@@ -332,6 +332,23 @@
   }
   .stars button.on { color: var(--accent); }
   .stars button:hover { transform: scale(1.25); }
+
+  /* ── 白板（手绘风图解；亮暗模式都保持白板观感） ── */
+  .whiteboard { position: relative; background: #fbfbf7; border: 1px solid var(--line); border-radius: 10px; padding: 26px 18px 16px; margin: 22px 0; }
+  .whiteboard svg { display: block; width: 100%; height: auto; }
+  .wb-full {
+    position: absolute; top: 10px; right: 10px; z-index: 2;
+    font-family: var(--sans); font-size: .72rem; padding: 4px 12px; border-radius: 999px;
+    border: 1px solid #e3e0d8; background: #fff; color: #6b6862; cursor: pointer;
+    opacity: .45; transition: opacity .2s;
+  }
+  .whiteboard:hover .wb-full, .whiteboard:fullscreen .wb-full { opacity: 1; }
+  .whiteboard:fullscreen { border-radius: 0; display: flex; align-items: center; justify-content: center; padding: 3vh 3vw; background: #fbfbf7; }
+  .whiteboard:fullscreen svg { width: auto; height: auto; max-width: 96vw; max-height: 90vh; flex: 1; }
+  .wb-t { font-family: var(--sans); fill: #2b2b2b; }
+  .wb-k { stroke: #2b2b2b; } .wb-b { stroke: #2563eb; } .wb-r { stroke: #dc2626; } .wb-g { stroke: #16a34a; }
+  .wb-fk { fill: #2b2b2b; } .wb-fb { fill: #2563eb; } .wb-fr { fill: #dc2626; } .wb-fg { fill: #16a34a; }
+  .wb-soft-b { fill: rgba(37,99,235,.07); } .wb-soft-r { fill: rgba(220,38,38,.07); } .wb-soft-g { fill: rgba(22,163,74,.09); }
 </style>
 </head>
 <body>
@@ -347,15 +364,119 @@
       </div>
 
       <h1>合并区间</h1>
-      <p class="subtitle">merge-intervals — TODO 一句话题眼</p>
+      <p class="subtitle">merge-intervals — 按起点排序，能拼就拼，不能拼就开新区间</p>
       <div class="meta">
-        <span class="tag">TODO 难度</span>
+        <span class="tag">中等</span>
         <span class="tag">区间</span>
+        <span class="tag">排序</span>
       </div>
 
       <section>
         <h2><span class="secno">01</span>题目</h2>
-        <div class="problem-card"><p>TODO</p></div>
+        <div class="problem-card">
+          <p>以数组 <code class="inline">intervals</code> 表示若干个区间的集合，其中 <code class="inline">intervals[i] = [start, end]</code>。请你合并所有<strong>重叠</strong>的区间，并返回一个不重叠的区间数组，该数组需恰好覆盖输入中的所有区间。</p>
+          <div class="example"><span class="k">输入：</span>intervals = [[1,3],[2,6],[8,10],[15,18]]
+<span class="k">输出：</span>[[1,6],[8,10],[15,18]]<span class="k">（[1,3] 和 [2,6] 重叠 → 合并成 [1,6]）</span></div>
+        </div>
+        <div class="insight">
+          <span class="label">核心洞察</span>
+          乱序下判断重叠要两两比较；<strong>按起点排序后，可能重叠的区间必然相邻</strong>——只需一趟扫描，维护"当前合并中的区间"，下一个能接上（start ≤ 当前 end）就扩右端点，接不上就结算开新。
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">02</span>思路演进</h2>
+        <p><strong>第一反应：</strong>两两判断重叠反复合并，直到没有可合并的。O(n²) 起步，还可能多轮，区间包含关系一多就乱。</p>
+        <p><strong>关键一步是排序：</strong>按起点排序后，区间从左到右铺开，合并问题从"图连通"退化成"相邻判断"。对当前区间 cur，下一个区间只有两种命运：start ≤ cur.end（重叠或相接，合并）或 start &gt; cur.end（断开，结算）。</p>
+        <p><strong>合并细节：</strong>重叠时右端点取 <code class="inline">max</code>——不是直接取下一个的 end，因为存在包含关系 [1,8] vs [2,3]。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">03</span>白板图解</h2>
+        <div class="whiteboard">
+          <button class="wb-full" title="全屏">⛶ 全屏</button>
+          <svg viewBox="0 0 720 400" role="img" aria-label="合并区间白板图解">
+            <defs><marker id="wb1-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2b2b2b"/></marker></defs>
+
+            <text x="28" y="40" class="wb-t" font-size="19">排序后，重叠区间必然相邻</text>
+            <path d="M60,120 L660,120" class="wb-k" fill="none" stroke-width="2" marker-end="url(#wb1-arr)"/>
+            <rect x="80" y="70" width="160" height="26" rx="13" class="wb-k" fill="none" stroke-width="2"/>
+            <text x="95" y="62" class="wb-t" font-size="12">[1,3]</text>
+            <rect x="120" y="26" width="320" height="26" rx="13" class="wb-r" fill="none" stroke-width="2"/>
+            <text x="135" y="18" class="wb-t wb-fr" font-size="12">[2,6] 与上重叠</text>
+            <rect x="340" y="70" width="160" height="26" rx="13" class="wb-k" fill="none" stroke-width="2"/>
+            <text x="355" y="62" class="wb-t" font-size="12">[8,10] 断开</text>
+            <rect x="520" y="70" width="120" height="26" rx="13" class="wb-k" fill="none" stroke-width="2"/>
+            <text x="530" y="62" class="wb-t" font-size="12">[15,18]</text>
+            <path d="M60,180 L660,180" class="wb-k" fill="none" stroke-width="2" marker-end="url(#wb1-arr)"/>
+            <rect x="80" y="154" width="360" height="26" rx="13" class="wb-g wb-soft-g" stroke-width="2"/>
+            <text x="95" y="148" class="wb-t wb-fg" font-size="12">合并 [1,6]</text>
+            <text x="60" y="226" class="wb-t wb-fb" font-size="15">判定只有一句：next.start ≤ cur.end ?</text>
+            <path d="M60,236 q100,8 210,2" class="wb-b" fill="none" stroke-width="1.5"/>
+            <text x="40" y="280" class="wb-t" font-size="15"><tspan class="wb-fr">①</tspan> 接得上 → cur.end = max(cur.end, next.end)（注意包含关系）</text>
+            <text x="40" y="314" class="wb-t" font-size="15"><tspan class="wb-fr">②</span> 接不上 → 结算 cur，开新区间</text>
+            <rect x="460" y="274" width="210" height="52" rx="10" class="wb-g wb-soft-g" stroke-width="2"/>
+            <text x="478" y="307" class="wb-t wb-fg" font-size="14">O(n log n) 排序主导</text>
+            <text x="40" y="366" class="wb-t" font-size="12">排序是题眼：之后只剩一趟线性扫描</text>
+          </svg>
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">04</span>排序 + 扫描 · 逐步演示</h2>
+        <div class="viz">
+          <svg viewBox="0 0 720 240" role="img" aria-label="合并区间演示">
+            <text x="40" y="30" class="svg-label">已按起点排序（绿=合并结果，蓝=当前合并中）</text>
+            <g id="arr"></g>
+          </svg>
+          <div class="viz-msg" id="viz-msg"></div>
+          <div class="viz-controls">
+            <button id="btn-prev">← 上一步</button>
+            <button id="btn-play" class="primary">▶ 播放</button>
+            <button id="btn-next">下一步 →</button>
+            <button id="btn-reset">重置</button>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">05</span>代码实现</h2>
+        <div class="tabs">
+          <button data-tab="0" class="active">排序 + 一次扫描 ★</button>
+        </div>
+        <div class="codeblock">
+<pre data-tab="0" class="active"><span class="tok-k">def</span> <span class="tok-f">merge</span>(intervals):
+    intervals.<span class="tok-b">sort</span>()            <span class="tok-c"># 按起点排序（题眼）</span>
+    merged = [intervals[<span class="tok-n">0</span>]]
+    <span class="tok-k">for</span> s, e <span class="tok-k">in</span> intervals[<span class="tok-n">1</span>:]:
+        <span class="tok-k">if</span> s <= merged[-<span class="tok-n">1</span>][<span class="tok-n">1</span>]:        <span class="tok-c"># 重叠/相接 → 扩右端点</span>
+            merged[-<span class="tok-n">1</span>][<span class="tok-n">1</span>] = <span class="tok-b">max</span>(merged[-<span class="tok-n">1</span>][<span class="tok-n">1</span>], e)
+        <span class="tok-k">else</span>:                        <span class="tok-c"># 断开 → 开新区间</span>
+            merged.<span class="tok-b">append</span>([s, e])
+    <span class="tok-k">return</span> merged</pre>
+        </div>
+        <p style="margin-top:16px">判断用 <code class="inline">&lt;=</code> 还是 <code class="inline">&lt;</code> 取决于题目对"相接"的定义：本题 [1,4] 和 [4,5] 算重叠（共用端点 4），所以 <code class="inline">&lt;=</code>。LC 452（射箭）的边界定义恰好相反，这是区间题最爱挖的坑。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">06</span>复杂度</h2>
+        <table class="cx">
+          <thead><tr><th>解法</th><th>时间</th><th>空间</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr class="best"><td>排序 + 扫描</td><td class="mono">O(n log n)</td><td class="mono">O(log n)</td><td>排序主导，扫描 O(n)，输出不计</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2><span class="secno">07</span>边界、坑与变体</h2>
+        <ul>
+          <li><strong>包含关系：</strong>[1,8] 吞 [2,3]——右端点必须取 max，不能直接替换。</li>
+          <li><strong>单区间 / 全不重叠：</strong>循环每个都走 else，原样输出，正确。</li>
+          <li><strong>变体 → LC 57（插入区间）：</strong>已排序无重叠时插入新区间并合并——三分段：左边不碰、中间合并、右边不碰。</li>
+          <li><strong>变体 → LC 452（射箭引爆气球）：</strong>按终点排序数断点，边界语义相反，贪心经典。</li>
+          <li><strong>变体 → LC 253（会议室 II）：</strong>区间族的另一大套路——扫描线/差分或双堆。</li>
+        </ul>
       </section>
 
       <div class="footnote">
@@ -366,6 +487,22 @@
     </div>
 
   <!-- ═══ 右栏：练习编辑器（固定） ═══ -->
+    <div class="page mastery-page">
+      <section class="mastery">
+        <div>
+          <div class="mastery-title">掌握程度</div>
+          <div class="mastery-info" id="mastery-info">还没有评分记录 · 复习完给自己打个星</div>
+        </div>
+        <div class="stars" id="stars" role="radiogroup" aria-label="掌握程度评分">
+          <button data-r="1" title="1★ 完全没印象">★</button>
+          <button data-r="2" title="2★ 基本不会">★</button>
+          <button data-r="3" title="3★ 看了提示才会">★</button>
+          <button data-r="4" title="4★ 顺利写出">★</button>
+          <button data-r="5" title="5★ 秒答">★</button>
+        </div>
+      </section>
+    </div>
+  </main>
   <aside class="pane-right">
     <div class="ed-tabs" id="ed-tabs"></div>
     <div class="editor">
@@ -392,12 +529,61 @@
 /* ═══════════════════ 题目元数据（模板变量区） ═══════════════════ */
 const PROBLEM = {
   slug: 'merge-intervals',
-  versions: {"我的解法":"def solution():\n    pass\n"}  // 右侧编辑器的初始版本与种子代码
+  versions: {'排序扫描': 'def merge(intervals):\n    # 按起点排，接得上就扩右端\n    pass\n'}  // 右侧编辑器的初始版本与种子代码
 };
 
-// 可视化步骤机（可选）：参考 template/viz/ 与 template/COMPONENTS.md
+/* ── 步骤机：区间合并 ── */
+const IV = [[1,3],[2,6],[8,10],[15,18]], U = 40, X0 = 60, Y0 = 60, BH = 26;
+const STEPS = [
+  { cur: 0, done: [], label: ['[1,3]','[2,6]','[8,10]','[15,18]'], msg: '排序后从左到右扫。cur = [1,3]。' },
+  { cur: 0, ext: 1, done: [], label: ['[1,3]','[2,6]','[8,10]','[15,18]'], msg: '下一个 [2,6]：start=2 ≤ cur.end=3 → 重叠！cur.end = max(3,6) = 6。' },
+  { cur: 1, ext: -1, done: [[1,6]], label: ['[1,6]','[8,10]','[15,18]'], msg: '下一个 [8,10]：8 > 6 → 断开！结算 [1,6]，开新 cur=[8,10]。' },
+  { cur: 2, ext: -1, done: [[1,6],[8,10]], label: ['[1,6]','[8,10]','[15,18]'], msg: '下一个 [15,18]：15 > 10 → 断开。结算 [8,10]，开新 cur=[15,18]。' },
+  { cur: -1, ext: -1, done: [[1,6],[8,10],[15,18]], label: ['[1,6]','[8,10]','[15,18]'], hit: true, msg: '扫描完毕，结算最后一个。答案 [[1,6],[8,10],[15,18]]。' },
+];
+const arrG = document.getElementById('arr');
+const msgEl = document.getElementById('viz-msg');
+let step = 0, playing = false, timer = null;
+function render() {
+  const s = STEPS[step];
+  arrG.innerHTML = '';
+  s.label.forEach((lab, i) => {
+    const [a, b] = lab.slice(1,-1).split(',').map(Number);
+    const done = i < s.done.length && s.done.length === s.label.length || s.done.some(d => d[0]===a && d[1]===b);
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    const cls = s.hit ? 'cell cell--hit' : done ? 'cell cell--hit' : i === s.cur ? 'cell cell--active' : 'cell';
+    g.setAttribute('class', cls);
+    g.innerHTML = `<rect x="${X0 + a*U}" y="${Y0}" width="${(b-a)*U}" height="${BH}" rx="13"/>
+      <text x="${X0 + a*U + (b-a)*U/2}" y="${Y0 + BH + 22}" text-anchor="middle" style="font-size:13px">${lab}</text>`;
+    arrG.appendChild(g);
+  });
+  msgEl.textContent = s.msg;
+  document.getElementById('btn-prev').disabled = step === 0;
+  document.getElementById('btn-next').disabled = step === STEPS.length - 1;
+}
+function stop() { playing = false; clearInterval(timer); document.getElementById('btn-play').textContent = '▶ 播放'; }
+document.getElementById('btn-next').onclick = () => { stop(); if (step < STEPS.length - 1) { step++; render(); } };
+document.getElementById('btn-prev').onclick = () => { stop(); if (step > 0) { step--; render(); } };
+document.getElementById('btn-reset').onclick = () => { stop(); step = 0; render(); };
+document.getElementById('btn-play').onclick = () => {
+  if (playing) return stop();
+  if (step === STEPS.length - 1) step = 0;
+  playing = true; document.getElementById('btn-play').textContent = '⏸ 暂停';
+  timer = setInterval(() => { if (step >= STEPS.length - 1) return stop(); step++; render(); }, 1800);
+  render();
+};
+render();
 
 /* ═══════════════════ 2. 讲解区代码 tabs ═══════════════════ */
+
+/* 白板全屏（Esc 退出，浏览器原生行为） */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.wb-full'); if (!btn) return;
+  const board = btn.closest('.whiteboard'); if (!board) return;
+  if (document.fullscreenElement) document.exitFullscreen();
+  else board.requestFullscreen?.();
+});
+
 document.querySelectorAll('.tabs').forEach(tabsEl => {
   const block = tabsEl.nextElementSibling;
   tabsEl.addEventListener('click', e => {

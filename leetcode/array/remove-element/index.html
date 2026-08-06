@@ -332,6 +332,23 @@
   }
   .stars button.on { color: var(--accent); }
   .stars button:hover { transform: scale(1.25); }
+
+  /* ── 白板（手绘风图解；亮暗模式都保持白板观感） ── */
+  .whiteboard { position: relative; background: #fbfbf7; border: 1px solid var(--line); border-radius: 10px; padding: 26px 18px 16px; margin: 22px 0; }
+  .whiteboard svg { display: block; width: 100%; height: auto; }
+  .wb-full {
+    position: absolute; top: 10px; right: 10px; z-index: 2;
+    font-family: var(--sans); font-size: .72rem; padding: 4px 12px; border-radius: 999px;
+    border: 1px solid #e3e0d8; background: #fff; color: #6b6862; cursor: pointer;
+    opacity: .45; transition: opacity .2s;
+  }
+  .whiteboard:hover .wb-full, .whiteboard:fullscreen .wb-full { opacity: 1; }
+  .whiteboard:fullscreen { border-radius: 0; display: flex; align-items: center; justify-content: center; padding: 3vh 3vw; background: #fbfbf7; }
+  .whiteboard:fullscreen svg { width: auto; height: auto; max-width: 96vw; max-height: 90vh; flex: 1; }
+  .wb-t { font-family: var(--sans); fill: #2b2b2b; }
+  .wb-k { stroke: #2b2b2b; } .wb-b { stroke: #2563eb; } .wb-r { stroke: #dc2626; } .wb-g { stroke: #16a34a; }
+  .wb-fk { fill: #2b2b2b; } .wb-fb { fill: #2563eb; } .wb-fr { fill: #dc2626; } .wb-fg { fill: #16a34a; }
+  .wb-soft-b { fill: rgba(37,99,235,.07); } .wb-soft-r { fill: rgba(220,38,38,.07); } .wb-soft-g { fill: rgba(22,163,74,.09); }
 </style>
 </head>
 <body>
@@ -347,15 +364,134 @@
       </div>
 
       <h1>移除元素</h1>
-      <p class="subtitle">remove-element — TODO 一句话题眼</p>
+      <p class="subtitle">remove-element — 快慢双指针：slow 圈定"已保留区"，fast 探路</p>
       <div class="meta">
-        <span class="tag">TODO 难度</span>
+        <span class="tag diff-easy">简单</span>
         <span class="tag">数组</span>
+        <span class="tag">双指针</span>
       </div>
 
       <section>
         <h2><span class="secno">01</span>题目</h2>
-        <div class="problem-card"><p>TODO</p></div>
+        <div class="problem-card">
+          <p>给你一个数组 <code class="inline">nums</code> 和一个值 <code class="inline">val</code>，<strong>原地</strong>移除所有等于 <code class="inline">val</code> 的元素，并返回移除后数组的新长度。元素的顺序可以改变，不需要考虑数组中超出新长度后面的元素。</p>
+          <div class="example"><span class="k">输入：</span>nums = [3,2,2,3], val = 3
+<span class="k">输出：</span>2, nums = [2,2,_,_]（前 2 个是有效元素，下划线部分无需关心）</div>
+        </div>
+        <div class="insight">
+          <span class="label">核心洞察</span>
+          把数组分成左右两半：左边是"已确认保留"，右边是"还没看"。<strong>slow 指向下一个保留位，fast 探路</strong>——fast 遇到不等于 val 的就抄到 slow 处。 slow 最终位置就是新长度。
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">02</span>思路演进</h2>
+        <p><strong>第一反应：</strong>遇到 val 就删除（list.remove / pop(i)）。但数组删除中间元素要整体搬移，最坏 O(n²)，而且边遍历边删容易跳过元素。</p>
+        <p><strong>换个角度：</strong>删除 = 保留"不要的反面"。不需要真的删，只需把要保留的元素<strong>搬到前面</strong>，返回搬了几个。这正是快慢指针：fast 扫描、slow 接收，一遍搞定。</p>
+        <p><strong>进阶变体：</strong>如果 val 很少（比如只出现一次），快慢指针会把它后面所有元素都搬一遍，浪费。此时用<strong>对撞双指针</strong>：遇到 val 就直接拿末尾元素盖掉，从尾部缩短数组——最多只搬 val 出现的次数个元素。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">03</span>白板图解</h2>
+        <div class="whiteboard">
+          <button class="wb-full" title="全屏">⛶ 全屏</button>
+          <svg viewBox="0 0 720 370" role="img" aria-label="快慢双指针白板图解">
+            <defs><marker id="wb1-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2b2b2b"/></marker></defs>
+
+            <text x="28" y="40" class="wb-t" font-size="19">删除 = 把要留的搬到前面（val = 3）</text>
+            <rect x="40" y="80" width="52" height="52" rx="6" class="wb-k" fill="none" stroke-width="2"/>
+            <rect x="100" y="80" width="52" height="52" rx="6" class="wb-k" fill="none" stroke-width="2"/>
+            <rect x="160" y="80" width="52" height="52" rx="6" class="wb-k" fill="none" stroke-width="2"/>
+            <rect x="220" y="80" width="52" height="52" rx="6" class="wb-k" fill="none" stroke-width="2"/>
+            <text x="66" y="114" class="wb-t wb-fr" font-size="20" text-anchor="middle">3</text>
+            <text x="126" y="114" class="wb-t" font-size="20" text-anchor="middle">2</text>
+            <text x="186" y="114" class="wb-t" font-size="20" text-anchor="middle">2</text>
+            <text x="246" y="114" class="wb-t wb-fr" font-size="20" text-anchor="middle">3</text>
+            <path d="M126,58 L126,72" class="wb-r" fill="none" stroke-width="2" marker-end="url(#wb1-arr)"/>
+            <text x="126" y="50" class="wb-t wb-fr" font-size="13" text-anchor="middle">fast</text>
+            <path d="M66,172 L66,140" class="wb-b" fill="none" stroke-width="2" marker-end="url(#wb1-arr)"/>
+            <text x="66" y="192" class="wb-t wb-fb" font-size="13" text-anchor="middle">slow</text>
+            <text x="330" y="96" class="wb-t wb-fb" font-size="15">规则只有一条：</text>
+            <text x="330" y="132" class="wb-t" font-size="15"><tspan class="wb-fr">fast ≠ val</tspan> → 抄到 slow，slow+1</text>
+            <text x="330" y="166" class="wb-t" font-size="15"><tspan class="wb-fr">fast = val</tspan> → 跳过</text>
+            <text x="40" y="240" class="wb-t wb-fb" font-size="13">[0, slow) = 保留区</text>
+            <text x="40" y="278" class="wb-t" font-size="15"><tspan class="wb-fr">①</tspan> fast=3 跳过；fast=2 → 抄到 [0]，slow=1</text>
+            <text x="40" y="312" class="wb-t" font-size="15"><tspan class="wb-fr">②</tspan> fast=2 → 抄到 [1]，slow=2；fast=3 跳过</text>
+            <rect x="470" y="262" width="200" height="52" rx="10" class="wb-g wb-soft-g" stroke-width="2"/>
+            <text x="488" y="295" class="wb-t wb-fg" font-size="16">return slow = 2</text>
+            <text x="40" y="352" class="wb-t" font-size="12">O(n) 一遍扫描 · O(1) 原地 ｜ 尾部内容不用管</text>
+          </svg>
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">04</span>快慢指针 · 逐步演示</h2>
+        <div class="viz">
+          <svg viewBox="0 0 720 210" role="img" aria-label="快慢指针演示">
+            <text x="40" y="34" class="svg-label">NUMS（val = 3）</text>
+            <g id="arr"></g>
+          </svg>
+          <div class="viz-msg" id="viz-msg"></div>
+          <div class="viz-controls">
+            <button id="btn-prev">← 上一步</button>
+            <button id="btn-play" class="primary">▶ 播放</button>
+            <button id="btn-next">下一步 →</button>
+            <button id="btn-reset">重置</button>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">05</span>代码实现</h2>
+        <div class="tabs">
+          <button data-tab="0" class="active">解法一 · 快慢双指针 ★</button>
+          <button data-tab="1">解法二 · 对撞双指针（val 很少时更优）</button>
+        </div>
+        <div class="codeblock">
+<pre data-tab="0" class="active"><span class="tok-k">def</span> <span class="tok-f">removeElement</span>(nums, val):
+    <span class="tok-c"># slow: 下一个保留位；fast 探路，≠val 就抄过来</span>
+    slow = <span class="tok-n">0</span>
+    <span class="tok-k">for</span> fast <span class="tok-k">in</span> <span class="tok-b">range</span>(<span class="tok-b">len</span>(nums)):
+        <span class="tok-k">if</span> nums[fast] != val:
+            nums[slow] = nums[fast]
+            slow += <span class="tok-n">1</span>
+    <span class="tok-k">return</span> slow</pre>
+<pre data-tab="1"><span class="tok-k">def</span> <span class="tok-f">removeElement</span>(nums, val):
+    <span class="tok-c"># 遇到 val 直接拿末尾元素盖掉，从尾部缩短</span>
+    <span class="tok-c"># 搬运次数 = val 出现次数，val 稀少时更省</span>
+    i, n = <span class="tok-n">0</span>, <span class="tok-b">len</span>(nums)
+    <span class="tok-k">while</span> i < n:
+        <span class="tok-k">if</span> nums[i] == val:
+            nums[i] = nums[n - <span class="tok-n">1</span>]  <span class="tok-c"># 末尾元素盖过来</span>
+            n -= <span class="tok-n">1</span>                    <span class="tok-c"># 数组缩短；i 不动，新元素还要检查</span>
+        <span class="tok-k">else</span>:
+            i += <span class="tok-n">1</span>
+    <span class="tok-k">return</span> n</pre>
+        </div>
+        <p style="margin-top:16px">对撞写法里 <code class="inline">i</code> 盖掉后<strong>不能</strong>自增——从末尾搬来的元素还没检查过。这个细节是面试加分点，也是这题唯一的坑。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">06</span>复杂度对比</h2>
+        <table class="cx">
+          <thead><tr><th>解法</th><th>时间</th><th>空间</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>逐个删除</td><td class="mono">O(n²)</td><td class="mono">O(1)</td><td>中间删除引发整体搬移</td></tr>
+            <tr class="best"><td>快慢双指针</td><td class="mono">O(n)</td><td class="mono">O(1)</td><td>通用解，保留相对顺序</td></tr>
+            <tr><td>对撞双指针</td><td class="mono">O(n)</td><td class="mono">O(1)</td><td>搬运最少，但打乱顺序</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2><span class="secno">07</span>边界、坑与变体</h2>
+        <ul>
+          <li><strong>空数组 / 全是 val：</strong>slow 停在 0，返回 0，正确。</li>
+          <li><strong>没有 val：</strong>slow 一路抄到底，返回 n，正确（自我复制无副作用）。</li>
+          <li><strong>返回值才是答案：</strong>评测只看前 k 个元素，数组尾部是什么无所谓。</li>
+          <li><strong>变体 → LC 26（删除有序数组重复项）：</strong>同一个快慢骨架，判断条件从"≠ val"换成"≠ 上一个保留值"。</li>
+          <li><strong>变体 → LC 283（移动零）：</strong>同一骨架 + 最后补零，两步走完。</li>
+        </ul>
       </section>
 
       <div class="footnote">
@@ -366,6 +502,22 @@
     </div>
 
   <!-- ═══ 右栏：练习编辑器（固定） ═══ -->
+    <div class="page mastery-page">
+      <section class="mastery">
+        <div>
+          <div class="mastery-title">掌握程度</div>
+          <div class="mastery-info" id="mastery-info">还没有评分记录 · 复习完给自己打个星</div>
+        </div>
+        <div class="stars" id="stars" role="radiogroup" aria-label="掌握程度评分">
+          <button data-r="1" title="1★ 完全没印象">★</button>
+          <button data-r="2" title="2★ 基本不会">★</button>
+          <button data-r="3" title="3★ 看了提示才会">★</button>
+          <button data-r="4" title="4★ 顺利写出">★</button>
+          <button data-r="5" title="5★ 秒答">★</button>
+        </div>
+      </section>
+    </div>
+  </main>
   <aside class="pane-right">
     <div class="ed-tabs" id="ed-tabs"></div>
     <div class="editor">
@@ -392,12 +544,75 @@
 /* ═══════════════════ 题目元数据（模板变量区） ═══════════════════ */
 const PROBLEM = {
   slug: 'remove-element',
-  versions: {"我的解法":"def solution():\n    pass\n"}  // 右侧编辑器的初始版本与种子代码
+  versions: {'快慢双指针': 'def removeElement(nums, val):\n    # slow 收，fast 探\n    pass\n', '对撞双指针': 'def removeElement(nums, val):\n    # 末尾元素盖掉 val\n    pass\n'}  // 右侧编辑器的初始版本与种子代码
 };
 
-// 可视化步骤机（可选）：参考 template/viz/ 与 template/COMPONENTS.md
+/* ── 步骤机：快慢指针 ── */
+const NUMS = [3, 2, 2, 3], VAL = 3, CELL = 52, GAP = 8, X0 = 40, Y0 = 50;
+const STEPS = [
+  { vals: [3,2,2,3], fast: 0, slow: 0, kept: [], msg: 'slow=0 等接收，fast 从 0 出发。fast=3 = val，跳过。' },
+  { vals: [3,2,2,3], fast: 1, slow: 0, kept: [], msg: 'fast=2 ≠ val → 抄到 nums[0]，slow 变 1。' },
+  { vals: [2,2,2,3], fast: 1, slow: 1, kept: [0], msg: 'nums[0]=2 已保留。fast 继续。' },
+  { vals: [2,2,2,3], fast: 2, slow: 1, kept: [0], msg: 'fast=2 ≠ val → 抄到 nums[1]（自己抄自己），slow=2。' },
+  { vals: [2,2,2,3], fast: 3, slow: 2, kept: [0,1], msg: 'fast=3 = val，跳过。fast 走完。' },
+  { vals: [2,2,2,3], fast: -1, slow: 2, kept: [0,1], hit: [0,1], msg: '返回 slow=2，前 2 个 [2,2] 即答案，尾部无视。' },
+];
+const arrG = document.getElementById('arr');
+const msgEl = document.getElementById('viz-msg');
+NUMS.forEach((v, idx) => {
+  const x = X0 + idx * (CELL + GAP);
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.setAttribute('class', 'cell'); g.dataset.idx = idx;
+  g.innerHTML = `<rect x="${x}" y="${Y0}" width="${CELL}" height="${CELL}" rx="8"/>
+    <text x="${x + CELL/2}" y="${Y0 + CELL/2 + 6}" text-anchor="middle"></text>
+    <text class="arr-idx" x="${x + CELL/2}" y="${Y0 + CELL + 20}" text-anchor="middle">${idx}</text>`;
+  arrG.appendChild(g);
+});
+const ptrF = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+const ptrS = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+ptrF.setAttribute('class', 'viz-note'); ptrS.setAttribute('class', 'viz-note');
+ptrF.textContent = 'fast'; ptrS.textContent = 'slow';
+arrG.appendChild(ptrF); arrG.appendChild(ptrS);
+let step = 0, playing = false, timer = null;
+function render() {
+  const s = STEPS[step];
+  arrG.querySelectorAll('g').forEach(g => {
+    const idx = +g.dataset.idx;
+    g.setAttribute('class', 'cell' + (s.hit?.includes(idx) ? ' cell--hit' : idx === s.fast ? ' cell--active' : s.kept.includes(idx) ? ' cell--seen' : ''));
+    g.querySelector('text').textContent = s.vals[idx];
+  });
+  const px = i => X0 + i * (CELL + GAP) + CELL/2;
+  ptrF.setAttribute('x', px(Math.max(s.fast, 0))); ptrF.setAttribute('y', Y0 - 12);
+  ptrF.setAttribute('text-anchor', 'middle'); ptrF.style.opacity = s.fast >= 0 ? 1 : 0;
+  ptrS.setAttribute('x', px(Math.min(s.slow, NUMS.length - 1))); ptrS.setAttribute('y', Y0 + CELL + 40);
+  ptrS.setAttribute('text-anchor', 'middle');
+  msgEl.textContent = s.msg;
+  document.getElementById('btn-prev').disabled = step === 0;
+  document.getElementById('btn-next').disabled = step === STEPS.length - 1;
+}
+function stop() { playing = false; clearInterval(timer); document.getElementById('btn-play').textContent = '▶ 播放'; }
+document.getElementById('btn-next').onclick = () => { stop(); if (step < STEPS.length - 1) { step++; render(); } };
+document.getElementById('btn-prev').onclick = () => { stop(); if (step > 0) { step--; render(); } };
+document.getElementById('btn-reset').onclick = () => { stop(); step = 0; render(); };
+document.getElementById('btn-play').onclick = () => {
+  if (playing) return stop();
+  if (step === STEPS.length - 1) step = 0;
+  playing = true; document.getElementById('btn-play').textContent = '⏸ 暂停';
+  timer = setInterval(() => { if (step >= STEPS.length - 1) return stop(); step++; render(); }, 1600);
+  render();
+};
+render();
 
 /* ═══════════════════ 2. 讲解区代码 tabs ═══════════════════ */
+
+/* 白板全屏（Esc 退出，浏览器原生行为） */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.wb-full'); if (!btn) return;
+  const board = btn.closest('.whiteboard'); if (!board) return;
+  if (document.fullscreenElement) document.exitFullscreen();
+  else board.requestFullscreen?.();
+});
+
 document.querySelectorAll('.tabs').forEach(tabsEl => {
   const block = tabsEl.nextElementSibling;
   tabsEl.addEventListener('click', e => {

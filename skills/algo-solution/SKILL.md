@@ -1,6 +1,6 @@
 ---
 name: algo-solution
-description: LeetCode 算法题解的创建、完善与复习（单文件 HTML，论文版式 + GitHub 亮暗配色）。当用户要求"讲一道 LeetCode 题"、"创建/写题解"、"刷题"、"algo 新题"、"完善某道题"、"加个可视化"、"今天复习什么"、"记录复习"时使用。配合全局 `algo` CLI 与 ~/algo/template 组件体系工作。
+description: LeetCode 算法题解的创建、完善与复习（单文件 HTML，论文版式 + GitHub 亮暗配色）。仅在用户明确提到算法相关需求时触发，关键词：算法、算法题、刷算法、复习算法、学算法、题解、LeetCode、algo（例如“我们来复习一下今天的算法”“讲一道算法题”“今天学什么算法”“这道算法题帮我完善”）。与算法无关的请求不要使用本 skill。
 ---
 
 # Algo 题解工作流 · 总入口

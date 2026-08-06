@@ -11,9 +11,10 @@
 | `algo open [slug]` | 打开题目到浏览器；无参 = 自动选最紧的一道待复习题；服务没起会自动后台起；记录 `opened` |
 | `algo serve` | 前台起本地服务（端口 7717）：静态服务 `~/algo` + 进度 API |
 | `algo list [--topic t]` | 按主题分组列出所有题，●=待复习 ○=未到期 |
-| `algo today` | 复习区（逾期在前，带阶梯/⚠困难）+ 新学区（未评分题，日限 10 道） |
+| `algo today` | 复习区（逾期在前，带阶梯/⚠困难）+ 今日新学区（每天 2 道，自动顺延，题库不足告警） |
 | `algo done <slug> --rating <1-5>` | 记录一次复习，推进艾宾浩斯阶梯 |
 | `algo stats` | 总题数 / 复习次数 / 连续天数 / 待复习数 / 主题分布 |
+| `algo check [slug]` | 页面结构体检：main/aside 配对、编辑区与评分组件在场、slug 一致、无未替换占位符；不带参数扫全库 |
 
 ## 主题（--topic 可选值）
 
@@ -41,7 +42,7 @@ array, linked-list, hash, string, two-pointers, sliding-window, stack, queue, tr
     "<slug>": {
       "topic": "array", "title": "两数之和",
       "created": "2026-08-06", "due": "2026-08-08", "interval": 2,
-      "stage": 1, "struggle": false,
+      "stage": 1, "struggle": false, "plan": "2026-08-06",
       "reviews": [{ "date": "2026-08-06", "rating": 4 }],
       "opened": "…ISO…", "updated": "…ISO…",
       "code": { "暴力解法": "def …" },   // 页面编辑器自动写
@@ -55,6 +56,7 @@ array, linked-list, hash, string, two-pointers, sliding-window, stack, queue, tr
 
 - `code/order/notes/marks` 由 HTML 页面读写（serve 模式）；**不要手改 db.json**。
 - `due/stage/interval/struggle/reviews` 由 `applyReview()` 维护（`algo done` 或页面底部点星）。
+- `plan` = 新题学习计划日，由 `assignPlans()` 维护：未评分题按官方题单顺序每天 2 道顺延；首次评分后 `due` 接管。
 - 有效截止日 = `due` → `opened` → `updated` 的第一个（所以没走 `new` 创建的题也能进复习流）。
 
 ## HTTP API（serve 模式，端口 7717）

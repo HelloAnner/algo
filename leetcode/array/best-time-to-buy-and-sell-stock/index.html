@@ -332,6 +332,24 @@
   }
   .stars button.on { color: var(--accent); }
   .stars button:hover { transform: scale(1.25); }
+
+  /* ── 白板（手绘风图解；亮暗模式都保持白板观感） ── */
+  .whiteboard { position: relative; background: #fbfbf7; border: 1px solid var(--line); border-radius: 10px; padding: 26px 18px 16px; margin: 22px 0; }
+  .whiteboard svg { display: block; width: 100%; height: auto; }
+  .wb-full {
+    position: absolute; top: 10px; right: 10px; z-index: 2;
+    font-family: var(--sans); font-size: .72rem; padding: 4px 12px; border-radius: 999px;
+    border: 1px solid #e3e0d8; background: #fff; color: #6b6862; cursor: pointer;
+    opacity: .45; transition: opacity .2s;
+  }
+  .whiteboard:hover .wb-full, .whiteboard:fullscreen .wb-full { opacity: 1; }
+  .whiteboard:fullscreen { border-radius: 0; display: flex; align-items: center; justify-content: center; padding: 3vh 3vw; background: #fbfbf7; }
+  .whiteboard:fullscreen svg { width: auto; height: auto; max-width: 96vw; max-height: 90vh; flex: 1; }
+  /* 手写字体 + 记号笔色板（白板内部固定色，豁免主题变量） */
+  .wb-t { font-family: var(--sans); fill: #2b2b2b; }
+  .wb-k { stroke: #2b2b2b; } .wb-b { stroke: #2563eb; } .wb-r { stroke: #dc2626; } .wb-g { stroke: #16a34a; }
+  .wb-fk { fill: #2b2b2b; } .wb-fb { fill: #2563eb; } .wb-fr { fill: #dc2626; } .wb-fg { fill: #16a34a; }
+  .wb-soft-b { fill: rgba(37,99,235,.07); } .wb-soft-r { fill: rgba(220,38,38,.07); } .wb-soft-g { fill: rgba(22,163,74,.09); }
 </style>
 </head>
 <body>
@@ -347,15 +365,109 @@
       </div>
 
       <h1>买卖股票的最佳时机</h1>
-      <p class="subtitle">best-time-to-buy-and-sell-stock — TODO 一句话题眼</p>
+      <p class="subtitle">best-time-to-buy-and-sell-stock — 边走边记历史最低价，每天问：今天卖能赚多少</p>
       <div class="meta">
-        <span class="tag">TODO 难度</span>
+        <span class="tag diff-easy">简单</span>
         <span class="tag">数组</span>
+        <span class="tag">一次遍历</span>
       </div>
 
       <section>
         <h2><span class="secno">01</span>题目</h2>
-        <div class="problem-card"><p>TODO</p></div>
+        <div class="problem-card">
+          <p>给定数组 <code class="inline">prices</code>，<code class="inline">prices[i]</code> 是股票第 i 天的价格。你只能<strong>买一次、卖一次</strong>（先买后卖），求最大利润；不能赚钱就返回 0。</p>
+          <div class="example"><span class="k">输入：</span>prices = [7,1,5,3,6,4]
+<span class="k">输出：</span>5<span class="k">（第 2 天 1 买入，第 5 天 6 卖出，利润 6−1=5）</span></div>
+        </div>
+        <div class="insight">
+          <span class="label">核心洞察</span>
+          第 i 天卖出的最优买入点，就是 <strong>i 之前的历史最低价</strong>。一遍遍历：维护历史最低价 <code class="inline">minPrice</code>，每天算 <code class="inline">prices[i] - minPrice</code> 更新答案。
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">02</span>思路演进</h2>
+        <p><strong>第一反应：</strong>枚举所有买卖对 (i, j)，i &lt; j，取最大差。O(n²)，n=10⁵ 直接超时。</p>
+        <p><strong>瓶颈分析：</strong>对每个卖出日 j，内层在找 <code class="inline">min(prices[0..j-1])</code>——重复计算了。这个最小值可以边遍历边维护，内层 O(n) 降成 O(1)。</p>
+        <p><strong>等价视角（DP）：</strong>每天只有两种状态——手里有没有股票。这题是股票系列母题（LC 122/123/188），通用 DP 框架能解全系，但单次交易用一次遍历即可。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">03</span>白板图解</h2>
+        <div class="whiteboard">
+          <button class="wb-full" title="全屏">⛶ 全屏</button>
+          <svg viewBox="0 0 720 360" role="img" aria-label="股票白板图解">
+            <defs><marker id="wb1-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2b2b2b"/></marker></defs>
+
+            <text x="28" y="40" class="wb-t" font-size="19">卖在第 i 天 ⇐ 买在前 i 天最低处</text>
+            <path d="M60,60 L150,180 L240,100 L330,140 L420,80 L510,120" class="wb-k" fill="none" stroke-width="2.5"/>
+            <ellipse cx="150" cy="180" rx="15" ry="15" class="wb-r" fill="none" stroke-width="2"/>
+            <text x="132" y="216" class="wb-t wb-fr" font-size="14">买 1</text>
+            <ellipse cx="420" cy="80" rx="15" ry="15" class="wb-g" fill="none" stroke-width="2"/>
+            <text x="406" y="56" class="wb-t wb-fg" font-size="14">卖 6</text>
+            <path d="M150,196 L420,196" class="wb-b" fill="none" stroke-width="1.5" stroke-dasharray="6 4"/>
+            <path d="M420,192 L420,102" class="wb-b" fill="none" stroke-width="1.5" marker-end="url(#wb1-arr)"/>
+            <text x="250" y="222" class="wb-t wb-fb" font-size="15">利润 = 6 − 1 = 5</text>
+            <text x="40" y="272" class="wb-t" font-size="15"><tspan class="wb-fr">①</tspan> minPrice = 历史最低，边走边更新</text>
+            <text x="40" y="306" class="wb-t" font-size="15"><tspan class="wb-fr">②</tspan> 每天问：今天卖赚 prices[i] − minPrice，刷新答案</text>
+            <text x="40" y="342" class="wb-t" font-size="12">O(n) · O(1) ｜ 同一天买卖利润为 0，两个更新谁先谁后都行</text>
+          </svg>
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">04</span>代码实现</h2>
+        <div class="tabs">
+          <button data-tab="0">解法一 · 暴力枚举</button>
+          <button data-tab="1" class="active">解法二 · 一次遍历 ★</button>
+          <button data-tab="2">解法三 · DP 通式</button>
+        </div>
+        <div class="codeblock">
+<pre data-tab="0"><span class="tok-k">def</span> <span class="tok-f">maxProfit</span>(prices):
+    <span class="tok-c"># 枚举所有买卖对，O(n²)，n=1e5 超时</span>
+    ans = <span class="tok-n">0</span>
+    <span class="tok-k">for</span> i <span class="tok-k">in</span> <span class="tok-b">range</span>(<span class="tok-b">len</span>(prices)):
+        <span class="tok-k">for</span> j <span class="tok-k">in</span> <span class="tok-b">range</span>(i + <span class="tok-n">1</span>, <span class="tok-b">len</span>(prices)):
+            ans = <span class="tok-b">max</span>(ans, prices[j] - prices[i])
+    <span class="tok-k">return</span> ans</pre>
+<pre data-tab="1" class="active"><span class="tok-k">def</span> <span class="tok-f">maxProfit</span>(prices):
+    <span class="tok-c"># minPrice: 历史最低；每天更新最大利润</span>
+    ans, min_price = <span class="tok-n">0</span>, <span class="tok-b">float</span>(<span class="tok-s">'inf'</span>)
+    <span class="tok-k">for</span> p <span class="tok-k">in</span> prices:
+        min_price = <span class="tok-b">min</span>(min_price, p)
+        ans = <span class="tok-b">max</span>(ans, p - min_price)
+    <span class="tok-k">return</span> ans</pre>
+<pre data-tab="2"><span class="tok-k">def</span> <span class="tok-f">maxProfit</span>(prices):
+    <span class="tok-c"># 股票系列通式：hold=当天持股票的最大收益，cash=不持有</span>
+    hold, cash = -<span class="tok-b">float</span>(<span class="tok-s">'inf'</span>), <span class="tok-n">0</span>
+    <span class="tok-k">for</span> p <span class="tok-k">in</span> prices:
+        hold = <span class="tok-b">max</span>(hold, -p)        <span class="tok-c"># 保持 或 今天买（只许买一次，所以从 0 买）</span>
+        cash = <span class="tok-b">max</span>(cash, hold + p)   <span class="tok-c"># 保持 或 今天卖</span>
+    <span class="tok-k">return</span> cash</pre>
+        </div>
+        <p style="margin-top:16px">DP 通式看似杀鸡用牛刀，但它是股票系列的万能钥匙：LC 122（多次交易）把 <code class="inline">-p</code> 换成 <code class="inline">cash - p</code>，LC 123/188（限 k 次）再加一维交易次数。先写死这题，框架留到系列题收网。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">05</span>复杂度对比</h2>
+        <table class="cx">
+          <thead><tr><th>解法</th><th>时间</th><th>空间</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>暴力枚举</td><td class="mono">O(n²)</td><td class="mono">O(1)</td><td>所有买卖对，超时</td></tr>
+            <tr class="best"><td>一次遍历</td><td class="mono">O(n)</td><td class="mono">O(1)</td><td>历史最低价，本题最优</td></tr>
+            <tr><td>DP 通式</td><td class="mono">O(n)</td><td class="mono">O(1)</td><td>可扩展到整个股票系列</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2><span class="secno">06</span>边界、坑与变体</h2>
+        <ul>
+          <li><strong>一路下跌：</strong>利润全是负的，ans 保持 0 —— 初始值设 0 而非 -inf 就是为了"可以不交易"。</li>
+          <li><strong>只有一天：</strong>循环里 p - min_price = 0，返回 0，正确。</li>
+          <li><strong>变体 → LC 122（多次交易）：</strong>只要涨就赚，累加所有正差分；DP 改一个字符。</li>
+          <li><strong>变体 → LC 309（含冷冻期）/ LC 714（含手续费）：</strong>DP 通式加状态/改转移，框架不变。</li>
+        </ul>
       </section>
 
       <div class="footnote">
@@ -366,6 +478,22 @@
     </div>
 
   <!-- ═══ 右栏：练习编辑器（固定） ═══ -->
+    <div class="page mastery-page">
+      <section class="mastery">
+        <div>
+          <div class="mastery-title">掌握程度</div>
+          <div class="mastery-info" id="mastery-info">还没有评分记录 · 复习完给自己打个星</div>
+        </div>
+        <div class="stars" id="stars" role="radiogroup" aria-label="掌握程度评分">
+          <button data-r="1" title="1★ 完全没印象">★</button>
+          <button data-r="2" title="2★ 基本不会">★</button>
+          <button data-r="3" title="3★ 看了提示才会">★</button>
+          <button data-r="4" title="4★ 顺利写出">★</button>
+          <button data-r="5" title="5★ 秒答">★</button>
+        </div>
+      </section>
+    </div>
+  </main>
   <aside class="pane-right">
     <div class="ed-tabs" id="ed-tabs"></div>
     <div class="editor">
@@ -392,12 +520,21 @@
 /* ═══════════════════ 题目元数据（模板变量区） ═══════════════════ */
 const PROBLEM = {
   slug: 'best-time-to-buy-and-sell-stock',
-  versions: {"我的解法":"def solution():\n    pass\n"}  // 右侧编辑器的初始版本与种子代码
+  versions: {'一次遍历': 'def maxProfit(prices):\n    # 记历史最低，算今日利润\n    pass\n', 'DP通式': 'def maxProfit(prices):\n    # hold / cash 两状态\n    pass\n'}  // 右侧编辑器的初始版本与种子代码
 };
 
 // 可视化步骤机（可选）：参考 template/viz/ 与 template/COMPONENTS.md
 
 /* ═══════════════════ 2. 讲解区代码 tabs ═══════════════════ */
+
+/* 白板全屏（Esc 退出，浏览器原生行为） */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.wb-full'); if (!btn) return;
+  const board = btn.closest('.whiteboard'); if (!board) return;
+  if (document.fullscreenElement) document.exitFullscreen();
+  else board.requestFullscreen?.();
+});
+
 document.querySelectorAll('.tabs').forEach(tabsEl => {
   const block = tabsEl.nextElementSibling;
   tabsEl.addEventListener('click', e => {

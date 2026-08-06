@@ -332,6 +332,24 @@
   }
   .stars button.on { color: var(--accent); }
   .stars button:hover { transform: scale(1.25); }
+
+  /* ── 白板（手绘风图解；亮暗模式都保持白板观感） ── */
+  .whiteboard { position: relative; background: #fbfbf7; border: 1px solid var(--line); border-radius: 10px; padding: 26px 18px 16px; margin: 22px 0; }
+  .whiteboard svg { display: block; width: 100%; height: auto; }
+  .wb-full {
+    position: absolute; top: 10px; right: 10px; z-index: 2;
+    font-family: var(--sans); font-size: .72rem; padding: 4px 12px; border-radius: 999px;
+    border: 1px solid #e3e0d8; background: #fff; color: #6b6862; cursor: pointer;
+    opacity: .45; transition: opacity .2s;
+  }
+  .whiteboard:hover .wb-full, .whiteboard:fullscreen .wb-full { opacity: 1; }
+  .whiteboard:fullscreen { border-radius: 0; display: flex; align-items: center; justify-content: center; padding: 3vh 3vw; background: #fbfbf7; }
+  .whiteboard:fullscreen svg { width: auto; height: auto; max-width: 96vw; max-height: 90vh; flex: 1; }
+  /* 手写字体 + 记号笔色板（白板内部固定色，豁免主题变量） */
+  .wb-t { font-family: var(--sans); fill: #2b2b2b; }
+  .wb-k { stroke: #2b2b2b; } .wb-b { stroke: #2563eb; } .wb-r { stroke: #dc2626; } .wb-g { stroke: #16a34a; }
+  .wb-fk { fill: #2b2b2b; } .wb-fb { fill: #2563eb; } .wb-fr { fill: #dc2626; } .wb-fg { fill: #16a34a; }
+  .wb-soft-b { fill: rgba(37,99,235,.07); } .wb-soft-r { fill: rgba(220,38,38,.07); } .wb-soft-g { fill: rgba(22,163,74,.09); }
 </style>
 </head>
 <body>
@@ -347,15 +365,115 @@
       </div>
 
       <h1>跳跃游戏 II</h1>
-      <p class="subtitle">jump-game-ii — TODO 一句话题眼</p>
+      <p class="subtitle">jump-game-ii — 最少跳数：当前步的边界到了就不得不再跳一步</p>
       <div class="meta">
-        <span class="tag">TODO 难度</span>
+        <span class="tag">中等</span>
         <span class="tag">数组</span>
+        <span class="tag">贪心 / BFS 思想</span>
       </div>
 
       <section>
         <h2><span class="secno">01</span>题目</h2>
-        <div class="problem-card"><p>TODO</p></div>
+        <div class="problem-card">
+          <p>给定非负整数数组 <code class="inline">nums</code>，从下标 0 出发，<code class="inline">nums[i]</code> 是最多可跳步数，<strong>保证可以到达终点</strong>。求到达最后一个下标的<strong>最少跳跃次数</strong>。</p>
+          <div class="example"><span class="k">输入：</span>nums = [2,3,1,1,4]
+<span class="k">输出：</span>2<span class="k">（0 → 1 → 4）</span></div>
+        </div>
+        <div class="insight">
+          <span class="label">核心洞察</span>
+          把跳跃看成 BFS 分层：<strong>第 k 跳能到的位置是一个连续区间</strong>。遍历当前层的边界 <code class="inline">end</code>，同时预支下一层的最远边界 <code class="inline">reach</code>；脚踩到 end 就说明这层走完了，跳数 +1，end 换成 reach。
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">02</span>思路演进</h2>
+        <p><strong>BFS / DP：</strong>dp[i] = 到 i 的最少跳数，枚举所有能跳到 i 的 j。O(n²)，能过但浪费。</p>
+        <p><strong>关键观察：</strong>同一跳数能到达的位置连续成层。层与层之间只有边界在动——维护两个变量就够：当前层右边界 end、下一层最远 reach。</p>
+        <p><strong>与 LC 55 的关系：</strong>55 只问"能不能到"（一个 farthest 就够）；这题问"最少几步"，所以需要分层——end 就是层与层的分界线。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">03</span>白板图解</h2>
+        <div class="whiteboard">
+          <button class="wb-full" title="全屏">⛶ 全屏</button>
+          <svg viewBox="0 0 720 370" role="img" aria-label="跳跃游戏II白板图解">
+            <defs><marker id="wb1-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2b2b2b"/></marker></defs>
+
+            <text x="28" y="40" class="wb-t" font-size="19">像 BFS 一样一层一层扩边界</text>
+            <rect x="60" y="76" width="50" height="50" rx="6" class="wb-k" fill="none" stroke-width="2"/>
+            <rect x="118" y="76" width="50" height="50" rx="6" class="wb-k" fill="none" stroke-width="2"/>
+            <rect x="176" y="76" width="50" height="50" rx="6" class="wb-k" fill="none" stroke-width="2"/>
+            <rect x="234" y="76" width="50" height="50" rx="6" class="wb-k" fill="none" stroke-width="2"/>
+            <rect x="292" y="76" width="50" height="50" rx="6" class="wb-g wb-soft-g" stroke-width="2"/>
+            <text x="85" y="109" class="wb-t" font-size="19" text-anchor="middle">2</text>
+            <text x="143" y="109" class="wb-t" font-size="19" text-anchor="middle">3</text>
+            <text x="201" y="109" class="wb-t" font-size="19" text-anchor="middle">1</text>
+            <text x="259" y="109" class="wb-t" font-size="19" text-anchor="middle">1</text>
+            <text x="317" y="109" class="wb-t wb-fg" font-size="19" text-anchor="middle">4</text>
+            <path d="M85,132 Q120,166 176,136" class="wb-b" fill="none" stroke-width="2"/>
+            <text x="70" y="170" class="wb-t wb-fb" font-size="12">第 1 跳覆盖 [1..2]</text>
+            <path d="M143,132 Q230,192 318,140" class="wb-r" fill="none" stroke-width="2" marker-end="url(#wb1-arr)"/>
+            <text x="196" y="196" class="wb-t wb-fr" font-size="12">第 2 跳：层内最贪（i=1）能到 4</text>
+            <text x="420" y="96" class="wb-t wb-fb" font-size="14">end = 当前跳的右边界</text>
+            <text x="420" y="124" class="wb-t wb-fb" font-size="14">reach = 下一跳最远见</text>
+            <text x="40" y="254" class="wb-t" font-size="15"><tspan class="wb-fr">①</tspan> 遍历中 reach = max(reach, i + nums[i])</text>
+            <text x="40" y="288" class="wb-t" font-size="15"><tspan class="wb-fr">②</tspan> i 踩到 end → 必须再跳：jumps+1，end = reach</text>
+            <text x="40" y="322" class="wb-t" font-size="15"><tspan class="wb-fr">③</tspan> end 覆盖终点就停</text>
+            <rect x="470" y="272" width="200" height="52" rx="10" class="wb-g wb-soft-g" stroke-width="2"/>
+            <text x="488" y="305" class="wb-t wb-fg" font-size="16">O(n) · O(1)</text>
+            <text x="40" y="362" class="wb-t" font-size="12">循环只到 n−2：终点不是起跳点</text>
+          </svg>
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">04</span>代码实现</h2>
+        <div class="tabs">
+          <button data-tab="0">解法一 · DP</button>
+          <button data-tab="1" class="active">解法二 · 贪心分层 ★</button>
+        </div>
+        <div class="codeblock">
+<pre data-tab="0"><span class="tok-k">def</span> <span class="tok-f">jump</span>(nums):
+    <span class="tok-c"># dp[i] = 到 i 的最少跳数，O(n²)</span>
+    n = <span class="tok-b">len</span>(nums)
+    dp = [<span class="tok-b">float</span>(<span class="tok-s">'inf'</span>)] * n
+    dp[<span class="tok-n">0</span>] = <span class="tok-n">0</span>
+    <span class="tok-k">for</span> i <span class="tok-k">in</span> <span class="tok-b">range</span>(n):
+        <span class="tok-k">for</span> j <span class="tok-k">in</span> <span class="tok-b">range</span>(i + <span class="tok-n">1</span>, <span class="tok-b">min</span>(i + nums[i] + <span class="tok-n">1</span>, n)):
+            dp[j] = <span class="tok-b">min</span>(dp[j], dp[i] + <span class="tok-n">1</span>)
+    <span class="tok-k">return</span> dp[-<span class="tok-n">1</span>]</pre>
+<pre data-tab="1" class="active"><span class="tok-k">def</span> <span class="tok-f">jump</span>(nums):
+    <span class="tok-c"># end: 当前跳能到的右边界；reach: 下一跳最远见</span>
+    jumps = end = reach = <span class="tok-n">0</span>
+    <span class="tok-k">for</span> i <span class="tok-k">in</span> <span class="tok-b">range</span>(<span class="tok-b">len</span>(nums) - <span class="tok-n">1</span>):  <span class="tok-c"># 终点不算起跳点</span>
+        reach = <span class="tok-b">max</span>(reach, i + nums[i])
+        <span class="tok-k">if</span> i == end:            <span class="tok-c"># 当前层走完，不得不再跳</span>
+            jumps += <span class="tok-n">1</span>
+            end = reach
+    <span class="tok-k">return</span> jumps</pre>
+        </div>
+        <p style="margin-top:16px">循环只到 <code class="inline">n-2</code>：终点本身不是起跳点，否则 end 到达终点后还会白跳一次。贪心正确性一句话——<strong>在能到的范围里，能跳多远跳多远不会更差</strong>（交换论证：任何最优解的落脚点都可以换成 reach 最远的点）。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">05</span>复杂度对比</h2>
+        <table class="cx">
+          <thead><tr><th>解法</th><th>时间</th><th>空间</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>DP</td><td class="mono">O(n²)</td><td class="mono">O(n)</td><td>枚举所有起跳点</td></tr>
+            <tr class="best"><td>贪心分层</td><td class="mono">O(n)</td><td class="mono">O(1)</td><td>end / reach 两变量，BFS 分层的一维化</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2><span class="secno">06</span>边界、坑与变体</h2>
+        <ul>
+          <li><strong>单元素：</strong>循环不进，jumps=0，正确。</li>
+          <li><strong>循环上界 n-1：</strong>多跳到终点会多数一次——本题第一坑。</li>
+          <li><strong>与 LC 55 联动：</strong>55 判断可行性只要 farthest；这题要分层计数，end 是关键增量。</li>
+          <li><strong>同型 → LC 1024（视频拼接）/ LC 1326（灌溉花园）：</strong>"区间覆盖最少段数"，同一贪心骨架。</li>
+        </ul>
       </section>
 
       <div class="footnote">
@@ -366,6 +484,22 @@
     </div>
 
   <!-- ═══ 右栏：练习编辑器（固定） ═══ -->
+    <div class="page mastery-page">
+      <section class="mastery">
+        <div>
+          <div class="mastery-title">掌握程度</div>
+          <div class="mastery-info" id="mastery-info">还没有评分记录 · 复习完给自己打个星</div>
+        </div>
+        <div class="stars" id="stars" role="radiogroup" aria-label="掌握程度评分">
+          <button data-r="1" title="1★ 完全没印象">★</button>
+          <button data-r="2" title="2★ 基本不会">★</button>
+          <button data-r="3" title="3★ 看了提示才会">★</button>
+          <button data-r="4" title="4★ 顺利写出">★</button>
+          <button data-r="5" title="5★ 秒答">★</button>
+        </div>
+      </section>
+    </div>
+  </main>
   <aside class="pane-right">
     <div class="ed-tabs" id="ed-tabs"></div>
     <div class="editor">
@@ -392,12 +526,21 @@
 /* ═══════════════════ 题目元数据（模板变量区） ═══════════════════ */
 const PROBLEM = {
   slug: 'jump-game-ii',
-  versions: {"我的解法":"def solution():\n    pass\n"}  // 右侧编辑器的初始版本与种子代码
+  versions: {'贪心分层': 'def jump(nums):\n    # i 踩到 end 就 jumps+1, end=reach\n    pass\n', 'DP': 'def jump(nums):\n    # dp[i] = 到 i 的最少跳数\n    pass\n'}  // 右侧编辑器的初始版本与种子代码
 };
 
 // 可视化步骤机（可选）：参考 template/viz/ 与 template/COMPONENTS.md
 
 /* ═══════════════════ 2. 讲解区代码 tabs ═══════════════════ */
+
+/* 白板全屏（Esc 退出，浏览器原生行为） */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.wb-full'); if (!btn) return;
+  const board = btn.closest('.whiteboard'); if (!board) return;
+  if (document.fullscreenElement) document.exitFullscreen();
+  else board.requestFullscreen?.();
+});
+
 document.querySelectorAll('.tabs').forEach(tabsEl => {
   const block = tabsEl.nextElementSibling;
   tabsEl.addEventListener('click', e => {

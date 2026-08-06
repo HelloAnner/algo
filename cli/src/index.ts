@@ -34,6 +34,7 @@ interface ProblemState {
   due?: string;        // 下次复习日 YYYY-MM-DD
   stage?: number;      // 艾宾浩斯阶梯级数 0-6
   struggle?: boolean;  // 困难标记（评分≤2 打上，≥4 摘除）
+  plan?: string;       // 新题学习计划日 YYYY-MM-DD（未评分前生效）
   reviews?: Review[];
 }
 interface DB { version: number; problems: Record<string, ProblemState> }
@@ -60,7 +61,29 @@ const daysBetween = (a: string, b: string) =>
 function die(msg: string): never { console.error(msg); process.exit(1); }
 
 /** 有效复习截止日：due → opened → updated */
-const effDue = (p: ProblemState) => p.due ?? p.opened?.slice(0, 10) ?? p.updated?.slice(0, 10);
+const effDue = (p: ProblemState) => p.reviews?.length
+  ? (p.due ?? p.opened?.slice(0, 10) ?? p.updated?.slice(0, 10))
+  : (p.plan ?? p.due ?? p.opened?.slice(0, 10) ?? p.updated?.slice(0, 10));
+
+/* ── 新题排期：每天 NEW_PER_DAY 道，自动顺延 ── */
+const NEW_PER_DAY = 2;
+function assignPlans(db: DB) {
+  const occ: Record<string, number> = {};
+  const need: [string, ProblemState][] = [];
+  for (const e of Object.entries(db.problems)) {
+    if (e[1].reviews?.length) continue;
+    if (e[1].plan) occ[e[1].plan!] = (occ[e[1].plan!] ?? 0) + 1;
+    else need.push(e);   // Object.entries 保持插入序 = 官方题单顺序
+  }
+  if (!need.length) return;
+  let d = todayStr();
+  for (const [, p] of need) {
+    while ((occ[d] ?? 0) >= NEW_PER_DAY) d = addDays(d, 1);
+    p.plan = d;
+    occ[d] = (occ[d] ?? 0) + 1;
+  }
+  saveDB(db);
+}
 
 /* ── 艾宾浩斯复习阶梯 ──
  * 阶梯间隔（天）：参照艾宾浩斯遗忘曲线复习点
@@ -92,6 +115,25 @@ function dueList(db: DB): [string, ProblemState][] {
   return Object.entries(db.problems)
     .filter(([, p]) => { const d = effDue(p); return d && d <= today; })
     .sort(([ , a], [, b]) => (effDue(a) ?? "").localeCompare(effDue(b) ?? ""));
+}
+
+/* ── 页面结构校验：骨架/编辑区/评分组件/左右分栏缺一不可 ── */
+function validateHtml(html: string, slug: string): string[] {
+  const errs: string[] = [];
+  const has = (s: string) => html.includes(s);
+  if ((html.match(/<main\b/g) ?? []).length !== 1 || (html.match(/<\/main>/g) ?? []).length !== 1)
+    errs.push("<main> 标签不配对");
+  if ((html.match(/<aside\b/g) ?? []).length !== 1 || (html.match(/<\/aside>/g) ?? []).length !== 1)
+    errs.push("<aside> 标签不配对");
+  if (has("</main>") && has("<aside") && html.indexOf("<aside") < html.indexOf("</main>"))
+    errs.push("<aside> 必须在 </main> 之后（否则编辑区被吞进左栏）");
+  for (const id of ["ed-tabs", "ed-ta", "ed-hl", "notes-ta", "stars", "mastery-info", "content"])
+    if (!has(`id="${id}"`)) errs.push(`缺 #${id}`);
+  if (!has(`slug: '${slug}'`)) errs.push(`PROBLEM.slug 与目录名不一致`);
+  if (/\{\{[A-Z_]+\}\}/.test(html)) errs.push("存在未替换的 {{模板占位符}}");
+  for (const fn of ["renderMastery", "switchVersion", "scheduleSave"])
+    if (!has(fn)) errs.push(`缺基础设施函数 ${fn}`);
+  return errs;
 }
 
 const MIME: Record<string, string> = {
@@ -197,6 +239,11 @@ async function cmdNew(slug?: string, flags?: Record<string, string>) {
         <div class="problem-card"><p>TODO</p></div>
       </section>
 
+      <section>
+        <h2><span class="secno">02</span>白板图解</h2>
+        <!-- TODO: 一张手绘白板图说清算法全貌，组件与规则见 template/viz/whiteboard.html -->
+      </section>
+
       <div class="footnote">
         <span>ALGO · ${label}专题</span>
         <span>选中任意文字可高亮 / 写评论</span>
@@ -211,27 +258,32 @@ async function cmdNew(slug?: string, flags?: Record<string, string>) {
     .replace("{{CONTENT}}", skeleton)
     .replace(/\/\* \{\{VIZ_JS\}\}[^*]*\*\//, "// 可视化步骤机（可选）：参考 template/viz/ 与 template/COMPONENTS.md");
 
+  const errs = validateHtml(html, slug);   // 先校验，不合格不落地
+  if (errs.length) die(`模板生成页面未通过结构校验:\n  ` + errs.join("\n  "));
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "index.html"), html);
 
   const db = loadDB();
   db.problems[slug] = {
     ...db.problems[slug], topic, title,
-    created: todayStr(), due: todayStr(), interval: 0, reviews: [],
+    created: todayStr(), interval: 0, reviews: [],
   };
+  assignPlans(db);   // 排进新题计划（每天 2 道顺延）
   saveDB(db);
   console.log(`✓ ${join("leetcode", topic, slug, "index.html")}`);
   console.log(`  下一步: 在 pi 里让它讲解这道题，或 algo open ${slug}`);
 }
 
-/* ── algo open [slug]（无参 = 打开最紧的一道待复习题） ── */
+/* ── algo open [slug]（无参 = 最紧的待复习题，其次今日新学） ── */
 async function cmdOpen(slug?: string) {
   const db = loadDB();
+  assignPlans(db);
   if (!slug) {
-    const first = dueList(db)[0];
-    if (!first) die("没有待复习的题目。algo new 创建一道？");
+    const list = dueList(db);
+    const first = list.find(([, p]) => p.reviews?.length) ?? list[0];
+    if (!first) die("没有待复习/待学的题目。algo new 创建一道？");
     slug = first[0];
-    console.log(`自动选择待复习: ${slug}`);
+    console.log(`自动选择: ${slug}`);
   }
   const rel = await findProblem(slug);
   if (!rel) die(`找不到题目: ${slug}（先 algo new ${slug} --topic ...）`);
@@ -279,9 +331,10 @@ async function cmdDone(slug?: string, flags?: Record<string, string>) {
   if (rest > 0) console.log(`  还剩 ${rest} 道待复习/待学`);
 }
 
-/* ── algo today（新学 / 复习 分区） ── */
+/* ── algo today（复习 / 今日新学 分区，新题每天 2 道顺延） ── */
 function cmdToday() {
   const db = loadDB();
+  assignPlans(db);
   const list = dueList(db);
   if (!list.length) return console.log("今天没有待学/待复习的题目 🎉");
   const today = todayStr();
@@ -289,7 +342,8 @@ function cmdToday() {
   for (const [slug, p] of list) {
     const head = `${p.topic ?? "?"}/${slug}${p.title ? `  ${p.title}` : ""}`;
     if (!p.reviews?.length) {
-      fresh.push(`新题  ${head}`);
+      const plan = p.plan ?? today;
+      fresh.push(`${plan < today ? `逾期${daysBetween(plan, today)}天` : "今日"}  ${head}`);
     } else {
       const due = effDue(p) ?? "";
       const overdue = daysBetween(due, today);
@@ -298,12 +352,26 @@ function cmdToday() {
     }
   }
   if (review.length) console.log(`══ 复习 (${review.length}) ══\n${review.join("\n")}`);
-  if (fresh.length) {
-    const show = fresh.slice(0, 10);
-    console.log(`══ 新学 (今日建议 ${show.length}/${fresh.length}) ══\n${show.join("\n")}` +
-      (fresh.length > 10 ? `\n  …还有 ${fresh.length - 10} 道新题排队中` : ""));
-  }
+  if (fresh.length) console.log(`══ 今日新学 (${fresh.length}) ══\n${fresh.join("\n")}`);
+  else console.log("══ 今日新学 ══\n无（按计划今天没有新题）");
+  const totalFresh = Object.values(db.problems).filter(p => !p.reviews?.length).length;
+  if (totalFresh > 0 && totalFresh < NEW_PER_DAY)
+    console.log(`\n⚠ 题库只剩 ${totalFresh} 道新题，不够明天学了——该补题了（algo new 或让我再搜一批）`);
+  if (totalFresh === 0) console.log("\n⚠ 题库新题已清零！快去找新题（algo new / 让我再搜一批）");
   console.log(`\n开始: algo open ｜ 结束后: algo done <slug> --rating <1-5>（或在页面底部点星）`);
+}
+
+/* ── algo check [slug]：全库结构体检 ── */
+async function cmdCheck(slug?: string) {
+  const glob = new Bun.Glob(slug ? `leetcode/**/${slug}/index.html` : "leetcode/*/*/index.html");
+  let total = 0, bad = 0;
+  for await (const f of glob.scan({ cwd: ROOT })) {
+    total++;
+    const s = f.split("/");
+    const errs = validateHtml(readFileSync(join(ROOT, f), "utf8"), s[2]);
+    if (errs.length) { bad++; console.log(`✗ ${s[1]}/${s[2]}\n  ${errs.join("\n  ")}`); }
+  }
+  console.log(bad ? `${bad}/${total} 个页面有问题` : `✓ 全部通过 (${total} 页)`);
 }
 
 /* ── algo stats ── */
@@ -327,7 +395,7 @@ async function cmdStats() {
   const lastRatings = entries.map(([, p]) => p.reviews?.at(-1)?.rating).filter((r): r is number => !!r);
   const avg = lastRatings.length ? (lastRatings.reduce((a, b) => a + b, 0) / lastRatings.length).toFixed(1) : "-";
   console.log(`总计 ${entries.length} 题 · 复习 ${totalReviews} 次 · 连续 ${streak} 天 · 待学/复习 ${due}${overdue ? `（逾期 ${overdue}）` : ""}`);
-  console.log(`掌握: 平均 ${avg}★ · 困难题 ${struggles} 道`);
+  console.log(`掌握: 平均 ${avg}★ · 困难题 ${struggles} 道 · 未学新题 ${entries.filter(([, p]) => !p.reviews?.length).length} 道`);
   const topics = Object.entries(byTopic).sort((a, b) => b[1] - a[1])
     .map(([t, n]) => `${TOPICS[t] ?? t} ${n}`).join(" · ");
   if (topics) console.log(`主题: ${topics}`);
@@ -350,6 +418,7 @@ else if (cmd === "open") await cmdOpen(arg);
 else if (cmd === "new") await cmdNew(arg, flags);
 else if (cmd === "list") await cmdList(flags);
 else if (cmd === "done") await cmdDone(arg, flags);
+else if (cmd === "check") await cmdCheck(arg);
 else if (cmd === "today") cmdToday();
 else if (cmd === "stats") await cmdStats();
 else {
@@ -359,9 +428,10 @@ else {
   algo open [slug]                                       打开题目（无参=最紧的待复习题；自动起服务）
   algo serve                                             本地服务，端口 ${PORT}
   algo list [--topic t]                                  按主题列出题目（●=待复习）
-  algo today                                             今日待复习清单（逾期在前）
+  algo today                                             今日任务：复习区 + 新学区（每天 2 道新题自动顺延）
   algo done <slug> --rating <1-5>                        记录一次复习
   algo stats                                             总览：题数/复习/连续天数
+  algo check [slug]                                      页面结构体检（不带参数=全库）
 
 主题: ${Object.keys(TOPICS).join(", ")}
 数据: ${DB_PATH}`);

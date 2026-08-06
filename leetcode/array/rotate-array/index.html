@@ -332,6 +332,23 @@
   }
   .stars button.on { color: var(--accent); }
   .stars button:hover { transform: scale(1.25); }
+
+  /* ── 白板（手绘风图解；亮暗模式都保持白板观感） ── */
+  .whiteboard { position: relative; background: #fbfbf7; border: 1px solid var(--line); border-radius: 10px; padding: 26px 18px 16px; margin: 22px 0; }
+  .whiteboard svg { display: block; width: 100%; height: auto; }
+  .wb-full {
+    position: absolute; top: 10px; right: 10px; z-index: 2;
+    font-family: var(--sans); font-size: .72rem; padding: 4px 12px; border-radius: 999px;
+    border: 1px solid #e3e0d8; background: #fff; color: #6b6862; cursor: pointer;
+    opacity: .45; transition: opacity .2s;
+  }
+  .whiteboard:hover .wb-full, .whiteboard:fullscreen .wb-full { opacity: 1; }
+  .whiteboard:fullscreen { border-radius: 0; display: flex; align-items: center; justify-content: center; padding: 3vh 3vw; background: #fbfbf7; }
+  .whiteboard:fullscreen svg { width: auto; height: auto; max-width: 96vw; max-height: 90vh; flex: 1; }
+  .wb-t { font-family: var(--sans); fill: #2b2b2b; }
+  .wb-k { stroke: #2b2b2b; } .wb-b { stroke: #2563eb; } .wb-r { stroke: #dc2626; } .wb-g { stroke: #16a34a; }
+  .wb-fk { fill: #2b2b2b; } .wb-fb { fill: #2563eb; } .wb-fr { fill: #dc2626; } .wb-fg { fill: #16a34a; }
+  .wb-soft-b { fill: rgba(37,99,235,.07); } .wb-soft-r { fill: rgba(220,38,38,.07); } .wb-soft-g { fill: rgba(22,163,74,.09); }
 </style>
 </head>
 <body>
@@ -347,15 +364,137 @@
       </div>
 
       <h1>轮转数组</h1>
-      <p class="subtitle">rotate-array — TODO 一句话题眼</p>
+      <p class="subtitle">rotate-array — 三次翻转：整体翻 → 前 k 翻 → 后段翻，O(1) 原地</p>
       <div class="meta">
-        <span class="tag">TODO 难度</span>
+        <span class="tag">中等</span>
         <span class="tag">数组</span>
+        <span class="tag">翻转技巧</span>
       </div>
 
       <section>
         <h2><span class="secno">01</span>题目</h2>
-        <div class="problem-card"><p>TODO</p></div>
+        <div class="problem-card">
+          <p>给定数组 <code class="inline">nums</code>，将数组中的元素向右轮转 <code class="inline">k</code> 个位置，<strong>原地</strong>修改，要求 O(1) 额外空间。</p>
+          <div class="example"><span class="k">输入：</span>nums = [1,2,3,4,5,6,7], k = 3
+<span class="k">输出：</span>[5,6,7,1,2,3,4]<span class="k">（尾部 3 个搬到前面）</span></div>
+        </div>
+        <div class="insight">
+          <span class="label">核心洞察</span>
+          轮转 = 把数组切成 [前 n−k | 后 k] 两段交换。三次翻转恰好完成段交换：<strong>整体翻 → 翻前 k → 翻后段</strong>。每段内部顺序经两次翻转后复原。
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">02</span>思路演进</h2>
+        <p><strong>第一反应：</strong>额外数组，每个元素放到 <code class="inline">(i+k) % n</code>。正确但 O(n) 空间，题目明确要 O(1)。</p>
+        <p><strong>环状替换：</strong>沿模 k 的循环节逐个换位置，O(1) 空间但下标处理绕（还要处理 gcd 个循环节），容易写挂。</p>
+        <p><strong>三次翻转：</strong>把"段交换"分解为三次整体操作，下标全部消失，只剩翻转——最不容易错的 O(1) 解法。先别忘 <code class="inline">k %= n</code>。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">03</span>白板图解</h2>
+        <div class="whiteboard">
+          <button class="wb-full" title="全屏">⛶ 全屏</button>
+          <svg viewBox="0 0 720 380" role="img" aria-label="三次翻转白板图解">
+            <defs><marker id="wb1-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2b2b2b"/></marker></defs>
+
+            <text x="28" y="40" class="wb-t" font-size="19">段交换 = 三次翻转（k=3）</text>
+            <text x="40" y="92" class="wb-t" font-size="15">原数组</text>
+            <text x="140" y="92" class="wb-t" font-size="16">[1 2 3 4 | 5 6 7]</text>
+            <path d="M140,102 L140,124" class="wb-k" fill="none" stroke-width="2" marker-end="url(#wb1-arr)"/>
+            <text x="160" y="120" class="wb-t wb-fr" font-size="13">① 整体翻</text>
+            <text x="140" y="152" class="wb-t" font-size="16">[7 6 5 4 | 3 2 1]</text>
+            <path d="M140,162 L140,184" class="wb-k" fill="none" stroke-width="2" marker-end="url(#wb1-arr)"/>
+            <text x="160" y="180" class="wb-t wb-fr" font-size="13">② 翻前 k=3 个</text>
+            <text x="140" y="212" class="wb-t" font-size="16">[5 6 7 | 4 3 2 1]</text>
+            <path d="M140,222 L140,244" class="wb-k" fill="none" stroke-width="2" marker-end="url(#wb1-arr)"/>
+            <text x="160" y="240" class="wb-t wb-fr" font-size="13">③ 翻后段</text>
+            <rect x="130" y="256" width="240" height="46" rx="10" class="wb-g wb-soft-g" stroke-width="2"/>
+            <text x="150" y="285" class="wb-t wb-fg" font-size="16">[5 6 7 1 2 3 4] ✓</text>
+            <text x="440" y="120" class="wb-t wb-fb" font-size="14">为什么对？</text>
+            <text x="440" y="150" class="wb-t" font-size="13">整体翻：两段位置互换</text>
+            <text x="440" y="178" class="wb-t" font-size="13">但段内顺序反了</text>
+            <text x="440" y="206" class="wb-t" font-size="13">再各翻一次：顺序复原</text>
+            <text x="440" y="250" class="wb-t wb-fr" font-size="13">别忘 k %= n（k 可能 ≥ n）</text>
+            <text x="40" y="346" class="wb-t" font-size="12">O(n) · O(1) ｜ 每个元素恰好被翻两次</text>
+          </svg>
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">04</span>三次翻转 · 逐步演示</h2>
+        <div class="viz">
+          <svg viewBox="0 0 720 190" role="img" aria-label="三次翻转演示">
+            <text x="40" y="34" class="svg-label">NUMS</text>
+            <g id="arr"></g>
+          </svg>
+          <div class="viz-msg" id="viz-msg"></div>
+          <div class="viz-controls">
+            <button id="btn-prev">← 上一步</button>
+            <button id="btn-play" class="primary">▶ 播放</button>
+            <button id="btn-next">下一步 →</button>
+            <button id="btn-reset">重置</button>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">05</span>代码实现</h2>
+        <div class="tabs">
+          <button data-tab="0">解法一 · 额外数组</button>
+          <button data-tab="1" class="active">解法二 · 三次翻转 ★</button>
+          <button data-tab="2">解法三 · 环状替换</button>
+        </div>
+        <div class="codeblock">
+<pre data-tab="0"><span class="tok-k">def</span> <span class="tok-f">rotate</span>(nums, k):
+    <span class="tok-c"># 每个元素放到 (i+k)%n，O(n) 空间</span>
+    n = <span class="tok-b">len</span>(nums)
+    res = nums[:]
+    <span class="tok-k">for</span> i, x <span class="tok-k">in</span> <span class="tok-b">enumerate</span>(nums):
+        res[(i + k) % n] = x
+    nums[:] = res</pre>
+<pre data-tab="1" class="active"><span class="tok-k">def</span> <span class="tok-f">rotate</span>(nums, k):
+    <span class="tok-c"># 整体翻 → 前 k 翻 → 后段翻，O(1) 原地</span>
+    n = <span class="tok-b">len</span>(nums)
+    k %= n                        <span class="tok-c"># k 可能大于 n！</span>
+    nums.reverse()                <span class="tok-c"># ① 整体翻</span>
+    nums[:k] = nums[:k][::-<span class="tok-n">1</span>]     <span class="tok-c"># ② 前 k 个翻回</span>
+    nums[k:] = nums[k:][::-<span class="tok-n">1</span>]     <span class="tok-c"># ③ 后段翻回</span></pre>
+<pre data-tab="2"><span class="tok-k">def</span> <span class="tok-f">rotate</span>(nums, k):
+    <span class="tok-c"># 沿模 k 循环节逐个换，O(1) 空间但下标绕</span>
+    n = <span class="tok-b">len</span>(nums); k %= n
+    <span class="tok-k">from</span> math <span class="tok-k">import</span> gcd
+    <span class="tok-k">for</span> start <span class="tok-k">in</span> <span class="tok-b">range</span>(gcd(n, k)):  <span class="tok-c"># gcd 个循环节</span>
+        cur, prev = start, nums[start]
+        <span class="tok-k">while</span> <span class="tok-n">True</span>:
+            nxt = (cur + k) % n
+            nums[nxt], prev = prev, nums[nxt]
+            cur = nxt
+            <span class="tok-k">if</span> cur == start: <span class="tok-k">break</span></pre>
+        </div>
+        <p style="margin-top:16px">切片翻转在 Python 里会产生临时切片，严格说是 O(k) 空间；追求极致就手写 <code class="inline">while l &lt; r: swap</code> 的双指针翻转。面试先写切片版，被追问再改。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">06</span>复杂度对比</h2>
+        <table class="cx">
+          <thead><tr><th>解法</th><th>时间</th><th>空间</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>额外数组</td><td class="mono">O(n)</td><td class="mono">O(n)</td><td>最直觉，不满足原地要求</td></tr>
+            <tr class="best"><td>三次翻转</td><td class="mono">O(n)</td><td class="mono">O(1)</td><td>无下标算术，最不易错</td></tr>
+            <tr><td>环状替换</td><td class="mono">O(n)</td><td class="mono">O(1)</td><td>循环节 + gcd，写挂率高</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2><span class="secno">07</span>边界、坑与变体</h2>
+        <ul>
+          <li><strong>k ≥ n：</strong><code class="inline">k %= n</code> 是第一步，漏了直接错。</li>
+          <li><strong>k = 0 或 k = n：</strong>取模后为 0，三次翻转移回原样，正确。</li>
+          <li><strong>左轮转 k 位：</strong>等价于右轮转 n−k 位，同一套代码。</li>
+          <li><strong>思想迁移：</strong>"段交换用翻转"是通用技巧——字符串循环左移、LC 186（翻转字符串中的单词 II）同理。</li>
+        </ul>
       </section>
 
       <div class="footnote">
@@ -366,6 +505,22 @@
     </div>
 
   <!-- ═══ 右栏：练习编辑器（固定） ═══ -->
+    <div class="page mastery-page">
+      <section class="mastery">
+        <div>
+          <div class="mastery-title">掌握程度</div>
+          <div class="mastery-info" id="mastery-info">还没有评分记录 · 复习完给自己打个星</div>
+        </div>
+        <div class="stars" id="stars" role="radiogroup" aria-label="掌握程度评分">
+          <button data-r="1" title="1★ 完全没印象">★</button>
+          <button data-r="2" title="2★ 基本不会">★</button>
+          <button data-r="3" title="3★ 看了提示才会">★</button>
+          <button data-r="4" title="4★ 顺利写出">★</button>
+          <button data-r="5" title="5★ 秒答">★</button>
+        </div>
+      </section>
+    </div>
+  </main>
   <aside class="pane-right">
     <div class="ed-tabs" id="ed-tabs"></div>
     <div class="editor">
@@ -392,12 +547,63 @@
 /* ═══════════════════ 题目元数据（模板变量区） ═══════════════════ */
 const PROBLEM = {
   slug: 'rotate-array',
-  versions: {"我的解法":"def solution():\n    pass\n"}  // 右侧编辑器的初始版本与种子代码
+  versions: {'三次翻转': 'def rotate(nums, k):\n    # 整体翻 → 前k翻 → 后段翻\n    pass\n', '额外数组': 'def rotate(nums, k):\n    # (i+k) % n 落位\n    pass\n'}  // 右侧编辑器的初始版本与种子代码
 };
 
-// 可视化步骤机（可选）：参考 template/viz/ 与 template/COMPONENTS.md
+/* ── 步骤机：三次翻转 ── */
+const CELL = 46, GAP = 8, X0 = 40, Y0 = 50;
+const STEPS = [
+  { vals: [1,2,3,4,5,6,7], hi: [], msg: '原数组，k=3。目标：尾部 3 个搬到前面。' },
+  { vals: [7,6,5,4,3,2,1], hi: [0,1,2,3,4,5,6], msg: '① 整体翻转：两段位置互换了，但段内顺序也反了。' },
+  { vals: [5,6,7,4,3,2,1], hi: [0,1,2], msg: '② 翻转前 k=3 个：5 6 7 顺序复原。' },
+  { vals: [5,6,7,1,2,3,4], hi: [3,4,5,6], hit: true, msg: '③ 翻转后段：1 2 3 4 顺序复原。完成！' },
+];
+const arrG = document.getElementById('arr');
+const msgEl = document.getElementById('viz-msg');
+STEPS[0].vals.forEach((v, idx) => {
+  const x = X0 + idx * (CELL + GAP);
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.setAttribute('class', 'cell'); g.dataset.idx = idx;
+  g.innerHTML = `<rect x="${x}" y="${Y0}" width="${CELL}" height="${CELL}" rx="8"/>
+    <text x="${x + CELL/2}" y="${Y0 + CELL/2 + 6}" text-anchor="middle"></text>
+    <text class="arr-idx" x="${x + CELL/2}" y="${Y0 + CELL + 20}" text-anchor="middle">${idx}</text>`;
+  arrG.appendChild(g);
+});
+let step = 0, playing = false, timer = null;
+function render() {
+  const s = STEPS[step];
+  arrG.querySelectorAll('g').forEach(g => {
+    const idx = +g.dataset.idx;
+    g.setAttribute('class', 'cell' + (s.hit && s.hi.includes(idx) ? ' cell--hit' : s.hi.includes(idx) ? ' cell--active' : ''));
+    g.querySelector('text').textContent = s.vals[idx];
+  });
+  msgEl.textContent = s.msg;
+  document.getElementById('btn-prev').disabled = step === 0;
+  document.getElementById('btn-next').disabled = step === STEPS.length - 1;
+}
+function stop() { playing = false; clearInterval(timer); document.getElementById('btn-play').textContent = '▶ 播放'; }
+document.getElementById('btn-next').onclick = () => { stop(); if (step < STEPS.length - 1) { step++; render(); } };
+document.getElementById('btn-prev').onclick = () => { stop(); if (step > 0) { step--; render(); } };
+document.getElementById('btn-reset').onclick = () => { stop(); step = 0; render(); };
+document.getElementById('btn-play').onclick = () => {
+  if (playing) return stop();
+  if (step === STEPS.length - 1) step = 0;
+  playing = true; document.getElementById('btn-play').textContent = '⏸ 暂停';
+  timer = setInterval(() => { if (step >= STEPS.length - 1) return stop(); step++; render(); }, 1800);
+  render();
+};
+render();
 
 /* ═══════════════════ 2. 讲解区代码 tabs ═══════════════════ */
+
+/* 白板全屏（Esc 退出，浏览器原生行为） */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.wb-full'); if (!btn) return;
+  const board = btn.closest('.whiteboard'); if (!board) return;
+  if (document.fullscreenElement) document.exitFullscreen();
+  else board.requestFullscreen?.();
+});
+
 document.querySelectorAll('.tabs').forEach(tabsEl => {
   const block = tabsEl.nextElementSibling;
   tabsEl.addEventListener('click', e => {

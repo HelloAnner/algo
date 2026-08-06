@@ -332,6 +332,23 @@
   }
   .stars button.on { color: var(--accent); }
   .stars button:hover { transform: scale(1.25); }
+
+  /* ── 白板（手绘风图解；亮暗模式都保持白板观感） ── */
+  .whiteboard { position: relative; background: #fbfbf7; border: 1px solid var(--line); border-radius: 10px; padding: 26px 18px 16px; margin: 22px 0; }
+  .whiteboard svg { display: block; width: 100%; height: auto; }
+  .wb-full {
+    position: absolute; top: 10px; right: 10px; z-index: 2;
+    font-family: var(--sans); font-size: .72rem; padding: 4px 12px; border-radius: 999px;
+    border: 1px solid #e3e0d8; background: #fff; color: #6b6862; cursor: pointer;
+    opacity: .45; transition: opacity .2s;
+  }
+  .whiteboard:hover .wb-full, .whiteboard:fullscreen .wb-full { opacity: 1; }
+  .whiteboard:fullscreen { border-radius: 0; display: flex; align-items: center; justify-content: center; padding: 3vh 3vw; background: #fbfbf7; }
+  .whiteboard:fullscreen svg { width: auto; height: auto; max-width: 96vw; max-height: 90vh; flex: 1; }
+  .wb-t { font-family: var(--sans); fill: #2b2b2b; }
+  .wb-k { stroke: #2b2b2b; } .wb-b { stroke: #2563eb; } .wb-r { stroke: #dc2626; } .wb-g { stroke: #16a34a; }
+  .wb-fk { fill: #2b2b2b; } .wb-fb { fill: #2563eb; } .wb-fr { fill: #dc2626; } .wb-fg { fill: #16a34a; }
+  .wb-soft-b { fill: rgba(37,99,235,.07); } .wb-soft-r { fill: rgba(220,38,38,.07); } .wb-soft-g { fill: rgba(22,163,74,.09); }
 </style>
 </head>
 <body>
@@ -347,15 +364,150 @@
       </div>
 
       <h1>合并两个有序数组</h1>
-      <p class="subtitle">merge-sorted-array — TODO 一句话题眼</p>
+      <p class="subtitle">merge-sorted-array — 逆向双指针：从后往前填，谁大谁落位</p>
       <div class="meta">
-        <span class="tag">TODO 难度</span>
+        <span class="tag diff-easy">简单</span>
         <span class="tag">数组</span>
+        <span class="tag">双指针</span>
       </div>
 
       <section>
         <h2><span class="secno">01</span>题目</h2>
-        <div class="problem-card"><p>TODO</p></div>
+        <div class="problem-card">
+          <p>给你两个按<strong>非递减顺序</strong>排列的整数数组 <code class="inline">nums1</code> 和 <code class="inline">nums2</code>，另有两个整数 <code class="inline">m</code> 和 <code class="inline">n</code> 分别表示两数组中的元素数目。请你把 <code class="inline">nums2</code> 合并到 <code class="inline">nums1</code> 中，使合并后的数组同样按非递减顺序排列。</p>
+          <p><code class="inline">nums1</code> 的长度为 <code class="inline">m + n</code>，前 m 个是有效元素，后 n 个是 0（预留空位）。最终结果存在 <code class="inline">nums1</code> 里，<strong>原地</strong>修改。</p>
+          <div class="example"><span class="k">输入：</span>nums1 = [1,2,3,0,0,0], m = 3, nums2 = [2,5,6], n = 3
+<span class="k">输出：</span>[1,2,2,3,5,6]</div>
+        </div>
+        <div class="insight">
+          <span class="label">核心洞察</span>
+          从前往后填会覆盖 nums1 还没处理的元素；<strong>从后往前填，空位就在身后</strong>——每次把两个数组当前最大值放到尾部，谁大谁落位，O(1) 空间原地完成。
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">02</span>思路演进</h2>
+        <p><strong>第一反应：</strong>把 nums2 拷进 nums1 尾部再整体排序。一行能写完，但 O((m+n)log(m+n))，完全浪费了"两个数组各自有序"这个条件。</p>
+        <p><strong>利用有序性：</strong>经典归并——两个指针分别扫 nums1、nums2，谁小取谁。但正向归并需要额外数组暂存结果，否则边取边写会覆盖 nums1 中还没比较的元素。O(m+n) 空间。</p>
+        <p><strong>关键反转：</strong>nums1 尾部有 n 个空位——空位在后面，那就<strong>从后往前填</strong>。两个指针指向有效元素的末尾，再一个写指针指向 nums1 尾部，谁大写谁。覆盖的都是空位或已落位的元素，绝对安全。O(1) 空间。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">03</span>白板图解</h2>
+        <div class="whiteboard">
+          <button class="wb-full" title="全屏">⛶ 全屏</button>
+          <svg viewBox="0 0 720 380" role="img" aria-label="逆向双指针白板图解">
+            <defs><marker id="wb1-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2b2b2b"/></marker></defs>
+
+            <text x="28" y="40" class="wb-t" font-size="19">逆向双指针：谁大谁落到最后</text>
+            <text x="40" y="86" class="wb-t" font-size="13">nums1</text>
+            <rect x="40" y="96" width="50" height="50" rx="6" class="wb-k" fill="none" stroke-width="2"/>
+            <rect x="96" y="96" width="50" height="50" rx="6" class="wb-k" fill="none" stroke-width="2"/>
+            <rect x="152" y="96" width="50" height="50" rx="6" class="wb-k" fill="none" stroke-width="2"/>
+            <rect x="208" y="96" width="50" height="50" rx="6" class="wb-r" fill="none" stroke-width="2" stroke-dasharray="6 4"/>
+            <rect x="264" y="96" width="50" height="50" rx="6" class="wb-r" fill="none" stroke-width="2" stroke-dasharray="6 4"/>
+            <rect x="320" y="96" width="50" height="50" rx="6" class="wb-r" fill="none" stroke-width="2" stroke-dasharray="6 4"/>
+            <text x="65" y="129" class="wb-t" font-size="19" text-anchor="middle">1</text>
+            <text x="121" y="129" class="wb-t" font-size="19" text-anchor="middle">2</text>
+            <text x="177" y="129" class="wb-t" font-size="19" text-anchor="middle">3</text>
+            <text x="233" y="129" class="wb-t wb-fr" font-size="19" text-anchor="middle">0</text>
+            <text x="289" y="129" class="wb-t wb-fr" font-size="19" text-anchor="middle">0</text>
+            <text x="345" y="129" class="wb-t wb-fr" font-size="19" text-anchor="middle">0</text>
+            <text x="177" y="80" class="wb-t wb-fr" font-size="13" text-anchor="middle">p1</text>
+            <text x="345" y="80" class="wb-t wb-fb" font-size="13" text-anchor="middle">p（写）</text>
+            <text x="232" y="176" class="wb-t wb-fr" font-size="12">虚线 = 预留空位（缓冲区）</text>
+            <text x="440" y="86" class="wb-t" font-size="13">nums2</text>
+            <rect x="440" y="96" width="50" height="50" rx="6" class="wb-k" fill="none" stroke-width="2"/>
+            <rect x="496" y="96" width="50" height="50" rx="6" class="wb-k" fill="none" stroke-width="2"/>
+            <rect x="552" y="96" width="50" height="50" rx="6" class="wb-k" fill="none" stroke-width="2"/>
+            <text x="465" y="129" class="wb-t" font-size="19" text-anchor="middle">2</text>
+            <text x="521" y="129" class="wb-t" font-size="19" text-anchor="middle">5</text>
+            <text x="577" y="129" class="wb-t" font-size="19" text-anchor="middle">6</text>
+            <text x="577" y="80" class="wb-t wb-fr" font-size="13" text-anchor="middle">p2</text>
+            <text x="40" y="222" class="wb-t wb-fb" font-size="15">每次只比 p1 和 p2 指向的两个数</text>
+            <path d="M40,232 q100,8 210,2" class="wb-b" fill="none" stroke-width="1.5"/>
+            <text x="40" y="268" class="wb-t" font-size="15"><tspan class="wb-fr">①</tspan> 谁大 → 写到 p，大者指针左移，p 左移</text>
+            <text x="40" y="302" class="wb-t" font-size="15"><tspan class="wb-fr">②</tspan> 循环到 nums2 用完为止</text>
+            <text x="40" y="336" class="wb-t" font-size="15"><tspan class="wb-fr">③</tspan> nums1 剩的不用动（本来就有序且在原位）</text>
+            <rect x="470" y="266" width="210" height="56" rx="10" class="wb-g wb-soft-g" stroke-width="2"/>
+            <text x="488" y="300" class="wb-t wb-fg" font-size="15">O(m+n) · O(1) 原地</text>
+          </svg>
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">04</span>逆向填充 · 逐步演示</h2>
+        <div class="viz">
+          <svg viewBox="0 0 720 210" role="img" aria-label="逆向填充演示">
+            <text x="40" y="34" class="svg-label">NUMS1（尾部逐步落位）</text>
+            <g id="arr"></g>
+            <text x="40" y="196" class="svg-label">NUMS2 = [2, 5, 6]</text>
+          </svg>
+          <div class="viz-msg" id="viz-msg"></div>
+          <div class="viz-controls">
+            <button id="btn-prev">← 上一步</button>
+            <button id="btn-play" class="primary">▶ 播放</button>
+            <button id="btn-next">下一步 →</button>
+            <button id="btn-reset">重置</button>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">05</span>代码实现</h2>
+        <div class="tabs">
+          <button data-tab="0">解法一 · 合并后排序</button>
+          <button data-tab="1">解法二 · 正向归并</button>
+          <button data-tab="2" class="active">解法三 · 逆向双指针 ★</button>
+        </div>
+        <div class="codeblock">
+<pre data-tab="0"><span class="tok-k">def</span> <span class="tok-f">merge</span>(nums1, m, nums2, n):
+    <span class="tok-c"># 最直白：拷过去再排，浪费有序性</span>
+    nums1[m:] = nums2
+    nums1.<span class="tok-b">sort</span>()</pre>
+<pre data-tab="1"><span class="tok-k">def</span> <span class="tok-f">merge</span>(nums1, m, nums2, n):
+    <span class="tok-c"># 经典归并：正向双指针 + 暂存数组，O(m+n) 空间</span>
+    tmp = nums1[:m]
+    p1 = p2 = <span class="tok-n">0</span>
+    <span class="tok-k">for</span> p <span class="tok-k">in</span> <span class="tok-b">range</span>(m + n):
+        <span class="tok-k">if</span> p2 >= n <span class="tok-k">or</span> (p1 < m <span class="tok-k">and</span> tmp[p1] <= nums2[p2]):
+            nums1[p] = tmp[p1]; p1 += <span class="tok-n">1</span>
+        <span class="tok-k">else</span>:
+            nums1[p] = nums2[p2]; p2 += <span class="tok-n">1</span></pre>
+<pre data-tab="2" class="active"><span class="tok-k">def</span> <span class="tok-f">merge</span>(nums1, m, nums2, n):
+    <span class="tok-c"># 从后往前：谁大谁落位，O(m+n) 时间 / O(1) 空间</span>
+    p1, p2, p = m - <span class="tok-n">1</span>, n - <span class="tok-n">1</span>, m + n - <span class="tok-n">1</span>
+    <span class="tok-k">while</span> p2 >= <span class="tok-n">0</span>:  <span class="tok-c"># nums2 用完就结束（nums1 剩的本来就在位）</span>
+        <span class="tok-k">if</span> p1 >= <span class="tok-n">0</span> <span class="tok-k">and</span> nums1[p1] > nums2[p2]:
+            nums1[p] = nums1[p1]; p1 -= <span class="tok-n">1</span>
+        <span class="tok-k">else</span>:
+            nums1[p] = nums2[p2]; p2 -= <span class="tok-n">1</span>
+        p -= <span class="tok-n">1</span></pre>
+        </div>
+        <p style="margin-top:16px">循环条件只写 <code class="inline">p2 &gt;= 0</code> 就够了：nums2 先用完时 nums1 剩余前缀天然有序且已在正确位置；nums1 先用完时把 nums2 剩余挨个拷入即可，循环自然覆盖。少一个分支，少一类 bug。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">06</span>复杂度对比</h2>
+        <table class="cx">
+          <thead><tr><th>解法</th><th>时间</th><th>空间</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>合并后排序</td><td class="mono">O((m+n)log(m+n))</td><td class="mono">O(log(m+n))</td><td>浪费有序性，排序栈开销</td></tr>
+            <tr><td>正向归并</td><td class="mono">O(m+n)</td><td class="mono">O(m)</td><td>需暂存 nums1 有效段</td></tr>
+            <tr class="best"><td>逆向双指针</td><td class="mono">O(m+n)</td><td class="mono">O(1)</td><td>空位在后 → 从后填，原地</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2><span class="secno">07</span>边界、坑与变体</h2>
+        <ul>
+          <li><strong>n = 0：</strong>循环一次都不进，nums1 原样返回，天然正确。</li>
+          <li><strong>m = 0：</strong>nums1 全是空位，p1 = -1，直接挨个拷 nums2，也正确。</li>
+          <li><strong>坑：</strong>正向写时总想"先把 nums1 元素挪走"——逆向写法就是为了避开这个念头。</li>
+          <li><strong>变体 → LC 21（合并两个有序链表）：</strong>同样的归并思想，链表天然适合正向操作（改指针不覆盖数据）。</li>
+          <li><strong>变体 → LC 23（合并 K 个有序链表）：</strong>归并的推广，两路归并升 K 路，用堆或分治。</li>
+        </ul>
       </section>
 
       <div class="footnote">
@@ -366,6 +518,22 @@
     </div>
 
   <!-- ═══ 右栏：练习编辑器（固定） ═══ -->
+    <div class="page mastery-page">
+      <section class="mastery">
+        <div>
+          <div class="mastery-title">掌握程度</div>
+          <div class="mastery-info" id="mastery-info">还没有评分记录 · 复习完给自己打个星</div>
+        </div>
+        <div class="stars" id="stars" role="radiogroup" aria-label="掌握程度评分">
+          <button data-r="1" title="1★ 完全没印象">★</button>
+          <button data-r="2" title="2★ 基本不会">★</button>
+          <button data-r="3" title="3★ 看了提示才会">★</button>
+          <button data-r="4" title="4★ 顺利写出">★</button>
+          <button data-r="5" title="5★ 秒答">★</button>
+        </div>
+      </section>
+    </div>
+  </main>
   <aside class="pane-right">
     <div class="ed-tabs" id="ed-tabs"></div>
     <div class="editor">
@@ -392,12 +560,66 @@
 /* ═══════════════════ 题目元数据（模板变量区） ═══════════════════ */
 const PROBLEM = {
   slug: 'merge-sorted-array',
-  versions: {"我的解法":"def solution():\n    pass\n"}  // 右侧编辑器的初始版本与种子代码
+  versions: {'逆向双指针': 'def merge(nums1, m, nums2, n):\n    # 从后往前，谁大谁落位\n    pass\n', '合并排序': 'def merge(nums1, m, nums2, n):\n    pass\n'}  // 右侧编辑器的初始版本与种子代码
 };
 
-// 可视化步骤机（可选）：参考 template/viz/ 与 template/COMPONENTS.md
+/* ── 步骤机：逆向填充 ── */
+const NUMS = [1, 2, 3, '', '', ''], CELL = 52, GAP = 8, X0 = 40, Y0 = 50;
+const STEPS = [
+  { vals: NUMS, act: -1, done: [], msg: 'p1 指向 3，p2 指向 6，写指针 p 在末尾空位。' },
+  { vals: [1,2,3,'','',6], act: 5, done: [5], msg: '3 vs 6：6 大 → 写入尾部。p2 前移。' },
+  { vals: [1,2,3,'',5,6], act: 4, done: [4,5], msg: '3 vs 5：5 大 → 写入。p2 前移。' },
+  { vals: [1,2,3,3,5,6], act: 3, done: [3,4,5], msg: '3 vs 2：3 大 → 写入（自己的元素，安全）。p1 前移。' },
+  { vals: [1,2,2,3,5,6], act: 2, done: [2,3,4,5], msg: '2 vs 2：取 nums1 的 2 写入。p1 前移。' },
+  { vals: [1,2,2,3,5,6], act: 1, done: [1,2,3,4,5], msg: '1 vs 2：2 大 → 写入。p2 用完，循环结束。' },
+  { vals: [1,2,2,3,5,6], act: -1, done: [0,1,2,3,4,5], hit: [0,1,2,3,4,5], msg: 'nums1 剩的 1 本来就在位。完成 [1,2,2,3,5,6]。' },
+];
+const arrG = document.getElementById('arr');
+const msgEl = document.getElementById('viz-msg');
+STEPS[0].vals.forEach((v, idx) => {
+  const x = X0 + idx * (CELL + GAP);
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.setAttribute('class', 'cell'); g.dataset.idx = idx;
+  g.innerHTML = `<rect x="${x}" y="${Y0}" width="${CELL}" height="${CELL}" rx="8"/>
+    <text x="${x + CELL/2}" y="${Y0 + CELL/2 + 6}" text-anchor="middle"></text>
+    <text class="arr-idx" x="${x + CELL/2}" y="${Y0 + CELL + 20}" text-anchor="middle">${idx}</text>`;
+  arrG.appendChild(g);
+});
+let step = 0, playing = false, timer = null;
+function render() {
+  const s = STEPS[step];
+  arrG.querySelectorAll('g').forEach(g => {
+    const idx = +g.dataset.idx;
+    g.setAttribute('class', 'cell' + (s.hit?.includes(idx) ? ' cell--hit' : idx === s.act ? ' cell--active' : s.done.includes(idx) ? ' cell--seen' : ''));
+    g.querySelector('text').textContent = s.vals[idx];
+  });
+  msgEl.textContent = s.msg;
+  document.getElementById('btn-prev').disabled = step === 0;
+  document.getElementById('btn-next').disabled = step === STEPS.length - 1;
+}
+function stop() { playing = false; clearInterval(timer); document.getElementById('btn-play').textContent = '▶ 播放'; }
+document.getElementById('btn-next').onclick = () => { stop(); if (step < STEPS.length - 1) { step++; render(); } };
+document.getElementById('btn-prev').onclick = () => { stop(); if (step > 0) { step--; render(); } };
+document.getElementById('btn-reset').onclick = () => { stop(); step = 0; render(); };
+document.getElementById('btn-play').onclick = () => {
+  if (playing) return stop();
+  if (step === STEPS.length - 1) step = 0;
+  playing = true; document.getElementById('btn-play').textContent = '⏸ 暂停';
+  timer = setInterval(() => { if (step >= STEPS.length - 1) return stop(); step++; render(); }, 1600);
+  render();
+};
+render();
 
 /* ═══════════════════ 2. 讲解区代码 tabs ═══════════════════ */
+
+/* 白板全屏（Esc 退出，浏览器原生行为） */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.wb-full'); if (!btn) return;
+  const board = btn.closest('.whiteboard'); if (!board) return;
+  if (document.fullscreenElement) document.exitFullscreen();
+  else board.requestFullscreen?.();
+});
+
 document.querySelectorAll('.tabs').forEach(tabsEl => {
   const block = tabsEl.nextElementSibling;
   tabsEl.addEventListener('click', e => {

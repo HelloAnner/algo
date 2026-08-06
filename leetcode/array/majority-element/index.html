@@ -332,6 +332,23 @@
   }
   .stars button.on { color: var(--accent); }
   .stars button:hover { transform: scale(1.25); }
+
+  /* ── 白板（手绘风图解；亮暗模式都保持白板观感） ── */
+  .whiteboard { position: relative; background: #fbfbf7; border: 1px solid var(--line); border-radius: 10px; padding: 26px 18px 16px; margin: 22px 0; }
+  .whiteboard svg { display: block; width: 100%; height: auto; }
+  .wb-full {
+    position: absolute; top: 10px; right: 10px; z-index: 2;
+    font-family: var(--sans); font-size: .72rem; padding: 4px 12px; border-radius: 999px;
+    border: 1px solid #e3e0d8; background: #fff; color: #6b6862; cursor: pointer;
+    opacity: .45; transition: opacity .2s;
+  }
+  .whiteboard:hover .wb-full, .whiteboard:fullscreen .wb-full { opacity: 1; }
+  .whiteboard:fullscreen { border-radius: 0; display: flex; align-items: center; justify-content: center; padding: 3vh 3vw; background: #fbfbf7; }
+  .whiteboard:fullscreen svg { width: auto; height: auto; max-width: 96vw; max-height: 90vh; flex: 1; }
+  .wb-t { font-family: var(--sans); fill: #2b2b2b; }
+  .wb-k { stroke: #2b2b2b; } .wb-b { stroke: #2563eb; } .wb-r { stroke: #dc2626; } .wb-g { stroke: #16a34a; }
+  .wb-fk { fill: #2b2b2b; } .wb-fb { fill: #2563eb; } .wb-fr { fill: #dc2626; } .wb-fg { fill: #16a34a; }
+  .wb-soft-b { fill: rgba(37,99,235,.07); } .wb-soft-r { fill: rgba(220,38,38,.07); } .wb-soft-g { fill: rgba(22,163,74,.09); }
 </style>
 </head>
 <body>
@@ -347,15 +364,136 @@
       </div>
 
       <h1>多数元素</h1>
-      <p class="subtitle">majority-element — TODO 一句话题眼</p>
+      <p class="subtitle">majority-element — Boyer-Moore 投票：不同就抵消，过半者必站到最后</p>
       <div class="meta">
-        <span class="tag">TODO 难度</span>
+        <span class="tag diff-easy">简单</span>
         <span class="tag">数组</span>
+        <span class="tag">投票算法</span>
       </div>
 
       <section>
         <h2><span class="secno">01</span>题目</h2>
-        <div class="problem-card"><p>TODO</p></div>
+        <div class="problem-card">
+          <p>给定一个大小为 n 的数组 <code class="inline">nums</code>，返回其中的<strong>多数元素</strong>。多数元素是指在数组中出现次数<strong>大于 ⌊n/2⌋</strong> 的元素。你可以假设多数元素一定存在。</p>
+          <div class="example"><span class="k">输入：</span>nums = [2,2,1,1,1,2,2]
+<span class="k">输出：</span>2<span class="k">（出现 4 次 > 7/2）</span></div>
+        </div>
+        <div class="insight">
+          <span class="label">核心洞察</span>
+          多数元素出现次数超过一半——把"一个多数 + 一个少数"配成对消掉，<strong>消到最后剩下的必然是多数</strong>。这就是 Boyer-Moore 投票：维护候选人和票数，遇同加一、遇异减一、票零换人。
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">02</span>思路演进</h2>
+        <p><strong>第一反应：</strong>哈希表计数，取次数最多的。O(n) 时间 O(n) 空间，正确但平庸。</p>
+        <p><strong>排序取巧：</strong>排序后多数元素必然占据中点 <code class="inline">nums[n//2]</code>（超过一半的数横跨中位）。一行答案，但 O(n log n)。</p>
+        <p><strong>最优：</strong>Boyer-Moore 投票，O(n) 时间 O(1) 空间。直觉：多数派 > 其他所有人总和，打群架一换一，多数派必然有人活下来。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">03</span>白板图解</h2>
+        <div class="whiteboard">
+          <button class="wb-full" title="全屏">⛶ 全屏</button>
+          <svg viewBox="0 0 720 400" role="img" aria-label="投票算法白板图解">
+            <defs><marker id="wb1-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2b2b2b"/></marker></defs>
+
+            <text x="28" y="40" class="wb-t" font-size="19">投票：一换一抵消，过半的杀不完</text>
+            <text x="40" y="92" class="wb-t" font-size="16">[2, 2, 1, 1, 1, 2, 2]</text>
+            <text x="40" y="140" class="wb-t" font-size="15"><tspan class="wb-fr">同</tspan> → 票 +1　<tspan class="wb-fr">异</tspan> → 票 −1　<tspan class="wb-fr">票=0</tspan> → 换候选人</text>
+            <rect x="40" y="180" width="150" height="56" rx="10" class="wb-k" fill="none" stroke-width="2"/>
+            <text x="58" y="214" class="wb-t" font-size="14">候选人 cand</text>
+            <rect x="220" y="180" width="130" height="56" rx="10" class="wb-k" fill="none" stroke-width="2"/>
+            <text x="240" y="214" class="wb-t" font-size="14">票数 cnt</text>
+            <text x="400" y="192" class="wb-t wb-fb" font-size="13">关键证明：</text>
+            <text x="400" y="216" class="wb-t" font-size="12">cnt 归零 ⇒ 已扫段多数派 ≤ 一半</text>
+            <text x="400" y="240" class="wb-t" font-size="12">⇒ 剩余段多数派仍 &gt; 一半，换人安全</text>
+            <text x="40" y="296" class="wb-t" font-size="14"><tspan class="wb-fr">①</tspan> cand=2 cnt=1 → 遇2 cnt=2 → 遇1 cnt=1 → 遇1 cnt=0</text>
+            <text x="40" y="330" class="wb-t" font-size="14"><tspan class="wb-fr">②</tspan> 换 1 上台 → 遇 2 归 0 → 换 2 上台，cnt=1</text>
+            <rect x="460" y="292" width="200" height="52" rx="10" class="wb-g wb-soft-g" stroke-width="2"/>
+            <text x="478" y="325" class="wb-t wb-fg" font-size="16">cand = 2 ✓</text>
+            <text x="40" y="380" class="wb-t" font-size="12">O(n) · O(1) ｜ 题设保证多数存在，否则需二次验证</text>
+          </svg>
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">04</span>投票 · 逐步演示</h2>
+        <div class="viz">
+          <svg viewBox="0 0 720 230" role="img" aria-label="投票过程演示">
+            <text x="40" y="34" class="svg-label">NUMS</text>
+            <g id="arr"></g>
+            <text x="420" y="60" class="svg-label">候选人</text>
+            <text id="viz-cand" x="420" y="90" class="svg-mono" style="font-size:20px">-</text>
+            <text x="540" y="60" class="svg-label">票数</text>
+            <text id="viz-cnt" x="540" y="90" class="svg-mono" style="font-size:20px">0</text>
+          </svg>
+          <div class="viz-msg" id="viz-msg"></div>
+          <div class="viz-controls">
+            <button id="btn-prev">← 上一步</button>
+            <button id="btn-play" class="primary">▶ 播放</button>
+            <button id="btn-next">下一步 →</button>
+            <button id="btn-reset">重置</button>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">05</span>为什么投票算法是对的</h2>
+        <p>严格论证一句话：<strong>每次 cnt 归零时，已扫描的区间里多数元素占比不超过一半</strong>（不然票不可能清光）。既然整数组里多数 > 1/2，而丢弃的前缀里多数 ≤ 1/2，那么剩余区间里多数仍然 > 1/2 —— 问题规模缩小但性质不变，归纳下去，最后站在台上的必然是多数元素。</p>
+        <p>推论：如果题目不保证多数存在，投票结果可能是炮灰——需要再扫一遍验证它的真实次数（LC 229 求 ⌊n/3⌋ 多数就需要这个验证步骤）。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">06</span>代码实现</h2>
+        <div class="tabs">
+          <button data-tab="0">解法一 · 哈希计数</button>
+          <button data-tab="1">解法二 · 排序取中位</button>
+          <button data-tab="2" class="active">解法三 · 投票 ★</button>
+        </div>
+        <div class="codeblock">
+<pre data-tab="0"><span class="tok-k">def</span> <span class="tok-f">majorityElement</span>(nums):
+    <span class="tok-c"># O(n) 时间 / O(n) 空间</span>
+    cnt = {}
+    <span class="tok-k">for</span> x <span class="tok-k">in</span> nums:
+        cnt[x] = cnt.<span class="tok-b">get</span>(x, <span class="tok-n">0</span>) + <span class="tok-n">1</span>
+        <span class="tok-k">if</span> cnt[x] > <span class="tok-b">len</span>(nums) // <span class="tok-n">2</span>:
+            <span class="tok-k">return</span> x</pre>
+<pre data-tab="1"><span class="tok-k">def</span> <span class="tok-f">majorityElement</span>(nums):
+    <span class="tok-c"># 多数 > n/2，排序后必占中点。O(n log n)</span>
+    <span class="tok-k">return</span> <span class="tok-b">sorted</span>(nums)[<span class="tok-b">len</span>(nums) // <span class="tok-n">2</span>]</pre>
+<pre data-tab="2" class="active"><span class="tok-k">def</span> <span class="tok-f">majorityElement</span>(nums):
+    <span class="tok-c"># Boyer-Moore：O(n) 时间 / O(1) 空间</span>
+    cand = cnt = <span class="tok-n">0</span>
+    <span class="tok-k">for</span> x <span class="tok-k">in</span> nums:
+        <span class="tok-k">if</span> cnt == <span class="tok-n">0</span>:   <span class="tok-c"># 票光了，换人</span>
+            cand = x
+        cnt += <span class="tok-n">1</span> <span class="tok-k">if</span> x == cand <span class="tok-k">else</span> -<span class="tok-n">1</span>
+    <span class="tok-k">return</span> cand</pre>
+        </div>
+        <p style="margin-top:16px">投票版三行核心：<code class="inline">票零换人 → 同加异减 → 返回候选人</code>。顺序上"先查票零再投票"，新人上任自带一票。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">07</span>复杂度对比</h2>
+        <table class="cx">
+          <thead><tr><th>解法</th><th>时间</th><th>空间</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>哈希计数</td><td class="mono">O(n)</td><td class="mono">O(n)</td><td>直白，提前返回</td></tr>
+            <tr><td>排序取中位</td><td class="mono">O(n log n)</td><td class="mono">O(log n)</td><td>一行流，面试只配当过渡</td></tr>
+            <tr class="best"><td>Boyer-Moore 投票</td><td class="mono">O(n)</td><td class="mono">O(1)</td><td>最优，需理解正确性证明</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2><span class="secno">08</span>边界、坑与变体</h2>
+        <ul>
+          <li><strong>单元素：</strong>cand 直接是它，正确。</li>
+          <li><strong>多数恰好过半 + 1：</strong>抵消依然有效，注意题设是"严格大于 ⌊n/2⌋"。</li>
+          <li><strong>不保证多数存在时：</strong>必须二次扫描验证，否则可能返回炮灰。</li>
+          <li><strong>变体 → LC 229（多数元素 II）：</strong>求所有出现 > ⌊n/3⌋ 的元素——两个候选人两张票，最后逐一验证。投票算法的真正毕业考。</li>
+        </ul>
       </section>
 
       <div class="footnote">
@@ -366,6 +504,22 @@
     </div>
 
   <!-- ═══ 右栏：练习编辑器（固定） ═══ -->
+    <div class="page mastery-page">
+      <section class="mastery">
+        <div>
+          <div class="mastery-title">掌握程度</div>
+          <div class="mastery-info" id="mastery-info">还没有评分记录 · 复习完给自己打个星</div>
+        </div>
+        <div class="stars" id="stars" role="radiogroup" aria-label="掌握程度评分">
+          <button data-r="1" title="1★ 完全没印象">★</button>
+          <button data-r="2" title="2★ 基本不会">★</button>
+          <button data-r="3" title="3★ 看了提示才会">★</button>
+          <button data-r="4" title="4★ 顺利写出">★</button>
+          <button data-r="5" title="5★ 秒答">★</button>
+        </div>
+      </section>
+    </div>
+  </main>
   <aside class="pane-right">
     <div class="ed-tabs" id="ed-tabs"></div>
     <div class="editor">
@@ -392,12 +546,67 @@
 /* ═══════════════════ 题目元数据（模板变量区） ═══════════════════ */
 const PROBLEM = {
   slug: 'majority-element',
-  versions: {"我的解法":"def solution():\n    pass\n"}  // 右侧编辑器的初始版本与种子代码
+  versions: {'投票算法': 'def majorityElement(nums):\n    # 票零换人，同加异减\n    pass\n', '哈希计数': 'def majorityElement(nums):\n    pass\n'}  // 右侧编辑器的初始版本与种子代码
 };
 
-// 可视化步骤机（可选）：参考 template/viz/ 与 template/COMPONENTS.md
+/* ── 步骤机：投票 ── */
+const NUMS = [2,2,1,1,1,2,2], CELL = 46, GAP = 8, X0 = 40, Y0 = 55;
+const STEPS = [
+  { i: -1, cand: '-', cnt: 0, msg: '候选人空缺，票数 0。' },
+  { i: 0, cand: 2, cnt: 1, msg: 'cnt=0 → 换 2 上任，cnt=1。' },
+  { i: 1, cand: 2, cnt: 2, msg: '遇 2（同）→ cnt=2。' },
+  { i: 2, cand: 2, cnt: 1, msg: '遇 1（异）→ cnt=1。' },
+  { i: 3, cand: 2, cnt: 0, msg: '遇 1（异）→ cnt=0，2 下台。' },
+  { i: 4, cand: 1, cnt: 1, msg: 'cnt=0 → 换 1 上任，cnt=1。' },
+  { i: 5, cand: 1, cnt: 0, msg: '遇 2（异）→ cnt=0，1 下台。' },
+  { i: 6, cand: 2, cnt: 1, hit: true, msg: '换 2 上任，cnt=1。扫描完，cand=2 即多数。' },
+];
+const arrG = document.getElementById('arr');
+const msgEl = document.getElementById('viz-msg');
+NUMS.forEach((v, idx) => {
+  const x = X0 + idx * (CELL + GAP);
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.setAttribute('class', 'cell'); g.dataset.idx = idx;
+  g.innerHTML = `<rect x="${x}" y="${Y0}" width="${CELL}" height="${CELL}" rx="8"/>
+    <text x="${x + CELL/2}" y="${Y0 + CELL/2 + 6}" text-anchor="middle">${v}</text>`;
+  arrG.appendChild(g);
+});
+let step = 0, playing = false, timer = null;
+function render() {
+  const s = STEPS[step];
+  arrG.querySelectorAll('g').forEach(g => {
+    const idx = +g.dataset.idx;
+    g.setAttribute('class', 'cell' + (idx === s.i ? (s.hit ? ' cell--hit' : ' cell--active') : idx < s.i ? ' cell--seen' : ''));
+  });
+  document.getElementById('viz-cand').textContent = s.cand;
+  document.getElementById('viz-cnt').textContent = s.cnt;
+  msgEl.textContent = s.msg;
+  document.getElementById('btn-prev').disabled = step === 0;
+  document.getElementById('btn-next').disabled = step === STEPS.length - 1;
+}
+function stop() { playing = false; clearInterval(timer); document.getElementById('btn-play').textContent = '▶ 播放'; }
+document.getElementById('btn-next').onclick = () => { stop(); if (step < STEPS.length - 1) { step++; render(); } };
+document.getElementById('btn-prev').onclick = () => { stop(); if (step > 0) { step--; render(); } };
+document.getElementById('btn-reset').onclick = () => { stop(); step = 0; render(); };
+document.getElementById('btn-play').onclick = () => {
+  if (playing) return stop();
+  if (step === STEPS.length - 1) step = 0;
+  playing = true; document.getElementById('btn-play').textContent = '⏸ 暂停';
+  timer = setInterval(() => { if (step >= STEPS.length - 1) return stop(); step++; render(); }, 1600);
+  render();
+};
+render();
 
 /* ═══════════════════ 2. 讲解区代码 tabs ═══════════════════ */
+
+/* 白板全屏（Esc 退出，浏览器原生行为） */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.wb-full'); if (!btn) return;
+  const board = btn.closest('.whiteboard'); if (!board) return;
+  if (document.fullscreenElement) document.exitFullscreen();
+  else board.requestFullscreen?.();
+});
+
 document.querySelectorAll('.tabs').forEach(tabsEl => {
   const block = tabsEl.nextElementSibling;
   tabsEl.addEventListener('click', e => {

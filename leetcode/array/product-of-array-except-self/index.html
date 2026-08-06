@@ -332,6 +332,23 @@
   }
   .stars button.on { color: var(--accent); }
   .stars button:hover { transform: scale(1.25); }
+
+  /* ── 白板（手绘风图解；亮暗模式都保持白板观感） ── */
+  .whiteboard { position: relative; background: #fbfbf7; border: 1px solid var(--line); border-radius: 10px; padding: 26px 18px 16px; margin: 22px 0; }
+  .whiteboard svg { display: block; width: 100%; height: auto; }
+  .wb-full {
+    position: absolute; top: 10px; right: 10px; z-index: 2;
+    font-family: var(--sans); font-size: .72rem; padding: 4px 12px; border-radius: 999px;
+    border: 1px solid #e3e0d8; background: #fff; color: #6b6862; cursor: pointer;
+    opacity: .45; transition: opacity .2s;
+  }
+  .whiteboard:hover .wb-full, .whiteboard:fullscreen .wb-full { opacity: 1; }
+  .whiteboard:fullscreen { border-radius: 0; display: flex; align-items: center; justify-content: center; padding: 3vh 3vw; background: #fbfbf7; }
+  .whiteboard:fullscreen svg { width: auto; height: auto; max-width: 96vw; max-height: 90vh; flex: 1; }
+  .wb-t { font-family: var(--sans); fill: #2b2b2b; }
+  .wb-k { stroke: #2b2b2b; } .wb-b { stroke: #2563eb; } .wb-r { stroke: #dc2626; } .wb-g { stroke: #16a34a; }
+  .wb-fk { fill: #2b2b2b; } .wb-fb { fill: #2563eb; } .wb-fr { fill: #dc2626; } .wb-fg { fill: #16a34a; }
+  .wb-soft-b { fill: rgba(37,99,235,.07); } .wb-soft-r { fill: rgba(220,38,38,.07); } .wb-soft-g { fill: rgba(22,163,74,.09); }
 </style>
 </head>
 <body>
@@ -347,15 +364,120 @@
       </div>
 
       <h1>除了自身以外数组的乘积</h1>
-      <p class="subtitle">product-of-array-except-self — TODO 一句话题眼</p>
+      <p class="subtitle">product-of-array-except-self — 不许用除法？左积 × 右积，两遍扫描</p>
       <div class="meta">
-        <span class="tag">TODO 难度</span>
+        <span class="tag">中等</span>
         <span class="tag">数组</span>
+        <span class="tag">前缀积</span>
       </div>
 
       <section>
         <h2><span class="secno">01</span>题目</h2>
-        <div class="problem-card"><p>TODO</p></div>
+        <div class="problem-card">
+          <p>给定整数数组 <code class="inline">nums</code>，返回数组 <code class="inline">answer</code>，其中 <code class="inline">answer[i]</code> 等于 nums 中<strong>除 nums[i] 以外</strong>所有元素的乘积。<strong>不能使用除法</strong>，要求 O(n)。</p>
+          <div class="example"><span class="k">输入：</span>nums = [1,2,3,4]
+<span class="k">输出：</span>[24,12,8,6]<span class="k">（如 answer[1] = 1×3×4 = 12）</span></div>
+        </div>
+        <div class="insight">
+          <span class="label">核心洞察</span>
+          answer[i] =（i 左边所有数的积）×（i 右边所有数的积）。左积从左往右扫一遍边算边存，右积从右往左扫用一个变量滚动乘上去——<strong>两次扫掠，方向相反</strong>。
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">02</span>思路演进</h2>
+        <p><strong>第一反应：</strong>总乘积 ÷ nums[i]。一行搞定但被禁——而且对 0 直接崩盘（除零），有两个 0 时更是全错。这条路必须会识别并主动排除。</p>
+        <p><strong>前缀思想：</strong>"除自身以外"= 左边 × 右边。先朴素地建两个数组 L[i]（左积）和 R[i]（右积），answer[i] = L[i]×R[i]，O(n) 空间。</p>
+        <p><strong>空间压缩：</strong>先把左积写进 answer，再从右往左扫，用单个变量 R 滚动累计右积，answer[i] *= R。answer 不算额外空间 → O(1)。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">03</span>白板图解</h2>
+        <div class="whiteboard">
+          <button class="wb-full" title="全屏">⛶ 全屏</button>
+          <svg viewBox="0 0 720 380" role="img" aria-label="前后缀积白板图解">
+            <defs><marker id="wb1-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2b2b2b"/></marker></defs>
+
+            <text x="28" y="40" class="wb-t" font-size="19">answer[i] = 左积 × 右积（以 i=2 为例）</text>
+            <rect x="60" y="70" width="52" height="52" rx="6" class="wb-b" fill="none" stroke-width="2"/>
+            <rect x="120" y="70" width="52" height="52" rx="6" class="wb-b" fill="none" stroke-width="2"/>
+            <rect x="180" y="70" width="52" height="52" rx="6" class="wb-r" fill="none" stroke-width="2"/>
+            <rect x="240" y="70" width="52" height="52" rx="6" class="wb-b" fill="none" stroke-width="2"/>
+            <text x="86" y="104" class="wb-t" font-size="19" text-anchor="middle">1</text>
+            <text x="146" y="104" class="wb-t" font-size="19" text-anchor="middle">2</text>
+            <text x="206" y="104" class="wb-t wb-fr" font-size="19" text-anchor="middle">3</text>
+            <text x="266" y="104" class="wb-t" font-size="19" text-anchor="middle">4</text>
+            <path d="M66,132 Q120,170 172,134" class="wb-b" fill="none" stroke-width="2" marker-end="url(#wb1-arr)"/>
+            <text x="70" y="170" class="wb-t wb-fb" font-size="13">左积 1×2=2</text>
+            <path d="M286,132 Q240,170 212,136" class="wb-b" fill="none" stroke-width="2" marker-end="url(#wb1-arr)"/>
+            <text x="234" y="170" class="wb-t wb-fb" font-size="13">右积 4</text>
+            <text x="180" y="58" class="wb-t wb-fr" font-size="13">自身跳过</text>
+            <text x="40" y="228" class="wb-t wb-fb" font-size="15">两遍方向相反的扫描：</text>
+            <text x="40" y="268" class="wb-t" font-size="15"><tspan class="wb-fr">①</tspan> 左→右：answer[i] = 左边所有数的积（左积）</text>
+            <text x="40" y="302" class="wb-t" font-size="15"><tspan class="wb-fr">②</tspan> 右→左：answer[i] ×= R，然后 R ×= nums[i]</text>
+            <rect x="440" y="252" width="230" height="56" rx="10" class="wb-g wb-soft-g" stroke-width="2"/>
+            <text x="458" y="286" class="wb-t wb-fg" font-size="15">[24, 12, 8, 6] ✓</text>
+            <text x="40" y="352" class="wb-t" font-size="12">O(n) 两遍 · 输出数组不算空间 → O(1) 额外 ｜ R 先用后乘，顺序别反</text>
+          </svg>
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">04</span>代码实现</h2>
+        <div class="tabs">
+          <button data-tab="0">解法一 · 除法（违规但有说头）</button>
+          <button data-tab="1">解法二 · 左右数组</button>
+          <button data-tab="2" class="active">解法三 · 滚动右积 ★</button>
+        </div>
+        <div class="codeblock">
+<pre data-tab="0"><span class="tok-k">def</span> <span class="tok-f">productExceptSelf</span>(nums):
+    <span class="tok-c"># 总积 ÷ 自身。两个坑：除零；多零时全错。题目禁除法就是禁这个</span>
+    total = <span class="tok-n">1</span>
+    <span class="tok-k">for</span> x <span class="tok-k">in</span> nums: total *= x
+    <span class="tok-k">return</span> [total // x <span class="tok-k">for</span> x <span class="tok-k">in</span> nums]  <span class="tok-c"># x=0 直接炸</span></pre>
+<pre data-tab="1"><span class="tok-k">def</span> <span class="tok-f">productExceptSelf</span>(nums):
+    <span class="tok-c"># L[i]=i 左边的积，R[i]=i 右边的积，O(n) 空间</span>
+    n = <span class="tok-b">len</span>(nums)
+    L, R, ans = [<span class="tok-n">1</span>]*n, [<span class="tok-n">1</span>]*n, [<span class="tok-n">1</span>]*n
+    <span class="tok-k">for</span> i <span class="tok-k">in</span> <span class="tok-b">range</span>(<span class="tok-n">1</span>, n): L[i] = L[i-<span class="tok-n">1</span>] * nums[i-<span class="tok-n">1</span>]
+    <span class="tok-k">for</span> i <span class="tok-k">in</span> <span class="tok-b">range</span>(n-<span class="tok-n">2</span>, -<span class="tok-n">1</span>, -<span class="tok-n">1</span>): R[i] = R[i+<span class="tok-n">1</span>] * nums[i+<span class="tok-n">1</span>]
+    <span class="tok-k">for</span> i <span class="tok-k">in</span> <span class="tok-b">range</span>(n): ans[i] = L[i] * R[i]
+    <span class="tok-k">return</span> ans</pre>
+<pre data-tab="2" class="active"><span class="tok-k">def</span> <span class="tok-f">productExceptSelf</span>(nums):
+    <span class="tok-c"># 第一遍把左积写进答案；第二遍用 R 滚动乘右积</span>
+    n = <span class="tok-b">len</span>(nums)
+    ans = [<span class="tok-n">1</span>] * n
+    <span class="tok-k">for</span> i <span class="tok-k">in</span> <span class="tok-b">range</span>(<span class="tok-n">1</span>, n):
+        ans[i] = ans[i-<span class="tok-n">1</span>] * nums[i-<span class="tok-n">1</span>]   <span class="tok-c"># 左积</span>
+    R = <span class="tok-n">1</span>
+    <span class="tok-k">for</span> i <span class="tok-k">in</span> <span class="tok-b">range</span>(n-<span class="tok-n">1</span>, -<span class="tok-n">1</span>, -<span class="tok-n">1</span>):
+        ans[i] *= R       <span class="tok-c"># 先用：乘上右边的积</span>
+        R *= nums[i]        <span class="tok-c"># 后乘：把 nums[i] 并入右积</span>
+    <span class="tok-k">return</span> ans</pre>
+        </div>
+        <p style="margin-top:16px">滚动版的顺序是唯一的坑：<strong>先 <code class="inline">ans[i] *= R</code> 再 <code class="inline">R *= nums[i]</code></strong>——反了就把自身乘进去了。口诀："先用后乘"。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">05</span>复杂度对比</h2>
+        <table class="cx">
+          <thead><tr><th>解法</th><th>时间</th><th>空间</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>除法</td><td class="mono">O(n)</td><td class="mono">O(1)</td><td>违反题意，遇 0 即错</td></tr>
+            <tr><td>左右数组</td><td class="mono">O(n)</td><td class="mono">O(n)</td><td>思路最直白的实现</td></tr>
+            <tr class="best"><td>滚动右积</td><td class="mono">O(n)</td><td class="mono">O(1)</td><td>输出复用，面试交付版</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2><span class="secno">06</span>边界、坑与变体</h2>
+        <ul>
+          <li><strong>含 0：</strong>前缀积天然处理——0 会传播给别人的乘积，自身位置反而拿到非零积，全对。</li>
+          <li><strong>含负数：</strong>乘法无关正负，无需特判。</li>
+          <li><strong>溢出：</strong>Python 大数免疫；Java/C++ 面试要主动提一句 32 位溢出风险。</li>
+          <li><strong>思想迁移 → 前缀和家族：</strong>LC 560（和为 K 的子数组）、LC 724（寻找数组中心下标）都是"左边 ×/＋ 右边"的变体。</li>
+        </ul>
       </section>
 
       <div class="footnote">
@@ -366,6 +488,22 @@
     </div>
 
   <!-- ═══ 右栏：练习编辑器（固定） ═══ -->
+    <div class="page mastery-page">
+      <section class="mastery">
+        <div>
+          <div class="mastery-title">掌握程度</div>
+          <div class="mastery-info" id="mastery-info">还没有评分记录 · 复习完给自己打个星</div>
+        </div>
+        <div class="stars" id="stars" role="radiogroup" aria-label="掌握程度评分">
+          <button data-r="1" title="1★ 完全没印象">★</button>
+          <button data-r="2" title="2★ 基本不会">★</button>
+          <button data-r="3" title="3★ 看了提示才会">★</button>
+          <button data-r="4" title="4★ 顺利写出">★</button>
+          <button data-r="5" title="5★ 秒答">★</button>
+        </div>
+      </section>
+    </div>
+  </main>
   <aside class="pane-right">
     <div class="ed-tabs" id="ed-tabs"></div>
     <div class="editor">
@@ -392,12 +530,21 @@
 /* ═══════════════════ 题目元数据（模板变量区） ═══════════════════ */
 const PROBLEM = {
   slug: 'product-of-array-except-self',
-  versions: {"我的解法":"def solution():\n    pass\n"}  // 右侧编辑器的初始版本与种子代码
+  versions: {'滚动右积': 'def productExceptSelf(nums):\n    # 先存左积，再滚动乘右积\n    pass\n', '左右数组': 'def productExceptSelf(nums):\n    # L[i] * R[i]\n    pass\n'}  // 右侧编辑器的初始版本与种子代码
 };
 
 // 可视化步骤机（可选）：参考 template/viz/ 与 template/COMPONENTS.md
 
 /* ═══════════════════ 2. 讲解区代码 tabs ═══════════════════ */
+
+/* 白板全屏（Esc 退出，浏览器原生行为） */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.wb-full'); if (!btn) return;
+  const board = btn.closest('.whiteboard'); if (!board) return;
+  if (document.fullscreenElement) document.exitFullscreen();
+  else board.requestFullscreen?.();
+});
+
 document.querySelectorAll('.tabs').forEach(tabsEl => {
   const block = tabsEl.nextElementSibling;
   tabsEl.addEventListener('click', e => {

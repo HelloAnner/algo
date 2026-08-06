@@ -332,6 +332,24 @@
   }
   .stars button.on { color: var(--accent); }
   .stars button:hover { transform: scale(1.25); }
+
+  /* ── 白板（手绘风图解；亮暗模式都保持白板观感） ── */
+  .whiteboard { position: relative; background: #fbfbf7; border: 1px solid var(--line); border-radius: 10px; padding: 26px 18px 16px; margin: 22px 0; }
+  .whiteboard svg { display: block; width: 100%; height: auto; }
+  .wb-full {
+    position: absolute; top: 10px; right: 10px; z-index: 2;
+    font-family: var(--sans); font-size: .72rem; padding: 4px 12px; border-radius: 999px;
+    border: 1px solid #e3e0d8; background: #fff; color: #6b6862; cursor: pointer;
+    opacity: .45; transition: opacity .2s;
+  }
+  .whiteboard:hover .wb-full, .whiteboard:fullscreen .wb-full { opacity: 1; }
+  .whiteboard:fullscreen { border-radius: 0; display: flex; align-items: center; justify-content: center; padding: 3vh 3vw; background: #fbfbf7; }
+  .whiteboard:fullscreen svg { width: auto; height: auto; max-width: 96vw; max-height: 90vh; flex: 1; }
+  /* 手写字体 + 记号笔色板（白板内部固定色，豁免主题变量） */
+  .wb-t { font-family: var(--sans); fill: #2b2b2b; }
+  .wb-k { stroke: #2b2b2b; } .wb-b { stroke: #2563eb; } .wb-r { stroke: #dc2626; } .wb-g { stroke: #16a34a; }
+  .wb-fk { fill: #2b2b2b; } .wb-fb { fill: #2563eb; } .wb-fr { fill: #dc2626; } .wb-fg { fill: #16a34a; }
+  .wb-soft-b { fill: rgba(37,99,235,.07); } .wb-soft-r { fill: rgba(220,38,38,.07); } .wb-soft-g { fill: rgba(22,163,74,.09); }
 </style>
 </head>
 <body>
@@ -347,15 +365,125 @@
       </div>
 
       <h1>O(1) 时间插入、删除和获取随机元素</h1>
-      <p class="subtitle">insert-delete-getrandom-o1 — TODO 一句话题眼</p>
+      <p class="subtitle">insert-delete-getrandom-o1 — 哈希表管"在哪"，数组管"随机取"，删除靠尾部覆盖</p>
       <div class="meta">
-        <span class="tag">TODO 难度</span>
+        <span class="tag">中等</span>
         <span class="tag">数组</span>
+        <span class="tag">哈希表</span>
+        <span class="tag">设计题</span>
       </div>
 
       <section>
         <h2><span class="secno">01</span>题目</h2>
-        <div class="problem-card"><p>TODO</p></div>
+        <div class="problem-card">
+          <p>设计一个类，支持 <strong>平均 O(1)</strong> 的三种操作：<code class="inline">insert(val)</code>（不存在则插入）、<code class="inline">remove(val)</code>（存在则删除）、<code class="inline">getRandom()</code>（等概率随机返回一个元素）。</p>
+          <div class="example"><span class="k">输入：</span>insert(1), remove(2), insert(2), getRandom(), remove(1), insert(2), getRandom()
+<span class="k">输出：</span>[true, false, true, 1或2, true, false, 2]</div>
+        </div>
+        <div class="insight">
+          <span class="label">核心洞察</span>
+          O(1) 查找要哈希表；等概率随机要<strong>连续存储的数组</strong>（random 下标）。矛盾点在删除：数组中间删是 O(n)。解法：<strong>删除 = 和末尾元素交换位置 + pop</strong>，哈希表同步更新被换元素的下标。
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">02</span>思路演进</h2>
+        <p><strong>单哈希表：</strong>insert/remove 都 O(1)，但 getRandom 要 O(n) 收集 keys（dict 的下标不连续）。</p>
+        <p><strong>单数组：</strong>getRandom 用 random 下标 O(1)，但 remove 查找要 O(n)。</p>
+        <p><strong>组合：</strong>数组存值、哈希表存 值→下标。唯一需要协调的是删除——用"尾部覆盖法"把删除点移到末尾，让 pop 保持 O(1)。三个操作全部 O(1)。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">03</span>白板图解</h2>
+        <div class="whiteboard">
+          <button class="wb-full" title="全屏">⛶ 全屏</button>
+          <svg viewBox="0 0 720 400" role="img" aria-label="尾部覆盖删除白板图解">
+            <defs><marker id="wb1-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2b2b2b"/></marker></defs>
+
+            <text x="28" y="40" class="wb-t" font-size="19">remove(2)：末尾元素补位，pop 收尾</text>
+            <text x="40" y="80" class="wb-t" font-size="13">数组 arr</text>
+            <rect x="40" y="92" width="52" height="52" rx="6" class="wb-k" fill="none" stroke-width="2"/>
+            <rect x="98" y="92" width="52" height="52" rx="6" class="wb-r" fill="none" stroke-width="2"/>
+            <rect x="156" y="92" width="52" height="52" rx="6" class="wb-k" fill="none" stroke-width="2"/>
+            <rect x="214" y="92" width="52" height="52" rx="6" class="wb-g" fill="none" stroke-width="2"/>
+            <text x="66" y="126" class="wb-t" font-size="19" text-anchor="middle">1</text>
+            <text x="124" y="126" class="wb-t wb-fr" font-size="19" text-anchor="middle">2</text>
+            <text x="182" y="126" class="wb-t" font-size="19" text-anchor="middle">3</text>
+            <text x="240" y="126" class="wb-t wb-fg" font-size="19" text-anchor="middle">4</text>
+            <path d="M240,86 Q186,50 130,84" class="wb-g" fill="none" stroke-width="2" marker-end="url(#wb1-arr)"/>
+            <text x="140" y="50" class="wb-t wb-fg" font-size="13">① 末尾 4 盖到 2 的位置</text>
+            <text x="330" y="108" class="wb-t" font-size="13">哈希表：1→0, <tspan class="wb-fr">2→1</tspan>, 3→2, <tspan class="wb-fg">4→3</tspan></text>
+            <text x="330" y="138" class="wb-t wb-fb" font-size="13">② 改 4 的下标为 1；③ 删 2 的条目</text>
+            <text x="40" y="202" class="wb-t" font-size="14">④ arr.pop() 去尾</text>
+            <path d="M150,210 L240,210" class="wb-k" fill="none" stroke-width="1.5" marker-end="url(#wb1-arr)"/>
+            <rect x="40" y="230" width="220" height="50" rx="10" class="wb-g wb-soft-g" stroke-width="2"/>
+            <text x="58" y="261" class="wb-t wb-fg" font-size="15">arr = [1, 4, 3] ✓</text>
+            <text x="320" y="250" class="wb-t wb-fr" font-size="13">别忘了同步哈希表里的下标！</text>
+            <text x="40" y="324" class="wb-t" font-size="13">insert：尾部 append + 记下标　｜　getRandom：random 下标</text>
+            <text x="40" y="358" class="wb-t" font-size="12">全部平均 O(1) ｜ 随机性来自数组下标连续</text>
+          </svg>
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">04</span>为什么这套组合是 O(1)</h2>
+        <p>三个操作各取所需：<strong>哈希表</strong>给"值在哪"的 O(1) 查询（Python dict，开放寻址，平均 O(1)）；<strong>动态数组</strong>给"第 k 个是谁"的 O(1) 随机访问——等概率随机的本质是<strong>等概率取下标</strong>，只有连续存储能做到；<strong>尾部覆盖</strong>把"中间删除"转化为"末尾 pop"，数组 pop 均摊 O(1)。</p>
+        <p>这个"值→下标倒排 + 尾部覆盖删除"的套路是设计题高频配方：LC 381（允许重复版本）把下标换成下标集合，同骨架升级。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">05</span>代码实现</h2>
+        <div class="tabs">
+          <button data-tab="0" class="active">哈希表 + 动态数组 ★</button>
+        </div>
+        <div class="codeblock">
+<pre data-tab="0" class="active"><span class="tok-k">class</span> <span class="tok-f">RandomizedSet</span>:
+    <span class="tok-k">def</span> <span class="tok-f">__init__</span>(self):
+        self.arr = []      <span class="tok-c"># 值，供随机取下标</span>
+        self.pos = {}      <span class="tok-c"># 值 → 下标</span>
+
+    <span class="tok-k">def</span> <span class="tok-f">insert</span>(self, val):
+        <span class="tok-k">if</span> val <span class="tok-k">in</span> self.pos: <span class="tok-k">return</span> <span class="tok-n">False</span>
+        self.pos[val] = <span class="tok-b">len</span>(self.arr)
+        self.arr.<span class="tok-b">append</span>(val)
+        <span class="tok-k">return</span> <span class="tok-n">True</span>
+
+    <span class="tok-k">def</span> <span class="tok-f">remove</span>(self, val):
+        <span class="tok-k">if</span> val <span class="tok-k">not in</span> self.pos: <span class="tok-k">return</span> <span class="tok-n">False</span>
+        i = self.pos.<span class="tok-b">pop</span>(val)
+        last = self.arr[-<span class="tok-n">1</span>]
+        self.arr[i] = last          <span class="tok-c"># 末尾元素补位</span>
+        self.pos[last] = i          <span class="tok-c"># 同步下标（关键！）</span>
+        self.arr.<span class="tok-b">pop</span>()
+        <span class="tok-k">return</span> <span class="tok-n">True</span>
+
+    <span class="tok-k">def</span> <span class="tok-f">getRandom</span>(self):
+        <span class="tok-k">import</span> random
+        <span class="tok-k">return</span> random.<span class="tok-f">choice</span>(self.arr)</pre>
+        </div>
+        <p style="margin-top:16px">删除顺序注意：<strong>先 pop 哈希条目，再补位，再 pop 数组</strong>。当删的就是末尾元素时，<code class="inline">pos[last] = i</code> 会写一条马上被忽略的条目（因为前面 pop 的是 val，不是 last）——顺序反过来就会在删末尾元素时残留脏下标。这道题挂基本都挂在这里。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">06</span>复杂度对比</h2>
+        <table class="cx">
+          <thead><tr><th>操作</th><th>时间</th><th>关键</th></tr></thead>
+          <tbody>
+            <tr><td>insert</td><td class="mono">O(1)</td><td>append + 记下标</td></tr>
+            <tr><td>remove</td><td class="mono">O(1)</td><td>尾部覆盖 + pop + 同步下标</td></tr>
+            <tr class="best"><td>getRandom</td><td class="mono">O(1)</td><td>数组连续存储 → 随机下标等概率</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2><span class="secno">07</span>边界、坑与变体</h2>
+        <ul>
+          <li><strong>删末尾元素：</strong>补位是自己补自己，顺序不对会留下脏下标（见上）。</li>
+          <li><strong>重复 insert：</strong>先查 pos 返回 False，不追加。</li>
+          <li><strong>等概率证明：</strong>数组里每个元素下标等概率被选中，每个元素恰好一个下标，故等概率。</li>
+          <li><strong>变体 → LC 381（允许重复）：</strong>pos 的值改为下标集合（dict + set），删除时任取一个下标做尾部覆盖，同骨架。</li>
+        </ul>
       </section>
 
       <div class="footnote">
@@ -366,6 +494,22 @@
     </div>
 
   <!-- ═══ 右栏：练习编辑器（固定） ═══ -->
+    <div class="page mastery-page">
+      <section class="mastery">
+        <div>
+          <div class="mastery-title">掌握程度</div>
+          <div class="mastery-info" id="mastery-info">还没有评分记录 · 复习完给自己打个星</div>
+        </div>
+        <div class="stars" id="stars" role="radiogroup" aria-label="掌握程度评分">
+          <button data-r="1" title="1★ 完全没印象">★</button>
+          <button data-r="2" title="2★ 基本不会">★</button>
+          <button data-r="3" title="3★ 看了提示才会">★</button>
+          <button data-r="4" title="4★ 顺利写出">★</button>
+          <button data-r="5" title="5★ 秒答">★</button>
+        </div>
+      </section>
+    </div>
+  </main>
   <aside class="pane-right">
     <div class="ed-tabs" id="ed-tabs"></div>
     <div class="editor">
@@ -392,12 +536,21 @@
 /* ═══════════════════ 题目元数据（模板变量区） ═══════════════════ */
 const PROBLEM = {
   slug: 'insert-delete-getrandom-o1',
-  versions: {"我的解法":"def solution():\n    pass\n"}  // 右侧编辑器的初始版本与种子代码
+  versions: {'设计实现': 'class RandomizedSet:\n    # arr + pos（值→下标）\n    def insert(self, val):\n        pass\n    def remove(self, val):\n        pass\n    def getRandom(self):\n        pass\n'}  // 右侧编辑器的初始版本与种子代码
 };
 
 // 可视化步骤机（可选）：参考 template/viz/ 与 template/COMPONENTS.md
 
 /* ═══════════════════ 2. 讲解区代码 tabs ═══════════════════ */
+
+/* 白板全屏（Esc 退出，浏览器原生行为） */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.wb-full'); if (!btn) return;
+  const board = btn.closest('.whiteboard'); if (!board) return;
+  if (document.fullscreenElement) document.exitFullscreen();
+  else board.requestFullscreen?.();
+});
+
 document.querySelectorAll('.tabs').forEach(tabsEl => {
   const block = tabsEl.nextElementSibling;
   tabsEl.addEventListener('click', e => {

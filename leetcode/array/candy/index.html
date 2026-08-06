@@ -332,6 +332,23 @@
   }
   .stars button.on { color: var(--accent); }
   .stars button:hover { transform: scale(1.25); }
+
+  /* ── 白板（手绘风图解；亮暗模式都保持白板观感） ── */
+  .whiteboard { position: relative; background: #fbfbf7; border: 1px solid var(--line); border-radius: 10px; padding: 26px 18px 16px; margin: 22px 0; }
+  .whiteboard svg { display: block; width: 100%; height: auto; }
+  .wb-full {
+    position: absolute; top: 10px; right: 10px; z-index: 2;
+    font-family: var(--sans); font-size: .72rem; padding: 4px 12px; border-radius: 999px;
+    border: 1px solid #e3e0d8; background: #fff; color: #6b6862; cursor: pointer;
+    opacity: .45; transition: opacity .2s;
+  }
+  .whiteboard:hover .wb-full, .whiteboard:fullscreen .wb-full { opacity: 1; }
+  .whiteboard:fullscreen { border-radius: 0; display: flex; align-items: center; justify-content: center; padding: 3vh 3vw; background: #fbfbf7; }
+  .whiteboard:fullscreen svg { width: auto; height: auto; max-width: 96vw; max-height: 90vh; flex: 1; }
+  .wb-t { font-family: var(--sans); fill: #2b2b2b; }
+  .wb-k { stroke: #2b2b2b; } .wb-b { stroke: #2563eb; } .wb-r { stroke: #dc2626; } .wb-g { stroke: #16a34a; }
+  .wb-fk { fill: #2b2b2b; } .wb-fb { fill: #2563eb; } .wb-fr { fill: #dc2626; } .wb-fg { fill: #16a34a; }
+  .wb-soft-b { fill: rgba(37,99,235,.07); } .wb-soft-r { fill: rgba(220,38,38,.07); } .wb-soft-g { fill: rgba(22,163,74,.09); }
 </style>
 </head>
 <body>
@@ -347,15 +364,113 @@
       </div>
 
       <h1>分发糖果</h1>
-      <p class="subtitle">candy — TODO 一句话题眼</p>
+      <p class="subtitle">candy — 左右规则各扫一遍，每人取两次结果的最大值</p>
       <div class="meta">
-        <span class="tag">TODO 难度</span>
+        <span class="tag">困难</span>
         <span class="tag">数组</span>
+        <span class="tag">贪心</span>
       </div>
 
       <section>
         <h2><span class="secno">01</span>题目</h2>
-        <div class="problem-card"><p>TODO</p></div>
+        <div class="problem-card">
+          <p>n 个孩子站成一排，<code class="inline">ratings[i]</code> 是第 i 个孩子的评分。每人至少分 1 颗糖；<strong>评分比相邻孩子高的，糖必须更多</strong>。求最少需要多少颗糖。</p>
+          <div class="example"><span class="k">输入：</span>ratings = [1,0,2]
+<span class="k">输出：</span>5<span class="k">（分 [2,1,2]）</span></div>
+        </div>
+        <div class="insight">
+          <span class="label">核心洞察</span>
+          约束是双向的（比左边多、比右边多），一次遍历搞不定。拆成两次：<strong>左→右保证"比左高则多一颗"，右→左保证"比右高则多一颗"</strong>，每人取两轮的最大值，两个方向的约束同时满足。
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">02</span>思路演进</h2>
+        <p><strong>难点：</strong>约束相互牵连——给 i 加糖可能逼着 i+1 也要加，连锁反应方向不定。直接一步到位容易漏。</p>
+        <p><strong>拆解双向约束：</strong>左规则只看左边（一次正向遍历即可满足），右规则只看右边（一次反向遍历即可满足）。单方向约束没有连锁反应：遇到更高的就 +1，否则归 1。</p>
+        <p><strong>合并：</strong>最终每人糖数 = max(左规则结果, 右规则结果)。第二轮边算边累计答案，只需一个数组 + 一次求和。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">03</span>白板图解</h2>
+        <div class="whiteboard">
+          <button class="wb-full" title="全屏">⛶ 全屏</button>
+          <svg viewBox="0 0 720 370" role="img" aria-label="分糖果白板图解">
+            <defs><marker id="wb1-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2b2b2b"/></marker></defs>
+
+            <text x="28" y="40" class="wb-t" font-size="19">ratings = [1,2,87,87,87,2,1]</text>
+            <text x="40" y="92" class="wb-t" font-size="14">① 左→右（比左高 +1）：<tspan class="wb-fb">[1,2,3,1,1,1,1]</tspan></text>
+            <path d="M60,102 L420,102" class="wb-b" fill="none" stroke-width="1.5" marker-end="url(#wb1-arr)"/>
+            <text x="40" y="142" class="wb-t" font-size="14">② 右→左（比右高 +1）：<tspan class="wb-fb">[1,1,1,3,2,2,1]</tspan></text>
+            <path d="M420,152 L60,152" class="wb-b" fill="none" stroke-width="1.5" marker-end="url(#wb1-arr)"/>
+            <text x="40" y="196" class="wb-t" font-size="14">③ 逐位取 max：</text>
+            <rect x="230" y="166" width="240" height="44" rx="10" class="wb-g wb-soft-g" stroke-width="2"/>
+            <text x="250" y="195" class="wb-t wb-fg" font-size="15">[1,2,3,3,2,2,1] = 13</text>
+            <text x="500" y="186" class="wb-t" font-size="12">87 平台段靠第二轮抬起</text>
+            <text x="40" y="252" class="wb-t wb-fb" font-size="14">为什么取 max 就对？</text>
+            <text x="40" y="282" class="wb-t" font-size="13">左轮保左约束、右轮保右约束；取大者两约束同时成立</text>
+            <text x="40" y="308" class="wb-t" font-size="13">且每轮各自已是最小，max 仍最小</text>
+            <text x="40" y="352" class="wb-t" font-size="12">O(n) · O(n) ｜ 第二遍倒序时边算边 sum</text>
+          </svg>
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">04</span>代码实现</h2>
+        <div class="tabs">
+          <button data-tab="0" class="active">解法一 · 两次扫描 ★</button>
+          <button data-tab="1">解法二 · 单数组 + 滚动右值</button>
+        </div>
+        <div class="codeblock">
+<pre data-tab="0" class="active"><span class="tok-k">def</span> <span class="tok-f">candy</span>(ratings):
+    <span class="tok-c"># 左轮保左约束，右轮保右约束，取 max</span>
+    n = <span class="tok-b">len</span>(ratings)
+    left = [<span class="tok-n">1</span>] * n
+    <span class="tok-k">for</span> i <span class="tok-k">in</span> <span class="tok-b">range</span>(<span class="tok-n">1</span>, n):
+        <span class="tok-k">if</span> ratings[i] > ratings[i-<span class="tok-n">1</span>]:
+            left[i] = left[i-<span class="tok-n">1</span>] + <span class="tok-n">1</span>
+    right = <span class="tok-n">1</span>; ans = <span class="tok-n">0</span>
+    <span class="tok-k">for</span> i <span class="tok-k">in</span> <span class="tok-b">range</span>(n-<span class="tok-n">1</span>, -<span class="tok-n">1</span>, -<span class="tok-n">1</span>):
+        <span class="tok-k">if</span> i < n-<span class="tok-n">1</span> <span class="tok-k">and</span> ratings[i] > ratings[i+<span class="tok-n">1</span>]:
+            right += <span class="tok-n">1</span>
+        <span class="tok-k">else</span>:
+            right = <span class="tok-n">1</span>
+        ans += <span class="tok-b">max</span>(left[i], right)
+    <span class="tok-k">return</span> ans</pre>
+<pre data-tab="1"><span class="tok-k">def</span> <span class="tok-f">candy</span>(ratings):
+    <span class="tok-c"># 等价山峰法：找上坡和下坡长度（理解用，易写错）</span>
+    n = <span class="tok-b">len</span>(ratings)
+    ans = n; i = <span class="tok-n">1</span>
+    <span class="tok-k">while</span> i < n:
+        up = down = <span class="tok-n">0</span>
+        <span class="tok-k">while</span> i < n <span class="tok-k">and</span> ratings[i] > ratings[i-<span class="tok-n">1</span>]: up += <span class="tok-n">1</span>; i += <span class="tok-n">1</span>
+        <span class="tok-k">while</span> i < n <span class="tok-k">and</span> ratings[i] < ratings[i-<span class="tok-n">1</span>]: down += <span class="tok-n">1</span>; i += <span class="tok-n">1</span>
+        ans += up*(up+<span class="tok-n">1</span>)//<span class="tok-n">2</span> + down*(down+<span class="tok-n">1</span>)//<span class="tok-n">2</span> + <span class="tok-b">max</span>(up, down)
+        <span class="tok-k">while</span> i < n <span class="tok-k">and</span> ratings[i] == ratings[i-<span class="tok-n">1</span>]: i += <span class="tok-n">1</span>
+    <span class="tok-k">return</span> ans</pre>
+        </div>
+        <p style="margin-top:16px">两次扫描版把"山顶该多高"的纠结分摊给了 max——上坡段贡献递增、下坡段贡献递减，山顶取两者较大。山峰法省一个数组但边界极易错，面试写两遍扫描版。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">05</span>复杂度对比</h2>
+        <table class="cx">
+          <thead><tr><th>解法</th><th>时间</th><th>空间</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr class="best"><td>两次扫描</td><td class="mono">O(n)</td><td class="mono">O(n)</td><td>一个 left 数组 + 滚动 right，稳妥</td></tr>
+            <tr><td>山峰法</td><td class="mono">O(n)</td><td class="mono">O(1)</td><td>省空间但边界复杂</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2><span class="secno">06</span>边界、坑与变体</h2>
+        <ul>
+          <li><strong>评分相等：</strong>题目只约束"更高则更多"，相等无约束——右轮归 1，别写成右轮也 +1。</li>
+          <li><strong>严格递增/递减：</strong>答案是 1+2+…+n，公差为 1 的等差数列。</li>
+          <li><strong>坑：</strong>右轮的 right 在不满足条件时必须<strong>重置为 1</strong>，只增不减是经典错误。</li>
+          <li><strong>思想迁移：</strong>"双向约束拆成两轮单方向扫描"还见于 LC 42 的左右最高、LC 238 的前后缀积。</li>
+        </ul>
       </section>
 
       <div class="footnote">
@@ -366,6 +481,22 @@
     </div>
 
   <!-- ═══ 右栏：练习编辑器（固定） ═══ -->
+    <div class="page mastery-page">
+      <section class="mastery">
+        <div>
+          <div class="mastery-title">掌握程度</div>
+          <div class="mastery-info" id="mastery-info">还没有评分记录 · 复习完给自己打个星</div>
+        </div>
+        <div class="stars" id="stars" role="radiogroup" aria-label="掌握程度评分">
+          <button data-r="1" title="1★ 完全没印象">★</button>
+          <button data-r="2" title="2★ 基本不会">★</button>
+          <button data-r="3" title="3★ 看了提示才会">★</button>
+          <button data-r="4" title="4★ 顺利写出">★</button>
+          <button data-r="5" title="5★ 秒答">★</button>
+        </div>
+      </section>
+    </div>
+  </main>
   <aside class="pane-right">
     <div class="ed-tabs" id="ed-tabs"></div>
     <div class="editor">
@@ -392,12 +523,21 @@
 /* ═══════════════════ 题目元数据（模板变量区） ═══════════════════ */
 const PROBLEM = {
   slug: 'candy',
-  versions: {"我的解法":"def solution():\n    pass\n"}  // 右侧编辑器的初始版本与种子代码
+  versions: {'两次扫描': 'def candy(ratings):\n    # 左轮 + 右轮，取 max\n    pass\n'}  // 右侧编辑器的初始版本与种子代码
 };
 
 // 可视化步骤机（可选）：参考 template/viz/ 与 template/COMPONENTS.md
 
 /* ═══════════════════ 2. 讲解区代码 tabs ═══════════════════ */
+
+/* 白板全屏（Esc 退出，浏览器原生行为） */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.wb-full'); if (!btn) return;
+  const board = btn.closest('.whiteboard'); if (!board) return;
+  if (document.fullscreenElement) document.exitFullscreen();
+  else board.requestFullscreen?.();
+});
+
 document.querySelectorAll('.tabs').forEach(tabsEl => {
   const block = tabsEl.nextElementSibling;
   tabsEl.addEventListener('click', e => {

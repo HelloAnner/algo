@@ -332,6 +332,23 @@
   }
   .stars button.on { color: var(--accent); }
   .stars button:hover { transform: scale(1.25); }
+
+  /* ── 白板（手绘风图解；亮暗模式都保持白板观感） ── */
+  .whiteboard { position: relative; background: #fbfbf7; border: 1px solid var(--line); border-radius: 10px; padding: 26px 18px 16px; margin: 22px 0; }
+  .whiteboard svg { display: block; width: 100%; height: auto; }
+  .wb-full {
+    position: absolute; top: 10px; right: 10px; z-index: 2;
+    font-family: var(--sans); font-size: .72rem; padding: 4px 12px; border-radius: 999px;
+    border: 1px solid #e3e0d8; background: #fff; color: #6b6862; cursor: pointer;
+    opacity: .45; transition: opacity .2s;
+  }
+  .whiteboard:hover .wb-full, .whiteboard:fullscreen .wb-full { opacity: 1; }
+  .whiteboard:fullscreen { border-radius: 0; display: flex; align-items: center; justify-content: center; padding: 3vh 3vw; background: #fbfbf7; }
+  .whiteboard:fullscreen svg { width: auto; height: auto; max-width: 96vw; max-height: 90vh; flex: 1; }
+  .wb-t { font-family: var(--sans); fill: #2b2b2b; }
+  .wb-k { stroke: #2b2b2b; } .wb-b { stroke: #2563eb; } .wb-r { stroke: #dc2626; } .wb-g { stroke: #16a34a; }
+  .wb-fk { fill: #2b2b2b; } .wb-fb { fill: #2563eb; } .wb-fr { fill: #dc2626; } .wb-fg { fill: #16a34a; }
+  .wb-soft-b { fill: rgba(37,99,235,.07); } .wb-soft-r { fill: rgba(220,38,38,.07); } .wb-soft-g { fill: rgba(22,163,74,.09); }
 </style>
 </head>
 <body>
@@ -347,15 +364,163 @@
       </div>
 
       <h1>接雨水</h1>
-      <p class="subtitle">trapping-rain-water — TODO 一句话题眼</p>
+      <p class="subtitle">trapping-rain-water — 每根柱子的水量 = min(左最高, 右最高) − 自身高度</p>
       <div class="meta">
-        <span class="tag">TODO 难度</span>
+        <span class="tag">困难</span>
         <span class="tag">数组</span>
+        <span class="tag">双指针</span>
+        <span class="tag">单调栈</span>
       </div>
 
       <section>
         <h2><span class="secno">01</span>题目</h2>
-        <div class="problem-card"><p>TODO</p></div>
+        <div class="problem-card">
+          <p>给定 n 个非负整数表示宽度为 1 的柱子高度图，计算下雨后能接多少水。</p>
+          <div class="example"><span class="k">输入：</span>height = [0,1,0,2,1,0,1,3,2,1,2,1]
+<span class="k">输出：</span>6</div>
+        </div>
+        <div class="insight">
+          <span class="label">核心洞察</span>
+          按列看：第 i 根柱子上方能接的水 = <code class="inline">min(左边最高, 右边最高) − height[i]</code>（短板效应）。所有解法都是围绕"<strong>怎么更快地拿到左右最高</strong>"展开：预处理数组、双指针、单调栈。
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">02</span>思路演进</h2>
+        <p><strong>按列暴力：</strong>对每列向左扫最高、向右扫最高，O(n²)。正确性显然，但左右最高被重复计算了 n 遍。</p>
+        <p><strong>动态规划：</strong>左右最高只依赖单调方向的累计——<code class="inline">L[i]=max(L[i-1],h[i])</code>、<code class="inline">R[i]=max(R[i+1],h[i])</code>，两遍预处理 O(n)，再一遍求和。空间 O(n)。</p>
+        <p><strong>双指针压空间：</strong>谁矮谁先结算——若 <code class="inline">h[l] &lt; h[r]</code>，则 l 处的右最高至少不低于左最高，l 的水量只由左最高决定，结算后 l++。两个滚动最大值替代两个数组，O(1) 空间。</p>
+        <p><strong>单调栈视角：</strong>按行接水——栈存递减柱高，遇高柱出栈形成凹槽，水量按 (宽 × 凹槽高) 横向累加。同一问题的横切视角，理解单调栈的最佳题。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">03</span>白板图解</h2>
+        <div class="whiteboard">
+          <button class="wb-full" title="全屏">⛶ 全屏</button>
+          <svg viewBox="0 0 720 400" role="img" aria-label="接雨水白板图解">
+            <defs><marker id="wb1-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2b2b2b"/></marker></defs>
+
+            <text x="28" y="40" class="wb-t" font-size="19">短板效应：水位 = min(左墙, 右墙)</text>
+            <rect x="80" y="120" width="40" height="80" class="wb-k" fill="none" stroke-width="2.5"/>
+            <rect x="128" y="160" width="40" height="40" class="wb-b wb-soft-b" stroke-width="2"/>
+            <rect x="176" y="80" width="40" height="120" class="wb-k" fill="none" stroke-width="2.5"/>
+            <path d="M74,124 L74,196" class="wb-r" fill="none" stroke-width="2" marker-end="url(#wb1-arr)"/>
+            <text x="46" y="165" class="wb-t wb-fr" font-size="13">左=1</text>
+            <path d="M224,84 L224,196" class="wb-r" fill="none" stroke-width="2" marker-end="url(#wb1-arr)"/>
+            <text x="232" y="145" class="wb-t wb-fr" font-size="13">右=2</text>
+            <text x="122" y="146" class="wb-t wb-fb" font-size="13">水 1 格</text>
+            <text x="76" y="234" class="wb-t" font-size="13">min(1,2) − 0 = 1</text>
+            <text x="320" y="100" class="wb-t wb-fb" font-size="15">双指针：谁矮谁先算</text>
+            <text x="320" y="136" class="wb-t" font-size="13">h[l] &lt; h[r] → l 的水量只看左最高</text>
+            <text x="320" y="164" class="wb-t" font-size="13">（右边肯定有更高的墙托底）</text>
+            <path d="M320,180 q60,14 130,4" class="wb-b" fill="none" stroke-width="1.5"/>
+            <text x="40" y="286" class="wb-t" font-size="15"><tspan class="wb-fr">①</tspan> l、r 从两端出发，各记一侧滚动最高 lMax / rMax</text>
+            <text x="40" y="320" class="wb-t" font-size="15"><tspan class="wb-fr">②</tspan> 矮的一侧：水量 += 该侧最高 − 当前高度，指针内移</text>
+            <text x="40" y="354" class="wb-t" font-size="15"><tspan class="wb-fr">③</span> 相遇即结算完毕</text>
+            <rect x="470" y="306" width="200" height="52" rx="10" class="wb-g wb-soft-g" stroke-width="2"/>
+            <text x="488" y="339" class="wb-t wb-fg" font-size="16">O(n) · O(1)</text>
+          </svg>
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">04</span>双指针 · 逐步演示</h2>
+        <div class="viz">
+          <svg viewBox="0 0 720 260" role="img" aria-label="双指针接雨水演示">
+            <text x="40" y="30" class="svg-label">柱子高度（蓝=已结算水量累计在下方）</text>
+            <g id="arr"></g>
+            <text id="viz-sum" x="40" y="246" class="svg-mono" style="font-size:15px">water = 0</text>
+          </svg>
+          <div class="viz-msg" id="viz-msg"></div>
+          <div class="viz-controls">
+            <button id="btn-prev">← 上一步</button>
+            <button id="btn-play" class="primary">▶ 播放</button>
+            <button id="btn-next">下一步 →</button>
+            <button id="btn-reset">重置</button>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">05</span>单调栈：横着看同一道题</h2>
+        <p>双指针是<strong>竖着</strong>一列列结算；单调栈是<strong>横着</strong>一层层结算。维护一个<strong>高度单调递减</strong>的下标栈；遇到比栈顶高的柱子，栈顶就是凹槽底，出栈，凹槽的左右墙分别是新栈顶和当前柱子，水量 += 宽 × (min(两墙) − 槽底)。</p>
+        <p>单调栈的通用语义：<strong>找每个元素"两侧第一个比它大/小的元素"</strong>。接雨水找的是"两侧更高墙"，所以用递减栈。同类题：LC 84（柱状图最大矩形，递增栈）、LC 739（每日温度）、LC 503（下一个更大元素 II）。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">06</span>代码实现</h2>
+        <div class="tabs">
+          <button data-tab="0">解法一 · 按列暴力</button>
+          <button data-tab="1">解法二 · 动态规划</button>
+          <button data-tab="2">解法三 · 单调栈</button>
+          <button data-tab="3" class="active">解法四 · 双指针 ★</button>
+        </div>
+        <div class="codeblock">
+<pre data-tab="0"><span class="tok-k">def</span> <span class="tok-f">trap</span>(height):
+    <span class="tok-c"># 每列向左右扫最高，O(n²)，理解题意的起点</span>
+    ans = <span class="tok-n">0</span>
+    <span class="tok-k">for</span> i <span class="tok-k">in</span> <span class="tok-b">range</span>(<span class="tok-n">1</span>, <span class="tok-b">len</span>(height) - <span class="tok-n">1</span>):
+        l = <span class="tok-b">max</span>(height[:i+<span class="tok-n">1</span>]); r = <span class="tok-b">max</span>(height[i:])
+        ans += <span class="tok-b">min</span>(l, r) - height[i]
+    <span class="tok-k">return</span> ans</pre>
+<pre data-tab="1"><span class="tok-k">def</span> <span class="tok-f">trap</span>(height):
+    <span class="tok-c"># 预处理左右最高数组，O(n) / O(n)</span>
+    n = <span class="tok-b">len</span>(height)
+    L, R = [<span class="tok-n">0</span>]*n, [<span class="tok-n">0</span>]*n
+    <span class="tok-k">for</span> i <span class="tok-k">in</span> <span class="tok-b">range</span>(<span class="tok-n">1</span>, n): L[i] = <span class="tok-b">max</span>(L[i-<span class="tok-n">1</span>], height[i-<span class="tok-n">1</span>])
+    <span class="tok-k">for</span> i <span class="tok-k">in</span> <span class="tok-b">range</span>(n-<span class="tok-n">2</span>, -<span class="tok-n">1</span>, -<span class="tok-n">1</span>): R[i] = <span class="tok-b">max</span>(R[i+<span class="tok-n">1</span>], height[i+<span class="tok-n">1</span>])
+    <span class="tok-k">return</span> <span class="tok-b">sum</span>(<span class="tok-b">max</span>(<span class="tok-n">0</span>, <span class="tok-b">min</span>(L[i], R[i]) - height[i]) <span class="tok-k">for</span> i <span class="tok-k">in</span> <span class="tok-b">range</span>(n))</pre>
+<pre data-tab="2"><span class="tok-k">def</span> <span class="tok-f">trap</span>(height):
+    <span class="tok-c"># 递减栈，遇高柱结算凹槽（横向一层层算）</span>
+    st, ans = [], <span class="tok-n">0</span>
+    <span class="tok-k">for</span> i, h <span class="tok-k">in</span> <span class="tok-b">enumerate</span>(height):
+        <span class="tok-k">while</span> st <span class="tok-k">and</span> height[st[-<span class="tok-n">1</span>]] < h:
+            bottom = height[st.<span class="tok-b">pop</span>()]
+            <span class="tok-k">if</span> <span class="tok-k">not</span> st: <span class="tok-k">break</span>      <span class="tok-c"># 没有左墙</span>
+            w = i - st[-<span class="tok-n">1</span>] - <span class="tok-n">1</span>
+            ans += w * (<span class="tok-b">min</span>(height[st[-<span class="tok-n">1</span>]], h) - bottom)
+        st.<span class="tok-b">append</span>(i)
+    <span class="tok-k">return</span> ans</pre>
+<pre data-tab="3" class="active"><span class="tok-k">def</span> <span class="tok-f">trap</span>(height):
+    <span class="tok-c"># 谁矮谁先结算，O(n) / O(1)</span>
+    l, r = <span class="tok-n">0</span>, <span class="tok-b">len</span>(height) - <span class="tok-n">1</span>
+    l_max = r_max = ans = <span class="tok-n">0</span>
+    <span class="tok-k">while</span> l < r:
+        <span class="tok-k">if</span> height[l] < height[r]:
+            <span class="tok-k">if</span> height[l] >= l_max: l_max = height[l]
+            <span class="tok-k">else</span>: ans += l_max - height[l]   <span class="tok-c"># 右侧必有更高的墙</span>
+            l += <span class="tok-n">1</span>
+        <span class="tok-k">else</span>:
+            <span class="tok-k">if</span> height[r] >= r_max: r_max = height[r]
+            <span class="tok-k">else</span>: ans += r_max - height[r]
+            r -= <span class="tok-n">1</span>
+    <span class="tok-k">return</span> ans</pre>
+        </div>
+        <p style="margin-top:16px">双指针正确性的关键一句：当 <code class="inline">height[l] &lt; height[r]</code>，l 右侧<strong>至少有一堵比 lMax 高的墙</strong>，所以 l 处水量由 lMax 单方面决定，可以立即结算——不需要知道真实的右最高是多少。</p>
+      </section>
+
+      <section>
+        <h2><span class="secno">07</span>复杂度对比</h2>
+        <table class="cx">
+          <thead><tr><th>解法</th><th>时间</th><th>空间</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>按列暴力</td><td class="mono">O(n²)</td><td class="mono">O(1)</td><td>左右最高重复扫</td></tr>
+            <tr><td>动态规划</td><td class="mono">O(n)</td><td class="mono">O(n)</td><td>预处理左右最高，最好写</td></tr>
+            <tr><td>单调栈</td><td class="mono">O(n)</td><td class="mono">O(n)</td><td>横向结算，单调栈经典题</td></tr>
+            <tr class="best"><td>双指针</td><td class="mono">O(n)</td><td class="mono">O(1)</td><td>谁矮先算，最优交付版</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2><span class="secno">08</span>边界、坑与变体</h2>
+        <ul>
+          <li><strong>长度 &lt; 3：</strong>不可能存水，循环不进入，返回 0。</li>
+          <li><strong>严格递增/递减序列：</strong>一端没墙，每个位置水量都是 0，正确。</li>
+          <li><strong>双指针相等时：</strong><code class="inline">height[l] == height[r]</code> 走哪边都行，代码里归到 else（结算右侧），不影响正确性。</li>
+          <li><strong>变体 → LC 84（柱状图最大矩形）：</strong>同一批"两侧边界"思想，递增单调栈。</li>
+          <li><strong>变体 → LC 407（接雨水 II）：</strong>二维版，用最小堆从外圈向里收缩，难度跳档。</li>
+        </ul>
       </section>
 
       <div class="footnote">
@@ -366,6 +531,22 @@
     </div>
 
   <!-- ═══ 右栏：练习编辑器（固定） ═══ -->
+    <div class="page mastery-page">
+      <section class="mastery">
+        <div>
+          <div class="mastery-title">掌握程度</div>
+          <div class="mastery-info" id="mastery-info">还没有评分记录 · 复习完给自己打个星</div>
+        </div>
+        <div class="stars" id="stars" role="radiogroup" aria-label="掌握程度评分">
+          <button data-r="1" title="1★ 完全没印象">★</button>
+          <button data-r="2" title="2★ 基本不会">★</button>
+          <button data-r="3" title="3★ 看了提示才会">★</button>
+          <button data-r="4" title="4★ 顺利写出">★</button>
+          <button data-r="5" title="5★ 秒答">★</button>
+        </div>
+      </section>
+    </div>
+  </main>
   <aside class="pane-right">
     <div class="ed-tabs" id="ed-tabs"></div>
     <div class="editor">
@@ -392,12 +573,71 @@
 /* ═══════════════════ 题目元数据（模板变量区） ═══════════════════ */
 const PROBLEM = {
   slug: 'trapping-rain-water',
-  versions: {"我的解法":"def solution():\n    pass\n"}  // 右侧编辑器的初始版本与种子代码
+  versions: {'双指针': 'def trap(height):\n    # 谁矮谁先结算\n    pass\n', '单调栈': 'def trap(height):\n    # 递减栈，横向结算凹槽\n    pass\n'}  // 右侧编辑器的初始版本与种子代码
 };
 
-// 可视化步骤机（可选）：参考 template/viz/ 与 template/COMPONENTS.md
+/* ── 步骤机：双指针接雨水（竖条图） ── */
+const H = [0,1,0,2,1,0,1,3,2,1,2,1], BW = 34, GAP2 = 4, X0 = 60, Y1 = 210, UH = 18;
+const STEPS = [
+  { l: 0, r: 11, cur: -1, water: 0, msg: 'l=0, r=11，lMax=rMax=0。' },
+  { l: 1, r: 11, cur: 0, water: 0, msg: 'h[0]=0 < h[11]=1 → 结算左侧：0 是边界墙，不存水。lMax=0，l++。' },
+  { l: 2, r: 11, cur: 1, water: 0, msg: 'h[1]=1 = h[11]，走右：h[11]=1 > rMax=0 → rMax=1，r--。' },
+  { l: 2, r: 10, cur: 10, water: 0, msg: 'h[2]=0 < h[10]=2 → 走右：h[10]=2 > rMax=1 → rMax=2，r--。' },
+  { l: 2, r: 9, cur: 9, water: 1, msg: 'h[9]=1 < rMax=2 → 接水 2−1=1。累计 1。r--。' },
+  { l: 2, r: 8, cur: 8, water: 1, msg: 'h[8]=2 = rMax → 更新不了，不存水。r--。' },
+  { l: 2, r: 7, cur: 7, water: 1, msg: 'h[7]=3 > rMax → rMax=3，r--。注意左侧 h[2]=0 < h[7] 才一路走的右边。' },
+  { l: 3, r: 7, cur: 2, water: 1, msg: 'h[2]=0 < h[7]=3 → 左侧：0 < lMax=1 → 接水 1。累计 2。l++。' },
+  { l: 4, r: 7, cur: 3, water: 2, msg: 'h[3]=2 ≥ lMax=1 → lMax=2，不存水。l++。' },
+  { l: 5, r: 7, cur: 4, water: 3, msg: 'h[4]=1 < lMax=2 → 接水 2−1=1。累计 3。l++。' },
+  { l: 6, r: 7, cur: 5, water: 5, msg: 'h[5]=0 < lMax=2 → 接水 2。累计 5。l++。' },
+  { l: 7, r: 7, cur: 6, water: 6, msg: 'h[6]=1 < lMax=2 → 接水 1。累计 6。l == r，结束。' },
+  { l: 7, r: 7, cur: -1, water: 6, hit: true, msg: '答案 = 6。√' },
+];
+const arrG = document.getElementById('arr');
+const msgEl = document.getElementById('viz-msg');
+H.forEach((h, idx) => {
+  const x = X0 + idx * (BW + GAP2);
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.setAttribute('class', 'cell'); g.dataset.idx = idx;
+  g.innerHTML = `<rect x="${x}" y="${Y1 - h * UH}" width="${BW}" height="${Math.max(h * UH, 2)}" rx="3"/>
+    <text class="arr-idx" x="${x + BW/2}" y="${Y1 + 18}" text-anchor="middle">${idx}</text>`;
+  arrG.appendChild(g);
+});
+let step = 0, playing = false, timer = null;
+function render() {
+  const s = STEPS[step];
+  arrG.querySelectorAll('g').forEach(g => {
+    const idx = +g.dataset.idx;
+    g.setAttribute('class', 'cell' + (s.hit ? ' cell--hit' : idx === s.cur ? ' cell--active' : (idx < s.l || idx > s.r) ? ' cell--seen' : ''));
+  });
+  document.getElementById('viz-sum').textContent = 'water = ' + s.water;
+  msgEl.textContent = s.msg;
+  document.getElementById('btn-prev').disabled = step === 0;
+  document.getElementById('btn-next').disabled = step === STEPS.length - 1;
+}
+function stop() { playing = false; clearInterval(timer); document.getElementById('btn-play').textContent = '▶ 播放'; }
+document.getElementById('btn-next').onclick = () => { stop(); if (step < STEPS.length - 1) { step++; render(); } };
+document.getElementById('btn-prev').onclick = () => { stop(); if (step > 0) { step--; render(); } };
+document.getElementById('btn-reset').onclick = () => { stop(); step = 0; render(); };
+document.getElementById('btn-play').onclick = () => {
+  if (playing) return stop();
+  if (step === STEPS.length - 1) step = 0;
+  playing = true; document.getElementById('btn-play').textContent = '⏸ 暂停';
+  timer = setInterval(() => { if (step >= STEPS.length - 1) return stop(); step++; render(); }, 1800);
+  render();
+};
+render();
 
 /* ═══════════════════ 2. 讲解区代码 tabs ═══════════════════ */
+
+/* 白板全屏（Esc 退出，浏览器原生行为） */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.wb-full'); if (!btn) return;
+  const board = btn.closest('.whiteboard'); if (!board) return;
+  if (document.fullscreenElement) document.exitFullscreen();
+  else board.requestFullscreen?.();
+});
+
 document.querySelectorAll('.tabs').forEach(tabsEl => {
   const block = tabsEl.nextElementSibling;
   tabsEl.addEventListener('click', e => {

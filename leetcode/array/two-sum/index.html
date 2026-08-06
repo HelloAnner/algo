@@ -332,6 +332,23 @@
   }
   .stars button.on { color: var(--accent); }
   .stars button:hover { transform: scale(1.25); }
+
+  /* ── 白板（手绘风图解；亮暗模式都保持白板观感） ── */
+  .whiteboard { position: relative; background: #fbfbf7; border: 1px solid var(--line); border-radius: 10px; padding: 26px 18px 16px; margin: 22px 0; }
+  .whiteboard svg { display: block; width: 100%; height: auto; }
+  .wb-full {
+    position: absolute; top: 10px; right: 10px; z-index: 2;
+    font-family: var(--sans); font-size: .72rem; padding: 4px 12px; border-radius: 999px;
+    border: 1px solid #e3e0d8; background: #fff; color: #6b6862; cursor: pointer;
+    opacity: .45; transition: opacity .2s;
+  }
+  .whiteboard:hover .wb-full, .whiteboard:fullscreen .wb-full { opacity: 1; }
+  .whiteboard:fullscreen { border-radius: 0; display: flex; align-items: center; justify-content: center; padding: 3vh 3vw; background: #fbfbf7; }
+  .whiteboard:fullscreen svg { width: auto; height: auto; max-width: 96vw; max-height: 90vh; flex: 1; }
+  .wb-t { font-family: var(--sans); fill: #2b2b2b; }
+  .wb-k { stroke: #2b2b2b; } .wb-b { stroke: #2563eb; } .wb-r { stroke: #dc2626; } .wb-g { stroke: #16a34a; }
+  .wb-fk { fill: #2b2b2b; } .wb-fb { fill: #2563eb; } .wb-fr { fill: #dc2626; } .wb-fg { fill: #16a34a; }
+  .wb-soft-b { fill: rgba(37,99,235,.07); } .wb-soft-r { fill: rgba(220,38,38,.07); } .wb-soft-g { fill: rgba(22,163,74,.09); }
 </style>
 </head>
 <body>
@@ -378,7 +395,47 @@
       </section>
 
       <section>
-        <h2><span class="secno">03</span>一遍哈希 · 逐步演示</h2>
+        <h2><span class="secno">03</span>白板图解</h2>
+        <div class="whiteboard">
+          <button class="wb-full" title="全屏">⛶ 全屏</button>
+          <svg viewBox="0 0 720 410" role="img" aria-label="Two Sum 白板图解">
+            <defs><marker id="wb1-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2b2b2b"/></marker></defs>
+
+            <text x="28" y="40" class="wb-t" font-size="19">Two Sum：一边走，一边问哈希表</text>
+            <rect x="40" y="80" width="54" height="54" rx="8" class="wb-k" fill="none" stroke-width="2"/>
+            <rect x="106" y="80" width="54" height="54" rx="8" class="wb-k" fill="none" stroke-width="2"/>
+            <rect x="172" y="80" width="54" height="54" rx="8" class="wb-k" fill="none" stroke-width="2"/>
+            <rect x="238" y="80" width="54" height="54" rx="8" class="wb-k" fill="none" stroke-width="2"/>
+            <text x="67" y="115" class="wb-t" font-size="20" text-anchor="middle">2</text>
+            <text x="133" y="115" class="wb-t" font-size="20" text-anchor="middle">7</text>
+            <text x="199" y="115" class="wb-t" font-size="20" text-anchor="middle">11</text>
+            <text x="265" y="115" class="wb-t" font-size="20" text-anchor="middle">15</text>
+            <text x="67" y="156" class="wb-t" font-size="11" text-anchor="middle">0</text>
+            <text x="133" y="156" class="wb-t" font-size="11" text-anchor="middle">1</text>
+            <text x="199" y="156" class="wb-t" font-size="11" text-anchor="middle">2</text>
+            <text x="265" y="156" class="wb-t" font-size="11" text-anchor="middle">3</text>
+            <ellipse cx="67" cy="107" rx="38" ry="38" class="wb-r" fill="none" stroke-width="2"/>
+            <ellipse cx="133" cy="107" rx="38" ry="38" class="wb-r" fill="none" stroke-width="2"/>
+            <path d="M133,196 L133,148" class="wb-r" fill="none" stroke-width="2" marker-end="url(#wb1-arr)"/>
+            <text x="133" y="216" class="wb-t wb-fr" font-size="15" text-anchor="middle">i</text>
+            <rect x="430" y="70" width="250" height="140" rx="10" class="wb-k" fill="none" stroke-width="2"/>
+            <text x="448" y="102" class="wb-t" font-size="13">哈希表（值 → 下标）</text>
+            <text x="460" y="150" class="wb-t" font-size="18">2 → 0</text>
+            <path d="M310,107 C356,107 384,110 424,110" class="wb-k" fill="none" stroke-width="2" marker-end="url(#wb1-arr)"/>
+            <text x="322" y="92" class="wb-t" font-size="12">见过就存</text>
+            <text x="40" y="268" class="wb-t wb-fb" font-size="15">每走一步先问：9 − x 在表里吗？</text>
+            <path d="M40,278 q120,8 250,2" class="wb-b" fill="none" stroke-width="1.5"/>
+            <text x="40" y="318" class="wb-t" font-size="15"><tspan class="wb-fr">①</tspan> x=2：查 9−2=7 <tspan class="wb-fr">✗</tspan> 不在 → 存 2→0</text>
+            <text x="40" y="352" class="wb-t" font-size="15"><tspan class="wb-fr">②</tspan> x=7：查 9−7=2 <tspan class="wb-fg">✓</tspan> 在！→ 返回答案</text>
+            <rect x="470" y="300" width="210" height="52" rx="10" class="wb-g wb-soft-g" stroke-width="2"/>
+            <text x="488" y="333" class="wb-t wb-fg" font-size="17">return [0, 1]</text>
+            <text x="40" y="396" class="wb-t" font-size="12">时间 O(n)：每个数只问一次，每次 O(1) ｜ 空间 O(n)</text>
+          </svg>
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="secno">04</span>一遍哈希 · 逐步演示</h2>
         <div class="viz">
           <svg viewBox="0 0 720 260" role="img" aria-label="哈希表演示动画">
             <text x="60" y="40" class="svg-label">NUMS</text>
@@ -404,7 +461,7 @@
       </section>
 
       <section>
-        <h2><span class="secno">04</span>为什么哈希表是 O(1)</h2>
+        <h2><span class="secno">05</span>为什么哈希表是 O(1)</h2>
         <p>哈希表（Hash Table）的本质是<strong>用哈希函数把"键"直接映射成数组下标</strong>：</p>
         <div class="example">index = hash(key) % capacity</div>
         <p>于是查找不再是"挨个比较"，而是"算一下地址直接跳过去" —— 和数组按下标访问一样快。平均情况下，插入、查找、删除都是 O(1)。</p>
@@ -417,7 +474,7 @@
       </section>
 
       <section>
-        <h2><span class="secno">05</span>代码实现</h2>
+        <h2><span class="secno">06</span>代码实现</h2>
         <div class="tabs" id="tabs">
           <button data-tab="0">解法一 · 暴力</button>
           <button data-tab="1">解法二 · 两遍哈希</button>
@@ -453,7 +510,7 @@
       </section>
 
       <section>
-        <h2><span class="secno">06</span>复杂度对比</h2>
+        <h2><span class="secno">07</span>复杂度对比</h2>
         <table class="cx">
           <thead><tr><th>解法</th><th>时间</th><th>空间</th><th>说明</th></tr></thead>
           <tbody>
@@ -465,7 +522,7 @@
       </section>
 
       <section>
-        <h2><span class="secno">07</span>边界、坑与变体</h2>
+        <h2><span class="secno">08</span>边界、坑与变体</h2>
         <ul>
           <li><strong>负数与零：</strong>哈希表解法对任何整数都成立，无需特判 —— 这本身就是相对"排序+双指针"的优势。</li>
           <li><strong>重复元素：</strong><code class="inline">[3, 3], target = 6</code>，一遍哈希在第二个 3 处命中，正确。</li>
@@ -593,6 +650,15 @@ document.getElementById('btn-play').onclick = () => {
 render();
 
 /* ═══════════════════ 2. 讲解区代码 tabs ═══════════════════ */
+
+/* 白板全屏（Esc 退出，浏览器原生行为） */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.wb-full'); if (!btn) return;
+  const board = btn.closest('.whiteboard'); if (!board) return;
+  if (document.fullscreenElement) document.exitFullscreen();
+  else board.requestFullscreen?.();
+});
+
 document.getElementById('tabs').addEventListener('click', e => {
   const btn = e.target.closest('button'); if (!btn) return;
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('active', b === btn));
