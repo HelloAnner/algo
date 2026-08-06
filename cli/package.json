@@ -1,0 +1,6 @@
+{
+  "name": "algo-cli",
+  "version": "0.1.0",
+  "description": "LeetCode 题解脚手架与复习追踪",
+  "bin": { "algo": "./src/index.ts" }
+}
