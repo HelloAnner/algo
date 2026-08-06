@@ -16,7 +16,7 @@ const TOPICS: Record<string, string> = {
   "two-pointers": "双指针", "sliding-window": "滑动窗口", stack: "栈", queue: "队列",
   tree: "树", graph: "图", dp: "动态规划", greedy: "贪心", backtracking: "回溯",
   "binary-search": "二分查找", heap: "堆", bit: "位运算", math: "数学",
-  sort: "排序", interval: "区间", trie: "前缀树",
+  sort: "排序", interval: "区间", trie: "前缀树", matrix: "矩阵",
 };
 
 interface Review { date: string; rating: number }
@@ -32,6 +32,8 @@ interface ProblemState {
   updated?: string;
   interval?: number;
   due?: string;        // 下次复习日 YYYY-MM-DD
+  stage?: number;      // 艾宾浩斯阶梯级数 0-6
+  struggle?: boolean;  // 困难标记（评分≤2 打上，≥4 摘除）
   reviews?: Review[];
 }
 interface DB { version: number; problems: Record<string, ProblemState> }
@@ -60,6 +62,30 @@ function die(msg: string): never { console.error(msg); process.exit(1); }
 /** 有效复习截止日：due → opened → updated */
 const effDue = (p: ProblemState) => p.due ?? p.opened?.slice(0, 10) ?? p.updated?.slice(0, 10);
 
+/* ── 艾宾浩斯复习阶梯 ──
+ * 阶梯间隔（天）：参照艾宾浩斯遗忘曲线复习点
+ * 1★/2★ 打回第 0 级（明天复习，加大密度）并标 struggle
+ * 3★ 原地重复当前级；4★ 升一级；5★ 跳一级
+ */
+const STAGES = [1, 2, 4, 7, 15, 30, 90];
+function applyReview(db: DB, slug: string, rating: number) {
+  const p = db.problems[slug] ?? {};
+  let stage = p.stage ?? 0;
+  if (rating <= 2) stage = 0;
+  else if (rating >= 4) stage = Math.min(stage + (rating === 5 ? 2 : 1), STAGES.length - 1);
+  // rating === 3: stage 不变
+  const interval = STAGES[stage];
+  const due = addDays(todayStr(), interval);
+  const reviews = [...(p.reviews ?? []), { date: todayStr(), rating }];
+  db.problems[slug] = {
+    ...p, stage, interval, due, reviews,
+    struggle: rating <= 2 ? true : rating >= 4 ? false : (p.struggle ?? false),
+    updated: new Date().toISOString(),
+  };
+  saveDB(db);
+  return { stage, interval, due, count: reviews.length, struggle: db.problems[slug].struggle };
+}
+
 /** 待复习清单（逾期在前，按 due 升序） */
 function dueList(db: DB): [string, ProblemState][] {
   const today = todayStr();
@@ -80,6 +106,14 @@ function serve() {
     async fetch(req) {
       const url = new URL(req.url);
       if (url.pathname === "/api/health") return Response.json({ ok: true });
+      if (url.pathname === "/api/review" && req.method === "POST") {
+        const slug = url.searchParams.get("slug") ?? "";
+        const rating = Number(url.searchParams.get("rating"));
+        if (!slug || !(rating >= 1 && rating <= 5)) {
+          return Response.json({ error: "need slug & rating 1-5" }, { status: 400 });
+        }
+        return Response.json(applyReview(loadDB(), slug, rating));
+      }
       if (url.pathname === "/api/state") {
         const slug = url.searchParams.get("slug") ?? "";
         if (!slug) return Response.json({ error: "missing slug" }, { status: 400 });
@@ -108,6 +142,17 @@ async function findProblem(slug: string): Promise<string | null> {
   const glob = new Bun.Glob(`leetcode/**/${slug}/index.html`);
   for await (const f of glob.scan({ cwd: ROOT })) return f;
   return null;
+}
+
+/** 老数据没有 topic 字段 → 从文件系统路径回填 */
+async function backfill(db: DB) {
+  let dirty = false;
+  for (const [slug, p] of Object.entries(db.problems)) {
+    if (p.topic) continue;
+    const rel = await findProblem(slug);
+    if (rel) { p.topic = rel.split("/")[1]; dirty = true; }
+  }
+  if (dirty) saveDB(db);
 }
 
 async function ensureServer() {
@@ -209,7 +254,8 @@ async function cmdList(flags?: Record<string, string>) {
     const p = db.problems[slug];
     const due = effDue(p ?? {});
     const mark = due && due <= todayStr() ? "●" : "○";
-    const line = `  ${mark} ${slug}${p?.title ? `  ${p.title}` : ""}${due ? `  (${due})` : ""}`;
+    const skel = readFileSync(join(ROOT, f), "utf8").includes("TODO 一句话题眼") ? "（骨架）" : "";
+    const line = `  ${mark} ${slug}${p?.title ? `  ${p.title}` : ""}${skel}${due ? `  (${due})` : ""}`;
     groups.set(topic, [...(groups.get(topic) ?? []), line]);
   }
   if (!groups.size) return console.log("暂无题目，用 algo new 创建");
@@ -221,45 +267,49 @@ async function cmdList(flags?: Record<string, string>) {
 }
 
 /* ── algo done <slug> --rating <1-5> ── */
-function cmdDone(slug?: string, flags?: Record<string, string>) {
+async function cmdDone(slug?: string, flags?: Record<string, string>) {
   if (!slug) die("用法: algo done <slug> --rating <1-5>");
   const rating = Number(flags?.rating);
   if (!rating || rating < 1 || rating > 5) die("--rating 必须是 1-5（5=秒答，1=完全不会）");
   const db = loadDB();
-  const p = db.problems[slug] ?? {};
-  const prev = p.interval ?? 0;
-  // ponytail: 简化 SM-2，够用；要更科学换 fsrs
-  const interval = rating <= 2 ? 1 : prev <= 0 ? (rating >= 4 ? 2 : 1)
-    : Math.max(1, Math.round(prev * (rating === 5 ? 2.5 : rating === 4 ? 2 : 1.3)));
-  const due = addDays(todayStr(), interval);
-  const reviews = [...(p.reviews ?? []), { date: todayStr(), rating }];
-  db.problems[slug] = { ...p, interval, due, reviews, updated: new Date().toISOString() };
-  saveDB(db);
-  console.log(`✓ ${slug}  评分 ${rating}★  第 ${reviews.length} 次复习  间隔 ${interval} 天  下次 ${due}`);
+  await backfill(db);
+  const r = applyReview(db, slug, rating);
+  console.log(`✓ ${slug}  ${rating}★  第 ${r.count} 次复习  阶梯 ${r.stage + 1}/${STAGES.length}  ${r.interval} 天后（${r.due}）${r.struggle ? "  ⚠ 已标困难，提高复习密度" : ""}`);
   const rest = dueList(db).length;
-  if (rest > 0) console.log(`  还剩 ${rest} 道待复习`);
+  if (rest > 0) console.log(`  还剩 ${rest} 道待复习/待学`);
 }
 
-/* ── algo today ── */
+/* ── algo today（新学 / 复习 分区） ── */
 function cmdToday() {
   const db = loadDB();
   const list = dueList(db);
-  if (!list.length) return console.log("今天没有待复习的题目 🎉");
+  if (!list.length) return console.log("今天没有待学/待复习的题目 🎉");
   const today = todayStr();
-  const rows = list.map(([slug, p]) => {
-    const due = effDue(p) ?? "";
-    const overdue = daysBetween(due, today);
-    const last = p.reviews?.at(-1);
-    return `${overdue > 0 ? `逾期${overdue}天` : "今日"}  ${p.topic ?? "?"}/${slug}` +
-      `${p.title ? `  ${p.title}` : ""}${last ? `  上次 ${last.rating}★` : "  未复习过"}`;
-  });
-  console.log(`今日待复习 (${rows.length}):\n${rows.join("\n")}`);
-  console.log(`\n开始: algo open ｜ 复习完: algo done <slug> --rating <1-5>`);
+  const fresh: string[] = [], review: string[] = [];
+  for (const [slug, p] of list) {
+    const head = `${p.topic ?? "?"}/${slug}${p.title ? `  ${p.title}` : ""}`;
+    if (!p.reviews?.length) {
+      fresh.push(`新题  ${head}`);
+    } else {
+      const due = effDue(p) ?? "";
+      const overdue = daysBetween(due, today);
+      const last = p.reviews.at(-1)!;
+      review.push(`${overdue > 0 ? `逾期${overdue}天` : "今日"}  ${head}  上次 ${last.rating}★  阶梯 ${(p.stage ?? 0) + 1}${p.struggle ? "  ⚠困难" : ""}`);
+    }
+  }
+  if (review.length) console.log(`══ 复习 (${review.length}) ══\n${review.join("\n")}`);
+  if (fresh.length) {
+    const show = fresh.slice(0, 10);
+    console.log(`══ 新学 (今日建议 ${show.length}/${fresh.length}) ══\n${show.join("\n")}` +
+      (fresh.length > 10 ? `\n  …还有 ${fresh.length - 10} 道新题排队中` : ""));
+  }
+  console.log(`\n开始: algo open ｜ 结束后: algo done <slug> --rating <1-5>（或在页面底部点星）`);
 }
 
 /* ── algo stats ── */
-function cmdStats() {
+async function cmdStats() {
   const db = loadDB();
+  await backfill(db);
   const entries = Object.entries(db.problems);
   const totalReviews = entries.reduce((n, [, p]) => n + (p.reviews?.length ?? 0), 0);
   const byTopic: Record<string, number> = {};
@@ -273,7 +323,11 @@ function cmdStats() {
   }
   const due = dueList(db).length;
   const overdue = dueList(db).filter(([, p]) => (effDue(p) ?? "") < todayStr()).length;
-  console.log(`总计 ${entries.length} 题 · 复习 ${totalReviews} 次 · 连续 ${streak} 天 · 待复习 ${due}${overdue ? `（逾期 ${overdue}）` : ""}`);
+  const struggles = entries.filter(([, p]) => p.struggle).length;
+  const lastRatings = entries.map(([, p]) => p.reviews?.at(-1)?.rating).filter((r): r is number => !!r);
+  const avg = lastRatings.length ? (lastRatings.reduce((a, b) => a + b, 0) / lastRatings.length).toFixed(1) : "-";
+  console.log(`总计 ${entries.length} 题 · 复习 ${totalReviews} 次 · 连续 ${streak} 天 · 待学/复习 ${due}${overdue ? `（逾期 ${overdue}）` : ""}`);
+  console.log(`掌握: 平均 ${avg}★ · 困难题 ${struggles} 道`);
   const topics = Object.entries(byTopic).sort((a, b) => b[1] - a[1])
     .map(([t, n]) => `${TOPICS[t] ?? t} ${n}`).join(" · ");
   if (topics) console.log(`主题: ${topics}`);
@@ -295,9 +349,9 @@ if (cmd === "serve") serve();
 else if (cmd === "open") await cmdOpen(arg);
 else if (cmd === "new") await cmdNew(arg, flags);
 else if (cmd === "list") await cmdList(flags);
-else if (cmd === "done") cmdDone(arg, flags);
+else if (cmd === "done") await cmdDone(arg, flags);
 else if (cmd === "today") cmdToday();
-else if (cmd === "stats") cmdStats();
+else if (cmd === "stats") await cmdStats();
 else {
   console.log(`algo — LeetCode 题解 CLI
 
