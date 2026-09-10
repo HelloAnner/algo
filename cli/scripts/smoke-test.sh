@@ -158,6 +158,18 @@ grep -q "^9 9$" three-sum/in.txt || fail "in.txt 没更新"
 grep -qF "[[-1,-1,2],[-1,0,1]]" three-sum/out.txt || fail "未指定的 out.txt 被改动了"
 echo "  ✓ 只更新目标文件"
 
+echo "→ make e / make w / make help（用假 micro、假 open，不启动真编辑器）"
+mkdir -p fakebin
+printf '#!/bin/sh\necho "MOCK-MICRO $*"\n' > fakebin/micro
+printf '#!/bin/sh\necho "MOCK-OPEN $*"\n' > fakebin/open
+chmod +x fakebin/micro fakebin/open
+PATH="$PWD/fakebin:$PATH" make -C two-sum e | grep "MOCK-MICRO solution.cpp" > /dev/null || fail "make e 没交给 micro"
+PATH="$PWD/fakebin:$PATH" make -C two-sum w | grep "MOCK-OPEN whiteboard.excalidraw" > /dev/null || fail "make w 没走系统打开"
+make -C two-sum help > make-help.txt || fail "make help 跑失败"
+grep -q "make e" make-help.txt || fail "make help 没列出 make e"
+grep -q "make w" make-help.txt || fail "make help 没列出 make w"
+echo "  ✓ make e / make w / make help 正常"
+
 echo "→ path / in / out / board（用假 micro、假 open，不启动真编辑器）"
 "$BUN" "$CLI" path three-sum in | grep -q "three-sum/in.txt$" || fail "path 解析 in.txt 失败"
 "$BUN" "$CLI" path three-sum | grep -q "three-sum$" || fail "path 解析目录失败"

@@ -45,6 +45,9 @@ make run              # 编译 → 用 in.txt 跑 → 立刻删掉二进制
 make check            # 和 out.txt 比对，✅ AC / ❌ WA（跑完同样清理）
 make debug            # ASan + UBSan（跑完清理）
 make build            # 想保留二进制时用这个（之后 make clean）
+make e                # micro 打开 solution.cpp
+make w                # 打开白板 whiteboard.excalidraw
+make help             # 列出全部目标
 ```
 
 ## 加一道题（题面 / 解法各一个 md）
@@ -122,7 +125,7 @@ two-sum/
 ├── solution.cpp     # ACM 模式：读 stdin 写 stdout
 ├── in.txt           # 样例输入
 ├── out.txt          # 期望输出
-├── Makefile         # run / raw / check / debug / build / clean
+├── Makefile         # run / raw / check / debug / build / e / w / help / clean
 ├── README.md        # 卡片：链接 / 难度 / 标签 / 状态 / 复盘记录
 └── .gitignore       # 忽略编译产物
 ```

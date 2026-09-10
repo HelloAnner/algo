@@ -78,7 +78,7 @@ algo/
 ├── solution.cpp   # ACM 实现：读 stdin、写 stdout
 ├── in.txt         # 样例输入
 ├── out.txt        # 期望输出
-├── Makefile       # run / raw / check / debug / build / clean（run 等跑完自动删二进制）
+├── Makefile       # run / raw / check / debug / build / e / w / help / clean（run 等跑完自动删二进制）
 ├── README.md      # 卡片：链接 / 难度 / 标签 / 状态 / 复盘记录
 └── .gitignore     # 忽略编译产物
 ```
@@ -151,7 +151,7 @@ make doctor                   # 环境自检
 - **micro 配置**：只做 **merge**，绝不覆盖用户已有的键；写之前备份成 `settings.json.bak-<时间戳>`；`init.lua` 已存在则不动。逻辑在 `cli/src/micro.ts`，但**行为说明以 `cli/micro.md` 为准**，两边必须同步。
 - **不要给 micro 装 LSP，也不要把 `linter` 打开**——「没有波浪线」是刻意设计，不是待修的缺陷。要加诊断能力，先在 `cli/micro.md` 里写清取舍。
 - **依赖**：CLI 不引入第三方运行时依赖；`assets/` 里的模板保持自包含（不依赖仓库外的文件）。
-- **脚手架模板**：生成的 `Makefile` 必须自清理——`run` / `raw` / `check` / `debug` 跑完都要删掉二进制和临时文件（`trap ... EXIT INT TERM` 兜底），只有 `build` 保留二进制。改 `cli/assets/make.tmpl` 后必须跑 `make test`，冒烟脚本会断言目录里没有残留。
+- **脚手架模板**：生成的 `Makefile` 必须自清理——`run` / `raw` / `check` / `debug` 跑完都要删掉二进制和临时文件（`trap ... EXIT INT TERM` 兜底），只有 `build` 保留二进制。另外提供 `make e`（micro 打开 solution.cpp）、`make w`（系统默认程序打开白板）和 `make help`。改 `cli/assets/make.tmpl` 后必须跑 `make test`，冒烟脚本会断言目录里没有残留。
 - **文档**：改动架构或命令后，同步更新本文件、`cli/README.md`、`cli/micro.md` 中受影响的部分。
 
 ---
