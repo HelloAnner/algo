@@ -39,6 +39,7 @@ git status --short           # 确认干净（应无输出）
 2. **信息格式**：首行 `<type>: <一句话说清做了什么>`，type 取 `feat` / `fix` / `docs` / `refactor` / `chore` / `test`；首行尽量不超过 72 字符。需要解释时空一行后用 `- ` 列要点。中英文皆可，与仓库历史保持一致（目前是中文）。
 3. **必须 push**：`git commit` 之后紧跟 `git push origin main`，并确认输出里出现 `main -> main`。**提交但不推送 = 没提交。**
 4. **提交前自检**：确认 `git status --short` 里没有被暂存的 `node_modules/`、`dist/`、`.env`、`*.bak-*` 等不该进仓库的东西（`.gitignore` 已覆盖前者，仍要扫一眼）。
+   还要特别看一眼**有没有误入的练习题目录**（仓库根出现含 `solution.cpp` 的目录就说明 `algo new` 跑错地方了）——这个坑踩过两次，务必在 `git add -A` 前用 `git status --short` 扫一遍。
 5. **结束时**：工作区必须干净（`git status --short` 无输出）。若确有文件不该提交，在回答里说明是哪个、为什么。
 6. **删除也算改动**：移除文件、目录、废弃文档要一并进 commit，不要留在工作区。
 7. **别问要不要提交**，直接做；只有遇到「无法判断该不该入库」或「push 被拒绝」才停下来问。
