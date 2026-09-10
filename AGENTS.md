@@ -176,3 +176,4 @@ make doctor                   # 环境自检
 - micro 启动顺序：`LoadAllPlugins()` → `action.InitCommands()` → `preinit()` → `init()`。因此 `init.lua` 里调用 `config.MakeCommand` **必须写在 `init()` 内**，写在顶层会报 `assignment to entry in nil map`。
 - 验证 micro 行为可以用 `script -q /dev/null micro ...` 开一个 pty（本机没有 `timeout` 命令）；用假的 `g++` 包装脚本记录调用，是确认 linter 开关生效最直接的办法。
   更彻底的办法是用 Python 的 `pty.fork()` 驱动真 micro（发 `\x1br` 这类按键），只看「效果」（文件内容、是否退出），别去 grep 屏幕输出——micro 是增量重绘，原始流里的文本是残缺的。
+- **Bun 的 `process.exit()` 不会执行 `finally`**，所以「跑完删 `.algo_bin`」不能只靠 `try/finally`（`run` 成功时就是这么退出的，曾经因此漏删）。`cli/src/cpp.ts` 里额外挂了 `process.on("exit")` 兜底。

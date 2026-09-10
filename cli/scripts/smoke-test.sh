@@ -71,6 +71,8 @@ FAKEBIN="$PWD/fakebin"
 echo "→ make run：编译 + 跑 in.txt，对了只打印一行 AC"
 RUN_OUT="$(cd two-sum && PATH="$FAKEBIN:$PATH" make run 2>&1 || true)"
 [ "$RUN_OUT" = "AC" ] || fail "make run 应该只输出 AC，实际：[$RUN_OUT]"
+# 单独查一次：run 成功时走的是 process.exit，曾经因此漏删 .algo_bin
+[ -e "two-sum/.algo_bin" ] && fail "make run 之后残留了 .algo_bin"
 
 echo "→ make check：静默即通过"
 CHK_OUT="$(cd two-sum && PATH="$FAKEBIN:$PATH" make check 2>&1 || true)"

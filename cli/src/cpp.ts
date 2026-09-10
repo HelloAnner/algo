@@ -15,7 +15,17 @@ export function compiler(): string {
   return which("clang++") ?? which("g++") ?? "c++";
 }
 
+/** 编译出过二进制的目录，退出前统一清一遍 */
+const bins = new Set<string>();
+
+// Bun 的 process.exit() 不会执行 finally（run 成功时就是这么退出的），
+// 所以再挂一个 exit 钩子兜底：.algo_bin 在任何退出路径下都不留。
+process.on("exit", () => {
+  for (const dir of bins) cleanupBin(dir);
+});
+
 export function cleanupBin(dir: string): void {
+  bins.delete(dir);
   const p = join(dir, BIN);
   if (existsSync(p)) {
     try {
@@ -36,7 +46,9 @@ export function compile(dir: string, flags: string[] = BUILD_FLAGS): BuildResult
   const t0 = Date.now();
   const r = spawnSync(compiler(), [...flags, "solution.cpp", "-o", BIN], { cwd: dir, encoding: "utf8" });
   const output = `${r.stdout ?? ""}${r.stderr ?? ""}`.trim();
-  return { ok: r.status === 0 && existsSync(join(dir, BIN)), ms: Date.now() - t0, output };
+  const ok = r.status === 0 && existsSync(join(dir, BIN));
+  if (ok) bins.add(dir);
+  return { ok, ms: Date.now() - t0, output };
 }
 
 export interface RunResult {
