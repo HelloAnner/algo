@@ -356,10 +356,16 @@ MICRO_CONFIG_DIR="$PWD/fakecfg" "$BUN" "$CLI" setup > /dev/null
 grep -q '"autosave": 2' fakecfg/settings.json || fail "profile 里没有 autosave=2"
 grep -q '"linter": false' fakecfg/settings.json || fail "profile 里没有 linter=false"
 grep -q '"autoclose": true' fakecfg/settings.json || fail "profile 里没有 autoclose=true"
+grep -q '"softwrap": true' fakecfg/settings.json || fail "profile 里没有 softwrap=true（长行要自动折行）"
+grep -q '"wordwrap": true' fakecfg/settings.json || fail "profile 里没有 wordwrap=true"
 grep -q '"Ctrl-P": "CommandMode"' fakecfg/bindings.json || fail "bindings.json 里没有 Ctrl-P 命令模式"
 grep -q '"Alt-n": "command-edit:open "' fakecfg/bindings.json || fail "bindings.json 里没有 Alt-n 新建文件"
 grep -q '"Ctrl-G"' fakecfg/bindings.json || fail "setup 把用户自己的绑定冲掉了"
 MICRO_CONFIG_DIR="$PWD/fakecfg" "$BUN" "$CLI" setup | grep -q "已是最新" || fail "micro 配置重复安装不幂等"
+# micro 自己认的是 MICRO_CONFIG_HOME，algo 也要跟着走
+rm -rf homecfg && mkdir -p homecfg
+MICRO_CONFIG_HOME="$PWD/homecfg" "$BUN" "$CLI" setup > /dev/null
+grep -q '"softwrap": true' homecfg/settings.json || fail "MICRO_CONFIG_HOME 没被 algo setup 认到"
 echo "  ✓ profile 内容正确，且保留用户自定义绑定"
 
 echo "→ algo setup --dry-run（只读，不写配置）"

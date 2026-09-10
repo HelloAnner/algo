@@ -182,7 +182,7 @@ make doctor                   # 环境自检
 ## 环境事实（本机，会踩的坑）
 
 - **macOS + Apple clang + libc++，系统里没有 `<bits/stdc++.h>`**（GCC 专有头）。为了让模板顶层只留一行 include，`cli/assets/include/bits/stdc++.h` 放了一份**兼容头**：`make -C cli install` 会把它装到 `~/.local/include/bits/stdc++.h`，题目的 `CXXFLAGS` 与 `cli/src/cpp.ts` 的 `BUILD_FLAGS` 都带 `-I$(HOME)/.local/include`（两边必须保持一致）。没装兼容头时编译会报 `'bits/stdc++.h' file not found`。想用真 GCC 就 `brew install gcc` 再 `make CXX=g++-14`。
-- micro **2.0.15**（Homebrew），配置目录 `~/.config/micro`（macOS 与 Linux 相同，可用 `MICRO_CONFIG_DIR` 覆盖）。
+- micro **2.0.15**（Homebrew），配置目录 `~/.config/micro`（macOS 与 Linux 相同）。**micro 自己认 `MICRO_CONFIG_HOME`（其次 `XDG_CONFIG_HOME`）和 `micro -config-dir`；`MICRO_CONFIG_DIR` 只是 algo CLI 的约定，micro 不读**（实测过：只设它，micro 仍读 `~/.config/micro`）。`microConfigDir()` 两者都认，顺序是 `MICRO_CONFIG_DIR` → `MICRO_CONFIG_HOME` → `XDG_CONFIG_HOME/micro` → `~/.config/micro`。
 - micro 内置插件只有 7 个（autoclose / comment / diff / ftoptions / linter / literate / status），**LSP 不在其中**，它是官方插件频道里的可选插件 `lsp`。
 - micro 启动顺序：`LoadAllPlugins()` → `action.InitCommands()` → `preinit()` → `init()`。因此 `init.lua` 里调用 `config.MakeCommand` **必须写在 `init()` 内**，写在顶层会报 `assignment to entry in nil map`。
 - 验证 micro 行为可以用 `script -q /dev/null micro ...` 开一个 pty（本机没有 `timeout` 命令）；用假的 `g++` 包装脚本记录调用，是确认 linter 开关生效最直接的办法。

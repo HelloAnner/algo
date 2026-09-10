@@ -32,6 +32,10 @@ export const PROFILE: Record<string, unknown> = {
   smartpaste: true,
   eofnewline: true,
   rmtrailingws: true,
+  // 长行按终端宽度自动换行（micro 默认 false：超宽的行会横向滚动，尾巴看不见）：
+  // softwrap = 折行显示；wordwrap = 在空格处断开，不把标识符劈成两半
+  softwrap: true,
+  wordwrap: true,
   // 界面：行号高亮、状态栏、滚动条、真彩色、鼠标
   cursorline: true,
   statusline: true,
@@ -62,9 +66,20 @@ export const BINDINGS: Record<string, string> = {
   "Alt-d": "DuplicateLine",
 };
 
+/**
+ * micro 的配置目录。
+ * 优先级：MICRO_CONFIG_DIR（algo 自己的约定，给测试/多套配置用）
+ *       → MICRO_CONFIG_HOME（micro 自己认的，见 internal/config/config.go）
+ *       → XDG_CONFIG_HOME/micro → ~/.config/micro。
+ * 注意 micro 二进制**不认** MICRO_CONFIG_DIR，别只设它却期待 micro 去读。
+ */
 export function microConfigDir(): string {
-  const env = process.env.MICRO_CONFIG_DIR?.trim();
-  return env && env.length > 0 ? env : join(homedir(), ".config", "micro");
+  const own = process.env.MICRO_CONFIG_DIR?.trim();
+  if (own) return own;
+  const microHome = process.env.MICRO_CONFIG_HOME?.trim();
+  if (microHome) return microHome;
+  const xdg = process.env.XDG_CONFIG_HOME?.trim();
+  return xdg ? join(xdg, "micro") : join(homedir(), ".config", "micro");
 }
 
 export function microSettingsPath(): string {

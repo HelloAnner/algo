@@ -46,7 +46,13 @@ micro --version        # 2.0.15
 
 ### 2.1 目录结构
 
-micro 的配置目录默认是 `~/.config/micro`（macOS 与 Linux 相同）。可用 `MICRO_CONFIG_DIR` 环境变量或 `micro -config-dir /path` 覆盖。
+micro 的配置目录默认是 `~/.config/micro`（macOS 与 Linux 相同）。
+
+micro 自己认的覆盖方式是 **`MICRO_CONFIG_HOME` 环境变量**（其次 `XDG_CONFIG_HOME`，都见 `internal/config/config.go` 的 `InitConfigDir`）和 **`micro -config-dir /path`** 启动参数（目录必须已存在）。
+
+> ⚠️ `MICRO_CONFIG_DIR` 是 **algo CLI 自己的约定**（`algo setup` 用它定位要写哪个配置目录，也给测试用），**micro 二进制不读它**。
+> 实测：把 `MICRO_CONFIG_DIR` 指到别处，micro 照样读 `~/.config/micro`；换成 `-config-dir` 渲染结果立刻不同。
+> 所以只想改 algo 写哪儿就设 `MICRO_CONFIG_DIR`，想让 micro 也读别处就设 `MICRO_CONFIG_HOME`（或 `-config-dir`）。
 
 | 路径 | 作用 |
 |---|---|
@@ -132,6 +138,8 @@ end
 | `smartpaste` | `true` | 粘贴多行时自动补前导缩进 | 缩进 |
 | `eofnewline` | `true` | 保存时文件末尾补换行 | 缩进 |
 | `rmtrailingws` | `true` | 保存时自动删行尾空格 | 缩进 |
+| `softwrap` | `true` | **按终端宽度自动换行**（超宽的行折到下一屏行，不再横向滚出去） | 观感 |
+| `wordwrap` | `true` | 折行时**在空格处断**，不把标识符/数字劈成两半（只在 `softwrap` 开着时有效） | 观感 |
 | `cursorline` | `true` | 高亮当前行 | 界面 |
 | `statusline` | `true` | 显示底部状态栏 | 界面 |
 | `scrollbar` | `true` | 右侧滚动条 | 界面 |
@@ -140,7 +148,7 @@ end
 | `savecursor` | `true` | 记住上次光标位置 | 会话 |
 | `saveundo` | `true` | 重启后仍能撤销 | 会话 |
 
-> 默认值对比（来自 `micro -options`）：`tabstospaces` 默认 `false`、`trucolor` 默认 `auto`、`rmtrailingws` 默认 `false`、`savecursor`/`saveundo`/`scrollbar` 默认都是 `false`。也就是说 `algo setup` 主要是把这些「更顺手」的开关打开，并且**关掉 linter**。
+> 默认值对比（来自 `micro -options`）：`tabstospaces` 默认 `false`、`trucolor` 默认 `auto`、`rmtrailingws` 默认 `false`、`softwrap`/`wordwrap` 默认都是 `false`（**micro 默认不折行**，长行只能横向滚）、`savecursor`/`saveundo`/`scrollbar` 默认都是 `false`。也就是说 `algo setup` 主要是把这些「更顺手」的开关打开，并且**关掉 linter**。
 
 ### 3.2 自动保存（autosave，静默）
 
@@ -360,6 +368,9 @@ micro 默认按键大全：编辑器内 `> help defaultkeys`；当前实际绑�
 - **括号**：`autoclose` 负责补全，`matchbrace` 负责高亮匹配。二者互不冲突：前者管输入，后者管显示。
 - **注释**：`Ctrl+/`（comment 插件）会按 C++ 用 `//`。
 - **换行缩进**：在一行末尾输入 `{` 后回车，会自动多缩进一级并把 `}` 顶格（这是 autoclose 的 `preInsertNewline` 行为）。
+- **长行自动折行**：`softwrap: true` + `wordwrap: true`，超宽的行按终端宽度折到下一屏行、在空格处断开（**micro 默认是 `false`**：长行只能横向滚动，屏幕上看不到尾巴）。终端很窄时把窗口拉宽即可，折行位置会跟着变；改宽度后不用重开 micro。
+
+  实测（40 列的小 pty + 一行 160 字符）：`softwrap: false` 时屏幕上**看不到**行尾；`softwrap: true` 时行尾正常出现在下面的屏行里。
 
 ### 与刷题工作流的配合
 
@@ -433,11 +444,11 @@ bp:OpenBuffer(buf)   -- 文件不存在时 NewBufferFromFile 会返回一个空 
 |---|---|---|
 | 又出现下划线报错 | `"linter"` 被改回 `true`，或装了 `lsp`/其它 diagnostic 插件 | 设 `"linter": false`；`micro -plugin list` 检查有无 `lsp` |
 | 左括号不自动补全 | `"autoclose": false` | 设为 `true`（或删掉该键，默认开启） |
-| 改了 settings.json 没生效 | 没重载；或写到了别的 config dir | `Ctrl+E` → `reload`；确认没有设置 `MICRO_CONFIG_DIR` |
+| 改了 settings.json 没生效 | 没重载；或写到了别的 config dir | `Ctrl+E` → `reload`；确认没设 `MICRO_CONFIG_HOME`（micro 认这个，不认 `MICRO_CONFIG_DIR`） |
 | micro 启动报 JSON 错误 | settings.json 语法错（注释/多余逗号） | 用 `algo setup` 重写，或从 `.bak-` 备份恢复 |
 | 出现 `assignment to entry in nil map` | `init.lua` 顶层调用了 `MakeCommand` | 挪进 `init()` / `preinit()` |
 | 颜色发灰、无真彩色 | 终端不认识 `truecolor` | 确认终端支持 24-bit（如 Ghostty/iTerm2），或把 `truecolor` 设 `auto` |
-| 中文/emoji 错位 | 终端宽度计算 | 属于终端层面，micro 无解；可关 `softwrap` |
+| 中文/emoji 错位、折行位置怪 | 终端按「字符数」估算宽度，CJK 是双宽 | 属于终端层面，micro 无解；实在别扭可临时关掉 `softwrap`（长行就变成横向滚动） |
 | `fatal error: 'bits/stdc++.h' file not found` | **与 micro 无关**：这是 GCC 专有头，Apple clang/libc++ 没有 | `make -C ~/algo/cli install` 装兼容头（脚手架已有 `-I` 指过去）；或 `brew install gcc` 后 `make CXX=g++-14` |
 | 插件装了没反应 | 被 `settings.json` 里同名键设成了 `false` | 改成 `true` 或删掉该键 |
 | `Alt-r` / `Alt-t` / `Alt-i` / `Alt-o` 没反应 | 没生成 `init.lua`（`algo setup` 默认不写它） | `algo setup --init`，然后在 micro 里 `Ctrl-P` → `reload` |
