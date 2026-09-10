@@ -89,6 +89,11 @@ export function problemFiles(opts: AddOptions, base: Partial<Header> = {}): { na
   ];
 }
 
+/** 用当前模板渲染 Makefile（`algo remake` 用它刷老题目目录） */
+export function renderMakefile(title: string): string {
+  return render(makeTpl, { TITLE: title });
+}
+
 export interface CreateResult {
   dir: string;
   /** 目录是这次新建（或 --force 重写）的吗 */

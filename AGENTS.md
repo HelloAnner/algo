@@ -170,6 +170,7 @@ make doctor                   # 环境自检
 - **依赖**：CLI 不引入第三方运行时依赖；`assets/` 里的模板保持自包含（不依赖仓库外的文件）。
 - **题面 / 解法都是纯文本**：`problem.txt`（头部 `题目：` / `链接：` / `难度：`，章节用 `[题目描述]` 这种标记，**图一律用 ASCII 画**）、`solution.txt`（`[思路]` / `[复杂度]` / `[关键点]` / `[C++ 代码]`）。**不要往题目目录里加 Markdown 文件**（用户明确要 `cat txt`）。
 - **`solution.cpp` 永远是空模板**：顶层就一行 `#include <bits/stdc++.h>`（靠兼容头 + `-I` 生效）+ `using namespace std;` + `main` + `// TODO: 读入 -> 计算 -> 输出`，实现留给用户自己写；参考代码放在 `solution.txt` 的 `[C++ 代码]` 里。不要用参考实现覆盖 `solution.cpp`，也不要往模板里堆一长串显式 include。
+- **改了 `cli/assets/make.tmpl` 要刷老题目**：题目目录里的 `Makefile` 是生成物，模板升级**不会自动同步**（曾经因此让 63 个目录的 `make p` 还指向已删掉的 `problem.md`）。改完模板先 `make test`，再用 `algo remake <题库目录>` 把老目录刷一遍。
 - **脚手架模板**：生成的 `Makefile` 必须自清理——`run` / `raw` / `check` / `debug` 跑完都要删掉二进制和临时文件（`trap ... EXIT INT TERM` 兜底），只有 `build` 保留二进制。另外提供 `make e` / `make p` / `make s`（micro 打开代码 / 题面 / 解法）、`make r` / `make c`（`run` / `check` 的简写）、`make w`（系统默认程序打开白板）和 `make help`。改 `cli/assets/make.tmpl` 后必须跑 `make test`，冒烟脚本会断言目录里没有残留。
 - **文档**：改动架构或命令后，同步更新本文件、`cli/README.md`、`cli/micro.md` 中受影响的部分。
 

@@ -6,6 +6,7 @@ import { flagOn, flagStr, parseArgs } from "./flags";
 import { printProblems } from "./list";
 import { installInitLua, installMicroProfile } from "./micro";
 import { openTarget } from "./open";
+import { remakeMakefiles } from "./remake";
 import { make, printPath, resolveProblemDir, runSolution } from "./run";
 import { createProblem } from "./scaffold";
 import { installShellIntegration } from "./shell";
@@ -33,6 +34,8 @@ ${c.bold("看 / 改文件")}
   algo board [目录]               用系统默认程序打开白板 whiteboard.excalidraw
   algo path [目录] [目标]         只打印路径，不打开
       目标：${TARGET_HELP}
+  algo remake [目录]              按当前模板重新生成题目里的 Makefile（模板升级后用；
+                                  目录是题目就刷它，否则刷它下面所有题目）
 
 ${c.bold("刷题")}
   algo list                       列出当前目录下的题目（题面/思路/板 进度）
@@ -124,6 +127,10 @@ export function main(argv: string[]): void {
     case "board": {
       const dir = resolveProblemDir(positionals[1]);
       openTarget(dir, resolveTarget(dir, cmd));
+      return;
+    }
+    case "remake": {
+      remakeMakefiles(positionals[1]);
       return;
     }
     case "path": {

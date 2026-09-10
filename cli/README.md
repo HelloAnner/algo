@@ -149,6 +149,8 @@ algo raw|debug|build|clean [目录]
 algo path [目录] [目标]    只打印路径；目标：code/cpp（solution.cpp）·
                            solution/answer（solution.txt）· problem · in · out ·
                            board · makefile（也可以直接写文件名，自动补 .cpp/.txt/.excalidraw）
+algo remake [目录]         按当前模板重新生成题目里的 Makefile（改了 assets/make.tmpl 之后
+                           用它刷老题目；目录是题目就刷它，否则刷它下面所有题目）
 algo setup [--dry-run]     合并 micro 配置（settings.json + bindings.json）
 algo setup --shell         装 shell 集成（algo new 之后自动 cd）
 algo setup --init          额外生成 ~/.config/micro/init.lua
@@ -193,6 +195,8 @@ two-sum/
 ```
 
 > 没有 README.md，也没有任何 Markdown —— 题面和解法都直接 `cat`。
+>
+> `Makefile` 是生成物：改了 `cli/assets/make.tmpl` 之后，老题目目录要 `algo remake <题库目录>` 刷一遍。
 
 > `make run` / `raw` / `check` / `debug` 都是「编译 → 运行 → 删掉二进制」：
 > 用 `trap ... EXIT INT TERM` 兜底，正常结束、编译报错、程序崩溃、Ctrl-C 都会清理，

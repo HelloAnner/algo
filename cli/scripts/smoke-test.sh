@@ -265,6 +265,15 @@ if [ -n "$C_OUT" ]; then
 fi
 echo "  ✓ make e / p / s / w / r / c / help 正常"
 
+echo "→ algo remake：模板升级后重刷老题目目录的 Makefile"
+sed 's/problem\.txt/problem.md/' two-sum/Makefile > remake-mk && mv remake-mk two-sum/Makefile
+grep -q "problem.md" two-sum/Makefile || fail "没造出「老 Makefile」"
+"$BUN" "$CLI" remake two-sum > /dev/null
+grep -q "PROBLEM  := problem.txt" two-sum/Makefile || fail "remake 没把 PROBLEM 刷成 problem.txt"
+grep -q "SOLUTION := solution.txt" two-sum/Makefile || fail "remake 没把 SOLUTION 刷成 solution.txt"
+if grep -q "\.md" two-sum/Makefile; then fail "remake 之后 Makefile 里还有 .md"; fi
+echo "  ✓ remake 正常"
+
 echo "→ path / in / out / board（用假 micro、假 open，不启动真编辑器）"
 "$BUN" "$CLI" path three-sum in | grep -q "three-sum/in.txt$" || fail "path 解析 in.txt 失败"
 "$BUN" "$CLI" path three-sum | grep -q "three-sum$" || fail "path 解析目录失败"
