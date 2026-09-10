@@ -14,6 +14,47 @@
 2. **编辑体验清爽**：micro 保留语法高亮和括号/引号自动补全，但**不要任何波浪线式报错**（详见 `cli/micro.md`，那里解释了原理与还原方法）。
 3. **零运行时依赖**：CLI 只用 Bun + Node 内置模块，不引入第三方 npm 包。
 
+---
+
+## 提交与推送（硬性约定）
+
+**每完成一个自洽的改动，就在同一轮里 commit + push。** 不要攒批，不要在回答结束时留下一堆未提交的改动。
+
+标准流程：
+
+```bash
+cd /Users/anner/algo
+make -C cli typecheck        # 改了 TS 就跑
+make -C cli test             # 改了模板 / CLI 行为就跑
+git add -A
+git commit -F /tmp/msg.txt    # 提交信息见下方格式
+git push origin main
+git log --oneline -2         # 确认提交
+git status --short           # 确认干净（应无输出）
+```
+
+规则：
+
+1. **粒度**：一个功能 / 一次修复 = 一个 commit。不要把两件不相干的事混在一起（同一件事的代码 + 文档 + 测试除外）。
+2. **信息格式**：首行 `<type>: <一句话说清做了什么>`，type 取 `feat` / `fix` / `docs` / `refactor` / `chore` / `test`；首行尽量不超过 72 字符。需要解释时空一行后用 `- ` 列要点。中英文皆可，与仓库历史保持一致（目前是中文）。
+3. **必须 push**：`git commit` 之后紧跟 `git push origin main`，并确认输出里出现 `main -> main`。**提交但不推送 = 没提交。**
+4. **提交前自检**：确认 `git status --short` 里没有被暂存的 `node_modules/`、`dist/`、`.env`、`*.bak-*` 等不该进仓库的东西（`.gitignore` 已覆盖前者，仍要扫一眼）。
+5. **结束时**：工作区必须干净（`git status --short` 无输出）。若确有文件不该提交，在回答里说明是哪个、为什么。
+6. **删除也算改动**：移除文件、目录、废弃文档要一并进 commit，不要留在工作区。
+7. **别问要不要提交**，直接做；只有遇到「无法判断该不该入库」或「push 被拒绝」才停下来问。
+
+提交信息示例：
+
+```
+feat: 支持随机数据对拍（algo gen + make stress）
+
+- gen.cpp 生成随机数据，stress.sh 循环比对 solution 与 brute
+- 新增 algo gen [目录] 命令
+- cli/README.md 补一段对拍用法
+```
+
+---
+
 ## 目录结构
 
 ```
@@ -41,6 +82,8 @@ algo/
 
 安装方式是 `make install`：`bun build` 出 `cli/dist/algo.js`，在 `~/.local/bin/algo` 放一个 `exec bun ...` 的轻量启动器，然后合并 micro 配置。源码改动**即刻生效**，无需重新安装（除非改的是启动器本身）。
 
+---
+
 ## 怎么开发 / 验证
 
 ```bash
@@ -54,13 +97,16 @@ make doctor                   # 环境自检
 
 改了 `cli/assets/**` 里的模板后**必须**跑 `make test`：它会真的调 `clang++` 编译并对拍，模板里的 tab 缩进、文件名、依赖项写错都会被它抓到。
 
-## 约定
+---
 
-- **提交**：每个大功能完成后及时 `git commit` + `git push`，不要攒批；提交信息说明功能点，中英文皆可。
+## 实现约定
+
 - **micro 配置**：只做 **merge**，绝不覆盖用户已有的键；写之前备份成 `settings.json.bak-<时间戳>`；`init.lua` 已存在则不动。逻辑在 `cli/src/micro.ts`，但**行为说明以 `cli/micro.md` 为准**，两边必须同步。
 - **不要给 micro 装 LSP，也不要把 `linter` 打开**——「没有波浪线」是刻意设计，不是待修的缺陷。要加诊断能力，先在 `cli/micro.md` 里写清取舍。
 - **依赖**：CLI 不引入第三方运行时依赖；`assets/` 里的模板保持自包含（不依赖仓库外的文件）。
 - **文档**：改动架构或命令后，同步更新本文件、`cli/README.md`、`cli/micro.md` 中受影响的部分。
+
+---
 
 ## 环境事实（本机，会踩的坑）
 
