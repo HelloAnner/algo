@@ -367,8 +367,8 @@ micro 默认按键大全：编辑器内 `> help defaultkeys`；当前实际绑�
 algo two-sum            # 生成 ./two-sum/（problem.md 题面 + solution.md 解法 + whiteboard.excalidraw 白板 + 代码 + Makefile）
 algo add two-sum --problem-file p.md --solution-file s.md   # 或一次性把内容灌进去
 algo in / algo out      # 直接改样例输入 / 期望输出（也在 micro 里编辑）
-make p / make s         # micro 打开题面 problem.md / 解法 solution.md
-make e / make w         # micro 打开 solution.cpp / 打开白板（等价于 algo edit / algo board）
+make p / make s         # micro 打开题面 problem.txt / 解法 solution.txt（答案在里面）
+make e / make w         # micro 打开 solution.cpp（空模板）/ 打开白板（等价于 algo edit / algo board）
 cd two-sum && micro .    # 开始写
 # 写完：Alt-r 跑样例 / Alt-t 对拍（需 algo setup --init），或 make r / make c
 ```
@@ -376,7 +376,7 @@ cd two-sum && micro .    # 开始写
 - `make run`（简写 `make r`）编译 + 用 `in.txt` 跑一遍，和 `out.txt` 一致就打印一行 `AC`；
 - `make check`（简写 `make c`）编译 + 静态检查 + 写法检查 + 对拍，**没问题什么都不输出**；
 - `make debug` 带 AddressSanitizer + UBSan，专门抓越界和未定义行为；
-- `make p` / `make s` / `make e` 用 micro 打开题面 / 解法 / 代码（对应 `algo new` 建出来的三个文件）。
+- `make p` / `make s` / `make e` 用 micro 打开题面 / 解法 / 代码；题面和解法是纯 txt，代码是**空模板**，实现自己写（参考代码在 solution.txt 的 `[C++ 代码]` 里）。
 - 以上目标跑完都会**自动删掉二进制**（只有 `make build` 会保留），目录里不留编译产物。
 
 在 micro 里想跑 shell 命令：`> term` 开一个分屏终端，或 `> run <命令>` 后台跑（输出在新 tab）。

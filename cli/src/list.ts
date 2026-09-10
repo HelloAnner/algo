@@ -10,7 +10,6 @@ export interface ProblemRow {
   solution: boolean;
   board: boolean;
   difficulty: string;
-  tags: string;
 }
 
 /** 白板上画过东西没有：元素表非空就算画过 */
@@ -25,15 +24,14 @@ function boardHasDrawing(path: string): boolean {
   }
 }
 
-/** 从 README.md 的 `- **难度**：…` 这类行里取值 */
-function metaField(md: string, label: string): string {
-  for (const line of md.split("\n")) {
+/** 从 problem.txt 头部的 `难度：简单` 这类行里取值 */
+function headerField(txt: string | null, label: string): string {
+  if (txt === null) return "";
+  for (const line of txt.split("\n").slice(0, 8)) {
     const t = line.trim();
-    if (!t.startsWith("-")) continue;
-    const norm = t.replace(/^[-*]\s*/, "").replace(/\*\*/g, "");
-    const idx = norm.search(/[：:]/);
+    const idx = t.search(/[：:]/);
     if (idx < 0) continue;
-    if (norm.slice(0, idx).trim() === label) return norm.slice(idx + 1).trim();
+    if (t.slice(0, idx).trim() === label) return t.slice(idx + 1).trim();
   }
   return "";
 }
@@ -53,15 +51,14 @@ export function listProblems(cwd: string): ProblemRow[] {
       /* ignore */
     }
 
-    const readme = readText(join(dir, "README.md")) ?? "";
+    const problemTxt = readText(join(dir, "problem.txt"));
     rows.push({
       slug: name,
       date,
-      problem: isFilled(readText(join(dir, "problem.md"))),
-      solution: isFilled(readText(join(dir, "solution.md"))),
+      problem: isFilled(problemTxt),
+      solution: isFilled(readText(join(dir, "solution.txt"))),
       board: boardHasDrawing(join(dir, "whiteboard.excalidraw")),
-      difficulty: metaField(readme, "难度"),
-      tags: metaField(readme, "标签"),
+      difficulty: headerField(problemTxt, "难度"),
     });
   }
   return rows;
@@ -72,15 +69,15 @@ export function printProblems(cwd: string): void {
   if (rows.length === 0) {
     console.log("当前目录还没有题目。");
     console.log(c.gray("  algo two-sum        # 新建一道题"));
-    console.log(c.gray("  algo add two-sum --problem-file p.md --solution-file s.md"));
+    console.log(c.gray("  algo add two-sum --problem-file 题面.txt --solution-file 解法.txt"));
     return;
   }
 
   console.log(c.bold(`${rows.length} 道题（${cwd}）`));
   for (const r of rows) {
-    const marks = `题面${r.problem ? "✓" : "—"}思路${r.solution ? "✓" : "—"}板${r.board ? "✓" : "—"}`;
-    const extra = [r.difficulty, r.tags].filter(Boolean).join(" · ");
-    console.log(`  ${pad(r.slug, 38)} ${c.gray(r.date)} ${c.cyan(marks)}${extra ? "  " + c.gray(extra) : ""}`);
+    const marks = `题面${r.problem ? "✓" : "—"}解法${r.solution ? "✓" : "—"}板${r.board ? "✓" : "—"}`;
+    console.log(`  ${pad(r.slug, 38)} ${c.gray(r.date)} ${c.cyan(marks)}${r.difficulty ? "  " + c.gray(r.difficulty) : ""}`);
   }
-  console.log(c.gray("\n  ✓ 已写    — 还是空的（题面 = problem.md，思路 = solution.md，板 = 白板上画过图）"));
+  console.log(c.gray("\n  ✓ 已写    — 还是空的（题面 = problem.txt，解法 = solution.txt，板 = 白板上画过图）"));
+  console.log(c.gray("  solution.cpp 是空模板，自己写；参考代码在 solution.txt 里"));
 }

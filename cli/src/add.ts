@@ -8,10 +8,9 @@ export interface AddOptions {
   title?: string;
   link?: string;
   difficulty?: string;
-  tags: string[];
-  /** 题面 markdown；undefined 表示用模板 */
+  /** 题面纯文本（problem.txt）；undefined 表示用模板 */
   problem?: string;
-  /** 解法 markdown；undefined 表示用模板 */
+  /** 解法纯文本（solution.txt，含参考代码）；undefined 表示用模板 */
   solution?: string;
   /** 样例输入（in.txt）；undefined 表示留空 */
   input?: string;
@@ -60,12 +59,6 @@ function readSource(src: string, label: string): string {
 
 function str(v: string | string[] | undefined): string | undefined {
   return typeof v === "string" && v.length > 0 ? v : undefined;
-}
-
-function splitTags(v: string | string[] | undefined): string[] {
-  if (v === undefined) return [];
-  const list = Array.isArray(v) ? v : v.split(/[,，、]+/);
-  return list.map((s) => String(s).trim()).filter(Boolean);
 }
 
 function readJsonSpec(src: string): JsonSpec {
@@ -123,15 +116,11 @@ export function resolveAddOptions(positionals: string[], flags: Flags): AddOptio
     die(`${fromStdin.join(" 和 ")} 都想从 stdin 读内容，一次只能读一个；改用 --json - 把内容放进同一个 JSON`);
   }
 
-  const tagsFlag = flagStr(flags, "tags");
-  const tags = tagsFlag !== undefined ? splitTags(tagsFlag) : splitTags(json.tags);
-
   return {
     name: name.trim(),
     title: flagStr(flags, "title") ?? str(json.title),
     link: flagStr(flags, "link") ?? str(json.link) ?? str(json.url),
     difficulty: flagStr(flags, "difficulty") ?? str(json.difficulty),
-    tags,
     problem,
     solution,
     input,

@@ -66,7 +66,7 @@ algo/
 │                       # 目前是《手撕字节跳动面试时出现过的算法题》里的 63 道，见 `algo list`
 └── cli/                # 全部实现
     ├── src/            # index(分发) / flags / add / scaffold / list / run / check / cpp / targets / open / shell / micro / doctor / util
-    ├── assets/         # 模板：solution.cpp / make.tmpl / problem.md.tmpl / solution.md.tmpl / whiteboard.excalidraw.tmpl / README.tmpl / init.lua
+    ├── assets/         # 模板：solution.cpp / make.tmpl / problem.txt.tmpl / solution.txt.tmpl / whiteboard.excalidraw.tmpl / init.lua
     ├── scripts/        # smoke-test.sh
     ├── micro.md        # micro 编辑器插件与配置详解 —— micro 相关改动的唯一依据
     └── README.md       # 安装与用法
@@ -76,16 +76,18 @@ algo/
 
 ```
 <slug>/
-├── problem.md     # 题面描述（独立 md）
-├── solution.md    # 解法思路（独立 md）
-├── whiteboard.excalidraw  # 白板（空白 Excalidraw 场景，打开就能画）
-├── solution.cpp   # ACM 实现：读 stdin、写 stdout
+├── problem.txt    # 题面（纯文本：头部 题目/链接/难度，章节用 [题目描述] 标记，图用 ASCII）
+├── solution.txt   # 解法 / 答案：[思路] / [复杂度] / [关键点] / [C++ 代码]
+├── solution.cpp   # **空模板**（include + main + TODO），等用户自己写
 ├── in.txt         # 样例输入
 ├── out.txt        # 期望输出
 ├── Makefile       # run(r) / raw / check(c) / debug / build / e / p / s / w / help / clean
 │                  # （run 等跑完自动删二进制；p / s 是 micro 看题面 / 解法）
-├── README.md      # 卡片：链接 / 难度 / 标签 / 状态 / 复盘记录
+├── whiteboard.excalidraw  # 白板（空白 Excalidraw 场景，打开就能画）
 └── .gitignore     # 忽略编译产物
+
+**题目目录里没有任何 Markdown**（没有 README.md / problem.md / solution.md）：
+题面 = problem.txt，解法与参考代码 = solution.txt，用户要自己写的是 solution.cpp。
 ```
 
 安装方式是 `make install`：`bun build` 出 `cli/dist/algo.js`，在 `~/.local/bin/algo` 放一个 `exec bun ...` 的轻量启动器，然后合并 micro 配置并装 shell 集成。源码改动**即刻生效**，无需重新安装（除非改的是启动器本身）。
@@ -94,9 +96,9 @@ algo/
 
 ## 添加题目（`algo add`，AI 常用）
 
-题面和解法各占一个独立 md：`problem.md`（题面）与 `solution.md`（解法思路）。
+题面和解法各占一个独立 txt：`problem.txt`（题面）与 `solution.txt`（解法 + 参考代码）。
 每个题目目录还会带一个 `whiteboard.excalidraw`——**空白**的合法 Excalidraw 场景（不要往里塞预置内容），用 VS Code 的 Excalidraw 插件或 Obsidian 打开就能画。
-两个模板里都埋了 `<!-- algo:todo ... -->` 标记，`algo list` 靠它判断写没写，写完删掉即可。
+两个模板里都埋了 `algo:todo` 标记（纯文本，不是 HTML 注释），`algo list` 靠它判断写没写，写完删掉即可。
 
 给 AI 用最顺手的是 **JSON 一次性投喂**：
 
@@ -107,9 +109,8 @@ cat > /tmp/spec.json <<'EOF'
   "title": "两数之和",
   "link": "https://leetcode.cn/problems/two-sum/",
   "difficulty": "简单",
-  "tags": ["数组", "哈希表"],
-  "problem": "## 题目描述\n...",
-  "solution": "## 思路\n...",
+  "problem": "[题目描述]\n...",
+  "solution": "[思路]\n...\n\n[C++ 代码]\n// 参考实现\n",
   "in": "4 9\n2 7 11 15\n",
   "out": "0 1\n"
 }
@@ -117,23 +118,24 @@ EOF
 algo add --json /tmp/spec.json     # 或 --json - 从 stdin 读
 ```
 
-也可以走命令行（长文本用 `--xxx-file`，别在 argv 里硬塞 markdown）：
+也可以走命令行（长文本用 `--xxx-file`，别在 argv 里硬塞大段文本）：
 
 ```bash
-algo add two-sum --title "两数之和" --difficulty 简单 --tags 数组,哈希表 \
-  --problem-file p.md --solution-file s.md
+algo add two-sum --title "两数之和" --difficulty 简单 \
+  --problem-file 题面.txt --solution-file 解法.txt
 ```
 
 规则：
 
-- 目录不存在 → 建全套；**目录已存在 → 只更新显式给出的文件**（`problem.md` / `solution.md` / `in.txt` / `out.txt`），绝不动 `solution.cpp`，也**不覆盖 `README.md`**（免得冲掉复盘记录）。要整套重来用 `--force`。
+- 目录不存在 → 建全套；**目录已存在 → 只更新显式给出的文件**（`problem.txt` / `solution.txt` / `in.txt` / `out.txt`），**绝不动 `solution.cpp`**。要整套重来用 `--force`。
+- 只给 `--title` / `--link` / `--difficulty` 时，只改 `problem.txt` 头部那三行，题面正文不动。
 - `--problem-file -` / `--solution-file -` 表示从 stdin 读；两个都用 `-` 会报错，这种情况改用 `--json -`。
-- `name` 命令行优先于 JSON；`--title` / `--link` / `--difficulty` / `--tags` 同理。
+- `name` 命令行优先于 JSON；`--title` / `--link` / `--difficulty` 同理。
 - `--in` / `--out`（或 JSON 的 `in` / `out`）把样例输入、期望输出直接写进 `in.txt` / `out.txt`。
 - **新建目录时完全静默**：`algo new` / `algo add --json` 建出来的新题目不打印任何内容（这样 shell 集成 cd 过去之后终端是干净的）。
   要文件清单与下一步提示加 `--verbose`；更新已有题目仍会打印一行「已更新 …」。别指望从 stdout 里读建题结果，用退出码 + 文件是否存在判断。
 
-看 / 改单个文件：`algo edit [目录] [目标]`（目标：`code` `in` `out` `problem` `board` `readme`，或直接写文件名）、
+看 / 改单个文件：`algo edit [目录] [目标]`（目标：`code`=solution.cpp（空模板）、`solution`/`answer`=solution.txt（答案）、`problem`、`in`、`out`、`board`，或直接写文件名）、
 `algo in` / `algo out` / `algo board`，以及只打印路径的 `algo path [目录] [目标]`。
 
 `algo new` 之后自动 cd 进新目录，靠 `algo setup --shell` 写进 `~/.zshrc` 的 `algo` shell 函数；
@@ -166,6 +168,8 @@ make doctor                   # 环境自检
 - **run / check 由 CLI 实现**：`cli/src/cpp.ts` 负责编译与运行（临时二进制 `.algo_bin`，任何路径下都必删），`cli/src/check.ts` 负责静态警告 + 写法坑 + 对拍。题目 Makefile 里的 `run` / `check` 只是转发到 `algo run` / `algo check`；Makefile 的 `CXXFLAGS` 与 `cpp.ts` 的 `BUILD_FLAGS` 必须保持一致。
   `check` 的「没问题就不输出」是刻意设计（静默即通过），别给它加成功提示；`run` 正常只打印一行 `AC`。
 - **依赖**：CLI 不引入第三方运行时依赖；`assets/` 里的模板保持自包含（不依赖仓库外的文件）。
+- **题面 / 解法都是纯文本**：`problem.txt`（头部 `题目：` / `链接：` / `难度：`，章节用 `[题目描述]` 这种标记，**图一律用 ASCII 画**）、`solution.txt`（`[思路]` / `[复杂度]` / `[关键点]` / `[C++ 代码]`）。**不要往题目目录里加 Markdown 文件**（用户明确要 `cat txt`）。
+- **`solution.cpp` 永远是空模板**：include + `main` + `// TODO: 读入 -> 计算 -> 输出`，实现留给用户自己写；参考代码放在 `solution.txt` 的 `[C++ 代码]` 里。不要用参考实现覆盖 `solution.cpp`。
 - **脚手架模板**：生成的 `Makefile` 必须自清理——`run` / `raw` / `check` / `debug` 跑完都要删掉二进制和临时文件（`trap ... EXIT INT TERM` 兜底），只有 `build` 保留二进制。另外提供 `make e` / `make p` / `make s`（micro 打开代码 / 题面 / 解法）、`make r` / `make c`（`run` / `check` 的简写）、`make w`（系统默认程序打开白板）和 `make help`。改 `cli/assets/make.tmpl` 后必须跑 `make test`，冒烟脚本会断言目录里没有残留。
 - **文档**：改动架构或命令后，同步更新本文件、`cli/README.md`、`cli/micro.md` 中受影响的部分。
 

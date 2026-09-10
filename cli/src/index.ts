@@ -15,18 +15,19 @@ import { c, die, emit, hint, isFile, routeHumanToStderr, run as exec, warn, whic
 const HELP = `${c.bold("algo")} — 面试算法练习脚手架（C++ / ACM 模式 + micro 编辑器）
 
 ${c.bold("新建题目")}
-  algo <名字>                     新建题目目录（题面 / 解法 / 白板 / 代码 / 样例 / Makefile）
+  algo <名字>                     新建题目目录（problem.txt / solution.txt / solution.cpp 空模板 /
+                                  in.txt / out.txt / Makefile / 白板；没有 Markdown）
                                   默认静默：不打印任何内容，配合 shell 集成直接 cd 进去
   algo add <名字>                 同上，并且可以直接带上内容与元信息
-      --title --link --difficulty --tags <a,b>
-      --problem <文本> / --problem-file <文件|->        -> problem.md
-      --solution <文本> / --solution-file <文件|->      -> solution.md
+      --title --link --difficulty
+      --problem <文本> / --problem-file <文件|->        -> problem.txt（题面）
+      --solution <文本> / --solution-file <文件|->      -> solution.txt（解法 + 参考代码）
       --in <文本> / --in-file <文件|->                  -> in.txt（样例输入）
       --out <文本> / --out-file <文件|->                -> out.txt（期望输出）
       --json <文件|->              一次性读入全部字段（推荐给 AI 用）
 
 ${c.bold("看 / 改文件")}
-  algo edit [目录] [目标]         用 micro 打开，默认 solution.cpp
+  algo edit [目录] [目标]         用 micro 打开，默认 solution.cpp（空模板，自己写）
   algo in [目录]                  打开 in.txt
   algo out [目录]                 打开 out.txt
   algo board [目录]               用系统默认程序打开白板 whiteboard.excalidraw

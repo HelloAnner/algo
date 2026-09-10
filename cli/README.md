@@ -3,6 +3,9 @@
 C++ / ACM 模式的本地刷题工作流：一条命令建好题目目录（题面 + 解法 + 代码 + 对拍），
 micro 里写完 `make run` / `make check` 验证。
 
+题目目录里**没有 Markdown**：题面是 `problem.txt`，解法（答案 + 参考代码）是 `solution.txt`，
+`solution.cpp` 只有一份空模板等你写 —— 想不出来再看 `solution.txt`。
+
 ## 安装
 
 ```bash
@@ -37,8 +40,8 @@ make install          # 打包 CLI + 装到 ~/.local/bin + 合并 micro 配置
 ```bash
 mkdir -p ~/algo/leetcode && cd ~/algo/leetcode
 
-algo two-sum          # 静默建 ./two-sum/（9 个文件），配合 shell 集成直接落在里面
-cd two-sum && micro . # 先看 problem.md，再写 solution.cpp
+algo two-sum          # 静默建 ./two-sum/（8 个文件，无 Markdown），配合 shell 集成直接落在里面
+cd two-sum && micro . # 先看 problem.txt 写思路，再在 solution.cpp 里实现
 algo in               # 改样例输入 in.txt
 algo out              # 改期望输出 out.txt
 algo board            # 打开白板 whiteboard.excalidraw
@@ -47,28 +50,32 @@ make run              # 编译 + 跑 in.txt；对了只打印一行 AC（简写 
 make check            # 编译 + 静态检查 + 写法检查 + 对拍；没问题什么都不输出（简写 make c）
 make debug            # ASan + UBSan（跑完清理）
 make build            # 想保留二进制时用这个（之后 make clean）
-make p / make s       # micro 打开题面 problem.md / 解法 solution.md
+make p / make s       # micro 打开题面 problem.txt / 解法 solution.txt（答案在里面）
 make e                # micro 打开 solution.cpp
 make w                # 打开白板 whiteboard.excalidraw
 make help             # 列出全部目标
 
 # micro 里：Alt-r 跑样例 · Alt-t 对拍 · Alt-i / Alt-o 开 in.txt / out.txt（algo setup --init）
+# 目标别名：code/solution（cpp 与 txt 不一样）· problem · in · out · board
 ```
 
-## 加一道题（题面 / 解法各一个 md）
+## 加一道题（题面 / 解法各一个 txt）
 
-题面和解法**分成两个独立的 md**：`problem.md`（题面）和 `solution.md`（解法思路）。
+题面和解法**分成两个独立的 txt**：`problem.txt`（题面）和 `solution.txt`（解法 + 参考代码）。
 
 ```bash
 # 1) 只建目录，题面和解法以后再补（模板里带 algo:todo 标记）
 algo two-sum
 
 # 2) 建目录的同时把内容灌进去（长文本建议用文件，避免 shell 转义）
-algo add two-sum --title "两数之和" --difficulty 简单 --tags 数组,哈希表 \
-  --problem-file problem.md --solution-file solution.md
+algo add two-sum --title "两数之和" --difficulty 简单 \
+  --problem-file 题面.txt --solution-file 解法.txt
 
-# 3) 目录已存在时，只更新显式给出的那个 md（不碰代码、样例和 README）
-algo add two-sum --solution-file 思路.md
+# 3) 目录已存在时，只更新显式给出的那个 txt（不会碰 solution.cpp）
+algo add two-sum --solution-file 解法.txt
+
+# 3b) 只改 problem.txt 头部那三行
+algo add two-sum --difficulty 中等
 
 # 4) 给 AI 用：一个 JSON 一次性投喂（--json - 从 stdin 读）
 algo add --json spec.json
@@ -82,9 +89,8 @@ algo add --json spec.json
   "title": "两数之和",
   "link": "https://leetcode.cn/problems/two-sum/",
   "difficulty": "简单",
-  "tags": ["数组", "哈希表"],
-  "problem": "## 题目描述\n...",
-  "solution": "## 思路\n...",
+  "problem": "[题目描述]\n...",
+  "solution": "[思路]\n...\n\n[C++ 代码]\n// 参考实现\n",
   "in": "4 9\n2 7 11 15\n",
   "out": "0 1\n",
   "problem_file": "可选，改成从文件读题面",
@@ -93,7 +99,8 @@ algo add --json spec.json
 ```
 
 - `name` 可以由命令行给出（`algo add two-sum --json spec.json`），命令行优先。
-- 目录已存在时，`--force` 才会整套重来；否则**只覆盖显式给出的文件**（problem.md / solution.md / in.txt / out.txt），不动 solution.cpp，也不碰 README.md。
+- 目录已存在时，`--force` 才会整套重来；否则**只覆盖显式给出的文件**（problem.txt / solution.txt / in.txt / out.txt），绝不动 solution.cpp。
+- 只给 `--title` / `--link` / `--difficulty` 时，只改 `problem.txt` 头部那三行，题面正文原样保留。
 - `--problem-file -` / `--solution-file -` 表示从 stdin 读；两个都用 `-` 会报错，请改用 `--json -`。
 
 ## `algo new` 之后自动 cd
@@ -124,14 +131,14 @@ algo new three-sum --print-dir    # 只想要路径
 ```
 algo <名字>                新建题目目录（等价于 algo add <名字>），静默
 algo new <名字> --verbose  新建时打印文件清单与下一步
-algo add <名字> [选项]      新建并写入题面/解法/元信息
-    --title --link --difficulty --tags
-    --problem / --problem-file <文件|->
-    --solution / --solution-file <文件|->
+algo add <名字> [选项]      新建并写入题面/解法/元信息（都写进 txt）
+    --title --link --difficulty
+    --problem / --problem-file <文件|->       -> problem.txt（题面）
+    --solution / --solution-file <文件|->     -> solution.txt（解法 + 参考代码）
     --in / --in-file <文件|->       样例输入 -> in.txt
     --out / --out-file <文件|->     期望输出 -> out.txt
     --json <文件|->         一次读入全部字段（AI 推荐）
-algo list                  列出题目，显示「题面✓思路✓板✓」进度
+algo list                  列出题目，显示「题面✓解法✓板✓」进度
 algo edit [目录] [目标]    用 micro 打开，默认 solution.cpp
 algo in / algo out [目录]  打开 in.txt / out.txt
 algo board [目录]          用系统默认程序打开 whiteboard.excalidraw
@@ -139,9 +146,9 @@ algo run [目录]            编译 + 跑 in.txt，和 out.txt 一致就打印�
 algo check [目录]          编译 + 静态检查 + 写法检查 + 对拍；没问题不输出
     --timeout <秒>         跑样例的超时（默认 5 秒，防死循环）
 algo raw|debug|build|clean [目录]
-algo path [目录] [目标]    只打印路径；目标：code/cpp · in · out ·
-                           problem · board · readme · makefile
-                           （也可以直接写文件名，自动补 .cpp/.md/.txt/.excalidraw）
+algo path [目录] [目标]    只打印路径；目标：code/cpp（solution.cpp）·
+                           solution/answer（solution.txt）· problem · in · out ·
+                           board · makefile（也可以直接写文件名，自动补 .cpp/.txt/.excalidraw）
 algo setup [--dry-run]     合并 micro 配置（settings.json + bindings.json）
 algo setup --shell         装 shell 集成（algo new 之后自动 cd）
 algo setup --init          额外生成 ~/.config/micro/init.lua
@@ -175,16 +182,17 @@ $ make check
 
 ```
 two-sum/
-├── problem.md       # 题面描述（独立 md）
-├── solution.md      # 解法思路（独立 md）
-├── whiteboard.excalidraw  # 白板：空白场景，打开就能画
-├── solution.cpp     # ACM 模式：读 stdin 写 stdout
+├── problem.txt      # 题面（纯文本；头部 题目/链接/难度，章节用 [题目描述] 这种标记，图用 ASCII 画）
+├── solution.txt     # 解法 / 答案：[思路] / [复杂度] / [关键点] / [C++ 代码]
+├── solution.cpp     # **空模板**（include + main + TODO），等你自己写
 ├── in.txt           # 样例输入
 ├── out.txt          # 期望输出
 ├── Makefile         # run(r) / raw / check(c) / debug / build / e / p / s / w / help / clean
-├── README.md        # 卡片：链接 / 难度 / 标签 / 状态 / 复盘记录
+├── whiteboard.excalidraw  # 白板：空白场景，打开就能画
 └── .gitignore       # 忽略编译产物
 ```
+
+> 没有 README.md，也没有任何 Markdown —— 题面和解法都直接 `cat`。
 
 > `make run` / `raw` / `check` / `debug` 都是「编译 → 运行 → 删掉二进制」：
 > 用 `trap ... EXIT INT TERM` 兜底，正常结束、编译报错、程序崩溃、Ctrl-C 都会清理，
@@ -210,7 +218,7 @@ cli/
 │   ├── doctor.ts     # 环境自检
 │   └── util.ts       # 颜色 / 文件 / 进程小工具
 ├── scripts/          # smoke-test.sh
-└── assets/           # 模板：solution.cpp / make.tmpl / problem.md.tmpl / solution.md.tmpl / whiteboard.excalidraw.tmpl / README.tmpl / init.lua
+└── assets/           # 模板：solution.cpp / make.tmpl / problem.txt.tmpl / solution.txt.tmpl / whiteboard.excalidraw.tmpl / init.lua
 ```
 
 micro 编辑器（插件清单、配置逐项解释、为什么关掉下划线报错、如何还原）见 **[micro.md](./micro.md)**。

@@ -27,13 +27,15 @@ EOF
 
 echo "→ algo two-sum"
 "$BUN" "$CLI" two-sum > /dev/null
-for f in solution.cpp problem.md solution.md whiteboard.excalidraw in.txt out.txt Makefile README.md .gitignore; do
+for f in solution.cpp problem.txt solution.txt whiteboard.excalidraw in.txt out.txt Makefile .gitignore; do
     [ -e "two-sum/$f" ] || fail "缺少 two-sum/$f"
 done
-grep -q "algo:todo" two-sum/problem.md || fail "problem.md 应带未填写的模板标记"
-grep -q "algo:todo" two-sum/solution.md || fail "solution.md 应带未填写的模板标记"
+grep -q "algo:todo" two-sum/problem.txt || fail "problem.txt 应带未填写的模板标记"
+grep -q "algo:todo" two-sum/solution.txt || fail "solution.txt 应带未填写的模板标记"
+grep -q "TODO: 读入" two-sum/solution.cpp || fail "solution.cpp 应该是空模板（带 TODO）"
+if ls two-sum/*.md > /dev/null 2>&1; then fail "题目目录里不该再有 Markdown 文件"; fi
 "$BUN" check-board.ts two-sum/whiteboard.excalidraw || fail "白板不是合法的 Excalidraw 场景"
-echo "  ✓ 9 个文件齐了，白板可解析"
+echo "  ✓ 8 个文件齐了（无 Markdown），白板可解析"
 
 printf '4 9\n2 7 11 15\n' > two-sum/in.txt
 printf '0 1\n' > two-sum/out.txt
@@ -131,11 +133,13 @@ EOF
 [ -e "two-sum/solution" ] && fail "make clean 没有删掉二进制"
 echo "  ✓ build 保留、clean 清理"
 
-echo "→ add 只补题面（不碰 solution.md 和代码）"
-printf '## 题目描述\n\n两数之和。\n' > only-problem.md
-"$BUN" "$CLI" add two-sum --problem-file only-problem.md > /dev/null
-grep -q "两数之和" two-sum/problem.md || fail "problem.md 没更新"
-grep -q "algo:todo" two-sum/solution.md || fail "未指定的 solution.md 不该被改动"
+echo "→ add 只补题面（不碰 solution.txt、不动 solution.cpp）"
+printf '[题目描述]\n\n两数之和。\n' > only-problem.txt
+CPP_BEFORE="$(cksum two-sum/solution.cpp)"
+"$BUN" "$CLI" add two-sum --problem-file only-problem.txt > /dev/null
+grep -q "两数之和" two-sum/problem.txt || fail "problem.txt 没更新"
+grep -q "algo:todo" two-sum/solution.txt || fail "未指定的 solution.txt 不该被改动"
+[ "$(cksum two-sum/solution.cpp)" = "$CPP_BEFORE" ] || fail "algo add 不该动 solution.cpp"
 echo "  ✓ 只更新目标文件"
 
 echo "→ algo add --json（AI 用法：一次带上题面与解法）"
@@ -145,42 +149,46 @@ cat > spec.json <<'EOF'
   "title": "三数之和",
   "link": "https://leetcode.cn/problems/3sum/",
   "difficulty": "中等",
-  "tags": ["数组", "双指针"],
-  "problem": "## 题目描述\n\n给你一个整数数组 nums。\n",
-  "solution": "## 思路\n\n排序 + 双指针夹逼。\n",
+  "problem": "[题目描述]\n\n给你一个整数数组 nums。\n",
+  "solution": "[思路]\n\n排序 + 双指针夹逼。\n\n[C++ 代码]\n// 参考实现\n",
   "in": "6\n-1 0 1 2 -1 -4\n",
   "out": "[[-1,-1,2],[-1,0,1]]\n"
 }
 EOF
 "$BUN" "$CLI" add --json spec.json > /dev/null
-grep -q "三数之和" three-sum/README.md || fail "README.md 没写进标题"
-grep -q "中等" three-sum/README.md || fail "README.md 没写进难度"
-grep -q "双指针" three-sum/README.md || fail "README.md 没写进标签"
-grep -q "题目描述" three-sum/problem.md || fail "problem.md 没写进题面"
-grep -q "双指针" three-sum/solution.md || fail "solution.md 没写进解法"
-grep -q "algo:todo" three-sum/problem.md && fail "写过的 problem.md 不该还有模板标记"
+grep -q "^题目：三数之和$" three-sum/problem.txt || fail "problem.txt 头部没写进标题"
+grep -q "^难度：中等$" three-sum/problem.txt || fail "problem.txt 头部没写进难度"
+grep -q "题目描述" three-sum/problem.txt || fail "problem.txt 没写进题面"
+grep -q "双指针" three-sum/solution.txt || fail "solution.txt 没写进解法"
+grep -q "algo:todo" three-sum/problem.txt && fail "写过的 problem.txt 不该还有模板标记"
 grep -q "^-1 0 1 2 -1 -4$" three-sum/in.txt || fail "in.txt 没写对"
 grep -qF "[[-1,-1,2],[-1,0,1]]" three-sum/out.txt || fail "out.txt 没写对"
 echo "  ✓ 内容落盘（含 in.txt / out.txt）"
 
-echo "→ add 二次更新只动指定的 md"
-printf '## 补充\n\n后补的题面。\n' > later.md
-"$BUN" "$CLI" add three-sum --problem-file later.md > /dev/null
-grep -q "后补的题面" three-sum/problem.md || fail "更新 problem.md 失败"
-grep -q "排序 + 双指针夹逼" three-sum/solution.md || fail "未指定的 solution.md 被改动了"
+echo "→ add 二次更新只动指定的 txt"
+printf '[补充]\n\n后补的题面。\n' > later.txt
+"$BUN" "$CLI" add three-sum --problem-file later.txt > /dev/null
+grep -q "后补的题面" three-sum/problem.txt || fail "更新 problem.txt 失败"
+grep -q "排序 + 双指针夹逼" three-sum/solution.txt || fail "未指定的 solution.txt 被改动了"
+
+echo "→ add 只给元信息：改 problem.txt 头部那三行"
+"$BUN" "$CLI" add three-sum --difficulty 困难 > /dev/null
+grep -q "^难度：困难$" three-sum/problem.txt || fail "元信息没写回 problem.txt 头部"
+grep -q "后补的题面" three-sum/problem.txt || fail "改元信息把题面冲掉了"
+"$BUN" "$CLI" add three-sum --difficulty 中等 > /dev/null
 echo "  ✓ 只更新目标文件"
 
 echo "→ 标题里有引号也不该出问题"
 "$BUN" "$CLI" add quote-test --title 'a "b" c' > /dev/null
-grep -q 'a "b" c' quote-test/README.md || fail "README.md 里的标题没写对"
+grep -q 'a "b" c' quote-test/problem.txt || fail "problem.txt 头部的标题没写对"
 "$BUN" check-board.ts quote-test/whiteboard.excalidraw || fail "白板不是合法 JSON"
 "$BUN" "$CLI" list > /dev/null || fail "list 在特殊标题下报错"
 echo "  ✓ 特殊字符正常"
 
 echo "→ algo list 进度标记"
 "$BUN" "$CLI" list | grep -q "three-sum" || fail "list 没有输出 three-sum"
-"$BUN" "$CLI" list | grep -q "题面✓思路✓板—" || fail "list 没有显示已填写状态"
-"$BUN" "$CLI" list | grep -q "题面✓思路—板—" || fail "list 没有显示只填了题面的状态"
+"$BUN" "$CLI" list | grep -q "题面✓解法✓板—" || fail "list 没有显示已填写状态"
+"$BUN" "$CLI" list | grep -q "题面✓解法—板—" || fail "list 没有显示只填了题面的状态"
 echo "  ✓ 进度标记正常"
 
 echo "→ algo add 只更新 in.txt"
@@ -195,8 +203,8 @@ printf '#!/bin/sh\necho "MOCK-MICRO $*"\n' > fakebin/micro
 printf '#!/bin/sh\necho "MOCK-OPEN $*"\n' > fakebin/open
 chmod +x fakebin/micro fakebin/open
 PATH="$PWD/fakebin:$PATH" make -C two-sum e | grep "MOCK-MICRO solution.cpp" > /dev/null || fail "make e 没交给 micro"
-PATH="$PWD/fakebin:$PATH" make -C two-sum p | grep "MOCK-MICRO problem.md" > /dev/null || fail "make p 没打开题面"
-PATH="$PWD/fakebin:$PATH" make -C two-sum s | grep "MOCK-MICRO solution.md" > /dev/null || fail "make s 没打开解法"
+PATH="$PWD/fakebin:$PATH" make -C two-sum p | grep "MOCK-MICRO problem.txt" > /dev/null || fail "make p 没打开题面"
+PATH="$PWD/fakebin:$PATH" make -C two-sum s | grep "MOCK-MICRO solution.txt" > /dev/null || fail "make s 没打开解法"
 PATH="$PWD/fakebin:$PATH" make -C two-sum w | grep "MOCK-OPEN whiteboard.excalidraw" > /dev/null || fail "make w 没走系统打开"
 make -C two-sum help > make-help.txt || fail "make help 跑失败"
 for t in e p s w r c; do
@@ -224,15 +232,17 @@ echo "  ✓ make e / p / s / w / r / c / help 正常"
 echo "→ path / in / out / board（用假 micro、假 open，不启动真编辑器）"
 "$BUN" "$CLI" path three-sum in | grep -q "three-sum/in.txt$" || fail "path 解析 in.txt 失败"
 "$BUN" "$CLI" path three-sum | grep -q "three-sum$" || fail "path 解析目录失败"
-"$BUN" "$CLI" path three-sum solution | grep -q "solution.cpp$" || fail "solution 应解析到 solution.cpp"
-"$BUN" "$CLI" path three-sum problem | grep -q "problem.md$" || fail "problem 应解析到 problem.md"
+"$BUN" "$CLI" path three-sum solution | grep -q "solution.txt$" || fail "solution 应解析到 solution.txt（答案）"
+"$BUN" "$CLI" path three-sum code | grep -q "solution.cpp$" || fail "code 应解析到 solution.cpp"
+"$BUN" "$CLI" path three-sum problem | grep -q "problem.txt$" || fail "problem 应解析到 problem.txt"
 mkdir -p fakebin
 printf '#!/bin/sh\necho "MOCK-MICRO $1"\n' > fakebin/micro
 printf '#!/bin/sh\necho "MOCK-OPEN $1"\n' > fakebin/open
 chmod +x fakebin/micro fakebin/open
 PATH="$PWD/fakebin:$PATH" "$BUN" "$CLI" in three-sum | grep -q "MOCK-MICRO in.txt" || fail "algo in 没把 in.txt 交给 micro"
 PATH="$PWD/fakebin:$PATH" "$BUN" "$CLI" out three-sum | grep -q "MOCK-MICRO out.txt" || fail "algo out 没把 out.txt 交给 micro"
-PATH="$PWD/fakebin:$PATH" "$BUN" "$CLI" edit three-sum problem | grep -q "MOCK-MICRO problem.md" || fail "edit problem 没交给 micro"
+PATH="$PWD/fakebin:$PATH" "$BUN" "$CLI" edit three-sum problem | grep -q "MOCK-MICRO problem.txt" || fail "edit problem 没交给 micro"
+PATH="$PWD/fakebin:$PATH" "$BUN" "$CLI" edit three-sum solution | grep -q "MOCK-MICRO solution.txt" || fail "edit solution 没交给 micro"
 PATH="$PWD/fakebin:$PATH" "$BUN" "$CLI" board three-sum | grep -q "MOCK-OPEN .*whiteboard.excalidraw" || fail "algo board 没走系统打开"
 echo "  ✓ 路径与打开都正常"
 

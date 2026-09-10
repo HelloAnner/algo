@@ -14,7 +14,6 @@ const VALUE_FLAGS = new Set([
   "title",
   "link",
   "difficulty",
-  "tags",
   "problem",
   "problem-file",
   "solution",
