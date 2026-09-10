@@ -19,6 +19,10 @@ INCLUDE_DIR ?= $(HOME)/.local/include
 CXXFLAGS ?= -std=c++20 -O2 -I$(INCLUDE_DIR) -Wall -Wextra -Wno-sign-compare -Wno-unused-variable
 DBGFLAGS ?= -std=c++20 -g -O0 -I$(INCLUDE_DIR) -fsanitize=address,undefined -fno-omit-frame-pointer
 
+# 本仓库的 CLI 装在 ~/.local/bin/algo；PATH 上可能有个同名的别的工具排在前面，
+# 所以这里优先用绝对路径（想换：make ALGO='bun ~/algo/cli/src/index.ts' run）
+ALGO ?= $(shell if [ -x "$$HOME/.local/bin/algo" ]; then echo "$$HOME/.local/bin/algo"; else command -v algo; fi)
+
 SRC      := solution.cpp
 BIN      := solution
 DBGBIN   := solution_dbg
@@ -44,16 +48,18 @@ help:
 	@echo "make s      用 micro 打开解法 $(SOLUTION)（答案在里面，想不出来再看）"
 	@echo "make w      用系统默认程序打开 $(BOARD)"
 	@echo "make clean  清掉编译产物"
+	@echo ""
+	@echo "algo 用的是：$(ALGO)"
 
 # 编译 + 用 in.txt 跑一遍，和 out.txt 一致就打印一行 AC
 run:
-	@command -v algo >/dev/null 2>&1 || { echo "找不到 algo 命令：先在 ~/algo 里 make install"; exit 1; }
-	@algo run .
+	@[ -n "$(ALGO)" ] || { echo "找不到 algo 命令：先在 ~/algo 里 make install"; exit 1; }
+	@$(ALGO) run .
 
 # 编译 + 静态检查 + 写法检查；没问题就什么都不打印（静默即通过；跑样例用 make r）
 check:
-	@command -v algo >/dev/null 2>&1 || { echo "找不到 algo 命令：先在 ~/algo 里 make install"; exit 1; }
-	@algo check .
+	@[ -n "$(ALGO)" ] || { echo "找不到 algo 命令：先在 ~/algo 里 make install"; exit 1; }
+	@$(ALGO) check .
 
 # 直接跑，标准输入接终端（手动输入测试，输出原样打出来）
 raw:
