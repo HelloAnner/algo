@@ -1,3 +1,4 @@
+import pkg from "../package.json";
 import { c, hint, isDir, isFile, versionOf, which } from "./util";
 import { microStatus, microVersion } from "./micro";
 import { rcFile, shellIntegrationInstalled } from "./shell";
@@ -48,6 +49,23 @@ export function doctor(): void {
     );
 
   console.log();
+  console.log(c.bold("CLI 自身"));
+  const algoPath = which("algo");
+  const selfVersion = algoPath ? versionOf("algo", ["version"]) : null;
+  if (!algoPath) {
+    check("PATH 上的 algo", "没找到 → make install（装到 ~/.local/bin）", "warn");
+  } else if (selfVersion === `algo ${pkg.version}`) {
+    check("PATH 上的 algo", algoPath);
+  } else {
+    // PATH 上可能有同名的别的工具抢在前面，那样题目 Makefile 里的 `algo run .` 会调到它
+    check(
+      "PATH 上的 algo",
+      `${algoPath} 不是本仓库装的（它自称「${selfVersion ?? "?"}」）→ 把 ~/.local/bin 放到 PATH 前面`,
+      "warn",
+    );
+  }
+
+  console.log();
   console.log(c.bold("micro 刷题配置"));
   const st = microStatus();
   check("配置目录", st.configDir);
@@ -55,6 +73,21 @@ export function doctor(): void {
   check("linter = false", st.linterOff ? "已关闭（无下划线报错）" : "仍是开启 → algo setup", st.linterOff ? "ok" : "warn");
   check("autoclose", st.autocloseOn ? "已开启（括号/引号自动补全）" : "被关闭了", st.autocloseOn ? "ok" : "warn");
   check("syntax", st.syntaxOn ? "语法高亮开启" : "语法高亮关闭", st.syntaxOn ? "ok" : "warn");
+  const bindingsOk = st.bindingsExists && st.bindingsApplied === st.bindingsTotal;
+  check(
+    "bindings.json",
+    st.bindingsExists
+      ? `已写入 ${st.bindingsApplied}/${st.bindingsTotal} 项刷题快捷键`
+      : "不存在 → algo setup",
+    bindingsOk ? "ok" : "warn",
+  );
+  check(
+    "init.lua",
+    st.initLuaExists
+      ? "已安装（Alt-r 跑样例 · Alt-t 对拍 · Alt-i/Alt-o 开样例）"
+      : "未安装 → algo setup --init",
+    st.initLuaExists ? "ok" : "warn",
+  );
 
   console.log();
   console.log(c.bold("shell 集成"));

@@ -177,3 +177,4 @@ make doctor                   # 环境自检
 - 验证 micro 行为可以用 `script -q /dev/null micro ...` 开一个 pty（本机没有 `timeout` 命令）；用假的 `g++` 包装脚本记录调用，是确认 linter 开关生效最直接的办法。
   更彻底的办法是用 Python 的 `pty.fork()` 驱动真 micro（发 `\x1br` 这类按键），只看「效果」（文件内容、是否退出），别去 grep 屏幕输出——micro 是增量重绘，原始流里的文本是残缺的。
 - **Bun 的 `process.exit()` 不会执行 `finally`**，所以「跑完删 `.algo_bin`」不能只靠 `try/finally`（`run` 成功时就是这么退出的，曾经因此漏删）。`cli/src/cpp.ts` 里额外挂了 `process.on("exit")` 兜底。
+- PATH 上有**另一个同名 `algo`**（`~/.bun/bin/algo`，另一个 LeetCode 复习项目，编译好的二进制），排在 `~/.local/bin/algo` 前面。题目 Makefile 里的 `algo run .` 会调到它，`algo setup` 也会打错工具——`algo doctor` 会报这一条，动手前也可以先 `which -a algo` 确认，必要时直接用绝对路径 `~/.local/bin/algo`。
