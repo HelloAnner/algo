@@ -107,6 +107,7 @@ algo doctor                自检
 two-sum/
 ├── problem.md       # 题面描述（独立 md）
 ├── solution.md      # 解法思路（独立 md）
+├── whiteboard.excalidraw  # 白板：画思路 / 图解
 ├── solution.cpp     # ACM 模式：读 stdin 写 stdout
 ├── in.txt           # 样例输入
 ├── out.txt          # 期望输出
@@ -137,7 +138,7 @@ cli/
 │   ├── doctor.ts     # 环境自检
 │   └── util.ts       # 颜色 / 文件 / 进程小工具
 ├── scripts/          # smoke-test.sh
-└── assets/           # 模板：solution.cpp / make.tmpl / problem.md.tmpl / solution.md.tmpl / README.tmpl / init.lua
+└── assets/           # 模板：solution.cpp / make.tmpl / problem.md.tmpl / solution.md.tmpl / whiteboard.excalidraw.tmpl / README.tmpl / init.lua
 ```
 
 micro 编辑器（插件清单、配置逐项解释、为什么关掉下划线报错、如何还原）见 **[micro.md](./micro.md)**。

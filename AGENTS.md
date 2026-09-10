@@ -62,7 +62,7 @@ algo/
 ├── Makefile            # 根入口：原样转发到 cli/Makefile
 └── cli/                # 全部实现
     ├── src/            # index(分发) / flags(参数) / add(题面解法) / scaffold / list / run / micro / doctor / util
-    ├── assets/         # 模板：solution.cpp / make.tmpl / problem.md.tmpl / solution.md.tmpl / README.tmpl / init.lua
+    ├── assets/         # 模板：solution.cpp / make.tmpl / problem.md.tmpl / solution.md.tmpl / whiteboard.excalidraw.tmpl / README.tmpl / init.lua
     ├── scripts/        # smoke-test.sh
     ├── micro.md        # micro 编辑器插件与配置详解 —— micro 相关改动的唯一依据
     └── README.md       # 安装与用法
@@ -74,6 +74,7 @@ algo/
 <slug>/
 ├── problem.md     # 题面描述（独立 md）
 ├── solution.md    # 解法思路（独立 md）
+├── whiteboard.excalidraw  # 白板（Excalidraw 场景，打开可直接画）
 ├── solution.cpp   # ACM 实现：读 stdin、写 stdout
 ├── in.txt         # 样例输入
 ├── out.txt        # 期望输出
@@ -89,6 +90,7 @@ algo/
 ## 添加题目（`algo add`，AI 常用）
 
 题面和解法各占一个独立 md：`problem.md`（题面）与 `solution.md`（解法思路）。
+每个题目目录还会带一个 `whiteboard.excalidraw`（合法的 Excalidraw 场景，标题 + 链接已填好），用 VS Code 的 Excalidraw 插件或 Obsidian 打开就能画。
 两个模板里都埋了 `<!-- algo:todo ... -->` 标记，`algo list` 靠它判断写没写，写完删掉即可。
 
 给 AI 用最顺手的是 **JSON 一次性投喂**：

@@ -1,6 +1,6 @@
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { isFilled } from "./scaffold";
+import { BOARD_BASE_ELEMENTS, isFilled } from "./scaffold";
 import { c, isDir, isFile, pad, readText } from "./util";
 
 export interface ProblemRow {
@@ -8,8 +8,21 @@ export interface ProblemRow {
   date: string;
   problem: boolean;
   solution: boolean;
+  board: boolean;
   difficulty: string;
   tags: string;
+}
+
+/** 白板上画过东西没有：元素数超过模板自带的标题 + 链接就算画过 */
+function boardHasDrawing(path: string): boolean {
+  const raw = readText(path);
+  if (raw === null) return false;
+  try {
+    const scene = JSON.parse(raw) as { elements?: unknown[] };
+    return Array.isArray(scene.elements) && scene.elements.length > BOARD_BASE_ELEMENTS;
+  } catch {
+    return false;
+  }
 }
 
 /** 从 README.md 的 `- **难度**：…` 这类行里取值 */
@@ -46,6 +59,7 @@ export function listProblems(cwd: string): ProblemRow[] {
       date,
       problem: isFilled(readText(join(dir, "problem.md"))),
       solution: isFilled(readText(join(dir, "solution.md"))),
+      board: boardHasDrawing(join(dir, "whiteboard.excalidraw")),
       difficulty: metaField(readme, "难度"),
       tags: metaField(readme, "标签"),
     });
@@ -64,9 +78,9 @@ export function printProblems(cwd: string): void {
 
   console.log(c.bold(`${rows.length} 道题（${cwd}）`));
   for (const r of rows) {
-    const marks = `题面${r.problem ? "✓" : "—"}思路${r.solution ? "✓" : "—"}`;
+    const marks = `题面${r.problem ? "✓" : "—"}思路${r.solution ? "✓" : "—"}板${r.board ? "✓" : "—"}`;
     const extra = [r.difficulty, r.tags].filter(Boolean).join(" · ");
     console.log(`  ${pad(r.slug, 38)} ${c.gray(r.date)} ${c.cyan(marks)}${extra ? "  " + c.gray(extra) : ""}`);
   }
-  console.log(c.gray("\n  ✓ 已写    — 还是模板（problem.md / solution.md）"));
+  console.log(c.gray("\n  ✓ 已写    — 还是空的（题面 = problem.md，思路 = solution.md，板 = 白板上画过图）"));
 }

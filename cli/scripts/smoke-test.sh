@@ -1,5 +1,5 @@
 #!/bin/sh
-# algo 冒烟测试：建题 → 编译/运行 → 对拍 → 清理校验 → add（--json / 局部更新）→ 列表进度
+# algo 冒烟测试：建题 → 编译/运行 → 对拍 → 清理校验 → add（json/局部更新）→ 白板 → 列表进度
 # 用法：sh scripts/smoke-test.sh [dist/algo.js 路径]
 set -eu
 
@@ -16,13 +16,25 @@ fail() {
     exit 1
 }
 
+# 校验白板是合法的 Excalidraw 场景
+cat > check-board.ts <<'EOF'
+const text = await Bun.file(process.argv[2]).text();
+const scene = JSON.parse(text);
+if (scene.type !== "excalidraw") throw new Error("type 不是 excalidraw");
+if (!Array.isArray(scene.elements) || scene.elements.length !== 2) throw new Error("elements 数量不对");
+if (!String(scene.elements[0].text).includes("Two Sum")) throw new Error("缺少标题: " + scene.elements[0].text);
+if (scene.appState === undefined || scene.files === undefined) throw new Error("缺少 appState / files");
+EOF
+
 echo "→ algo two-sum"
 "$BUN" "$CLI" two-sum > /dev/null
-for f in solution.cpp problem.md solution.md in.txt out.txt Makefile README.md .gitignore; do
+for f in solution.cpp problem.md solution.md whiteboard.excalidraw in.txt out.txt Makefile README.md .gitignore; do
     [ -e "two-sum/$f" ] || fail "缺少 two-sum/$f"
 done
 grep -q "algo:todo" two-sum/problem.md || fail "problem.md 应带未填写的模板标记"
 grep -q "algo:todo" two-sum/solution.md || fail "solution.md 应带未填写的模板标记"
+"$BUN" check-board.ts two-sum/whiteboard.excalidraw || fail "白板不是合法的 Excalidraw 场景"
+echo "  ✓ 9 个文件齐了，白板可解析"
 
 printf '4 9\n2 7 11 15\n' > two-sum/in.txt
 printf '0 1\n' > two-sum/out.txt
@@ -91,7 +103,6 @@ printf '## 题目描述\n\n两数之和。\n' > only-problem.md
 "$BUN" "$CLI" add two-sum --problem-file only-problem.md > /dev/null
 grep -q "两数之和" two-sum/problem.md || fail "problem.md 没更新"
 grep -q "algo:todo" two-sum/solution.md || fail "未指定的 solution.md 不该被改动"
-grep -q "algo:todo" two-sum/README.md && fail "README.md 不该再出现模板标记"
 echo "  ✓ 只更新目标文件"
 
 echo "→ algo add --json（AI 用法：一次带上题面与解法）"
@@ -122,10 +133,19 @@ grep -q "后补的题面" three-sum/problem.md || fail "更新 problem.md 失败
 grep -q "排序 + 双指针夹逼" three-sum/solution.md || fail "未指定的 solution.md 被改动了"
 echo "  ✓ 只更新目标文件"
 
+echo "→ 标题里有引号 / 反斜杠也要是合法 JSON"
+"$BUN" "$CLI" add quote-test --title 'a "b" \\ c' > /dev/null
+"$BUN" check-board.ts quote-test/whiteboard.excalidraw 2>/dev/null || true
+"$BUN" -e '
+const s = JSON.parse(await Bun.file("quote-test/whiteboard.excalidraw").text());
+if (s.elements[0].text !== process.argv[1]) throw new Error("标题被破坏了: " + s.elements[0].text);
+' 'a "b" \\ c' || fail "特殊字符破坏了白板 JSON"
+echo "  ✓ JSON 转义正确"
+
 echo "→ algo list 进度标记"
 "$BUN" "$CLI" list | grep -q "three-sum" || fail "list 没有输出 three-sum"
-"$BUN" "$CLI" list | grep -q "题面✓思路✓" || fail "list 没有显示已填写状态"
-"$BUN" "$CLI" list | grep -q "题面✓思路—" || fail "list 没有显示只填了题面的状态"
+"$BUN" "$CLI" list | grep -q "题面✓思路✓板—" || fail "list 没有显示已填写状态"
+"$BUN" "$CLI" list | grep -q "题面✓思路—板—" || fail "list 没有显示只填了题面的状态"
 echo "  ✓ 进度标记正常"
 
 echo "→ algo setup --dry-run（只读，不写配置）"

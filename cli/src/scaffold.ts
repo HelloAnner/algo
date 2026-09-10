@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { AddOptions } from "./add";
 import problemTpl from "../assets/problem.md.tmpl" with { type: "text" };
+import boardTpl from "../assets/whiteboard.excalidraw.tmpl" with { type: "text" };
 import solutionMdTpl from "../assets/solution.md.tmpl" with { type: "text" };
 import cppTpl from "../assets/solution.cpp" with { type: "text" };
 import makeTpl from "../assets/make.tmpl" with { type: "text" };
@@ -20,6 +21,30 @@ export function isFilled(md: string | null | undefined): boolean {
 
 const withNewline = (s: string) => (s.endsWith("\n") ? s : s + "\n");
 
+/** 白板模板自带的元素数（标题 + 链接），超过这个数说明已经画过东西 */
+export const BOARD_BASE_ELEMENTS = 2;
+
+/** 粗略估算文本宽度：CJK 按一个字宽，ASCII 按 0.55 字宽 */
+function estimateWidth(text: string, fontSize: number): number {
+  let w = 0;
+  for (const ch of text) {
+    const code = ch.codePointAt(0) ?? 0;
+    if (code > 0x2e80) w += fontSize;
+    else if (ch === " ") w += fontSize * 0.3;
+    else w += fontSize * 0.55;
+  }
+  return Math.max(40, Math.round(w));
+}
+
+/** 往 JSON 模板里填值：字符串做 JSON 转义（不额外加引号），数字直接写 */
+function renderJson(tpl: string, vars: Record<string, string | number>): string {
+  return tpl.replace(/\{\{(\w+)\}\}/g, (_m, k: string) => {
+    const v = vars[k];
+    if (v === undefined) return "";
+    return typeof v === "number" ? String(v) : JSON.stringify(v).slice(1, -1);
+  });
+}
+
 export function renderVars(opts: AddOptions): Record<string, string> {
   const slug = slugify(opts.name);
   const tags = opts.tags.length > 0 ? opts.tags.join("、") : "";
@@ -35,6 +60,9 @@ export function renderVars(opts: AddOptions): Record<string, string> {
 
 export function problemFiles(opts: AddOptions): { name: string; content: string }[] {
   const vars = renderVars(opts);
+  const title = vars.TITLE ?? "";
+  const link = vars.LINK ?? "";
+
   return [
     {
       name: "problem.md",
@@ -50,6 +78,17 @@ export function problemFiles(opts: AddOptions): { name: string; content: string 
     { name: "Makefile", content: render(makeTpl, vars) },
     { name: "README.md", content: render(readmeTpl, vars) },
     { name: ".gitignore", content: gitignoreTpl },
+    {
+      name: "whiteboard.excalidraw",
+      content: renderJson(boardTpl, {
+        TITLE: title,
+        LINK: link,
+        TITLE_W: estimateWidth(title, 28),
+        TITLE_H: 35,
+        LINK_W: estimateWidth(link, 16),
+        LINK_H: 20,
+      }),
+    },
   ];
 }
 
