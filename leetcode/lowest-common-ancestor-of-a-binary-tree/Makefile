@@ -1,8 +1,8 @@
 # 二叉树的最近公共祖先 — 本地编译 / 运行 / 对拍 / 编辑
 #
-# run 和 check 都交给 `algo`（编译、静态检查、对拍都在 CLI 里做，跑完不留文件）：
-#   make run    编译 + 用 in.txt 跑一遍，和 out.txt 一致就打印一行 AC
-#   make check  编译 + 静态检查 + 写法检查 + 对拍；一切正常就什么都不打印
+# run 和 check 都交给 `algo`（编译、检查、跑样例都在 CLI 里做，跑完不留文件）：
+#   make run    编译 + 用 in.txt 跑一遍，和 out.txt 一致就打印一行 AC（跑样例）
+#   make check  编译 + 静态检查 + 写法检查，**不跑样例**；一切正常就什么都不打印
 # 其余目标由本 Makefile 自己编译，注意别和 CLI 里的编译参数走偏。
 # 快捷键：make r = run，make c = check，make p / make s = micro 看题面 / 解法
 # 忘了有哪些目标：`make help`
@@ -32,13 +32,13 @@ SOLUTION := solution.txt
 all: build
 
 help:
-	@echo "make run    编译 + 跑 in.txt，对了打印 AC（algo run）"
-	@echo "make check  编译 + 静态检查 + 写法检查 + 对拍，没问题不输出（algo check）"
+	@echo "make run    编译 + 跑 in.txt，对了打印 AC（跑样例；algo run）"
+	@echo "make check  编译 + 静态检查 + 写法检查，不跑样例，没问题不输出（algo check）"
 	@echo "make raw    编译 + 手动输入跑（看原始输出）"
 	@echo "make debug  ASan + UBSan 跑一遍，抓越界"
 	@echo "make build  只编译（唯一会留下二进制，记得 make clean）"
-	@echo "make r      = make run（顺手一个字母）"
-	@echo "make c      = make check（顺手一个字母）"
+	@echo "make r      = make run（跑样例，顺手一个字母）"
+	@echo "make c      = make check（只编译 + 检查，不跑样例）"
 	@echo "make e      用 micro 打开 $(SRC)（空模板，自己写）"
 	@echo "make p      用 micro 打开题面 $(PROBLEM)"
 	@echo "make s      用 micro 打开解法 $(SOLUTION)（答案在里面，想不出来再看）"
@@ -50,7 +50,7 @@ run:
 	@command -v algo >/dev/null 2>&1 || { echo "找不到 algo 命令：先在 ~/algo 里 make install"; exit 1; }
 	@algo run .
 
-# 编译 + 静态检查 + 写法检查 + 对拍；没问题就什么都不打印（静默即通过）
+# 编译 + 静态检查 + 写法检查；没问题就什么都不打印（静默即通过；跑样例用 make r）
 check:
 	@command -v algo >/dev/null 2>&1 || { echo "找不到 algo 命令：先在 ~/algo 里 make install"; exit 1; }
 	@algo check .
