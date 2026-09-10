@@ -114,7 +114,9 @@ cat > spec.json <<'EOF'
   "difficulty": "中等",
   "tags": ["数组", "双指针"],
   "problem": "## 题目描述\n\n给你一个整数数组 nums。\n",
-  "solution": "## 思路\n\n排序 + 双指针夹逼。\n"
+  "solution": "## 思路\n\n排序 + 双指针夹逼。\n",
+  "in": "6\n-1 0 1 2 -1 -4\n",
+  "out": "[[-1,-1,2],[-1,0,1]]\n"
 }
 EOF
 "$BUN" "$CLI" add --json spec.json > /dev/null
@@ -124,7 +126,9 @@ grep -q "双指针" three-sum/README.md || fail "README.md 没写进标签"
 grep -q "题目描述" three-sum/problem.md || fail "problem.md 没写进题面"
 grep -q "双指针" three-sum/solution.md || fail "solution.md 没写进解法"
 grep -q "algo:todo" three-sum/problem.md && fail "写过的 problem.md 不该还有模板标记"
-echo "  ✓ 内容落盘"
+grep -q "^-1 0 1 2 -1 -4$" three-sum/in.txt || fail "in.txt 没写对"
+grep -qF "[[-1,-1,2],[-1,0,1]]" three-sum/out.txt || fail "out.txt 没写对"
+echo "  ✓ 内容落盘（含 in.txt / out.txt）"
 
 echo "→ add 二次更新只动指定的 md"
 printf '## 补充\n\n后补的题面。\n' > later.md
@@ -147,6 +151,27 @@ echo "→ algo list 进度标记"
 "$BUN" "$CLI" list | grep -q "题面✓思路✓板—" || fail "list 没有显示已填写状态"
 "$BUN" "$CLI" list | grep -q "题面✓思路—板—" || fail "list 没有显示只填了题面的状态"
 echo "  ✓ 进度标记正常"
+
+echo "→ algo add 只更新 in.txt"
+"$BUN" "$CLI" add three-sum --in "9 9" > /dev/null
+grep -q "^9 9$" three-sum/in.txt || fail "in.txt 没更新"
+grep -qF "[[-1,-1,2],[-1,0,1]]" three-sum/out.txt || fail "未指定的 out.txt 被改动了"
+echo "  ✓ 只更新目标文件"
+
+echo "→ path / in / out / board（用假 micro、假 open，不启动真编辑器）"
+"$BUN" "$CLI" path three-sum in | grep -q "three-sum/in.txt$" || fail "path 解析 in.txt 失败"
+"$BUN" "$CLI" path three-sum | grep -q "three-sum$" || fail "path 解析目录失败"
+"$BUN" "$CLI" path three-sum solution | grep -q "solution.cpp$" || fail "solution 应解析到 solution.cpp"
+"$BUN" "$CLI" path three-sum problem | grep -q "problem.md$" || fail "problem 应解析到 problem.md"
+mkdir -p fakebin
+printf '#!/bin/sh\necho "MOCK-MICRO $1"\n' > fakebin/micro
+printf '#!/bin/sh\necho "MOCK-OPEN $1"\n' > fakebin/open
+chmod +x fakebin/micro fakebin/open
+PATH="$PWD/fakebin:$PATH" "$BUN" "$CLI" in three-sum | grep -q "MOCK-MICRO in.txt" || fail "algo in 没把 in.txt 交给 micro"
+PATH="$PWD/fakebin:$PATH" "$BUN" "$CLI" out three-sum | grep -q "MOCK-MICRO out.txt" || fail "algo out 没把 out.txt 交给 micro"
+PATH="$PWD/fakebin:$PATH" "$BUN" "$CLI" edit three-sum problem | grep -q "MOCK-MICRO problem.md" || fail "edit problem 没交给 micro"
+PATH="$PWD/fakebin:$PATH" "$BUN" "$CLI" board three-sum | grep -q "MOCK-OPEN .*whiteboard.excalidraw" || fail "algo board 没走系统打开"
+echo "  ✓ 路径与打开都正常"
 
 echo "→ algo setup --dry-run（只读，不写配置）"
 "$BUN" "$CLI" setup --dry-run > /dev/null

@@ -73,8 +73,8 @@ export function problemFiles(opts: AddOptions): { name: string; content: string 
       content: opts.solution !== undefined ? withNewline(opts.solution) : render(solutionMdTpl, vars),
     },
     { name: "solution.cpp", content: render(cppTpl, vars) },
-    { name: "in.txt", content: inTpl },
-    { name: "out.txt", content: outTpl },
+    { name: "in.txt", content: opts.input !== undefined ? withNewline(opts.input) : inTpl },
+    { name: "out.txt", content: opts.expected !== undefined ? withNewline(opts.expected) : outTpl },
     { name: "Makefile", content: render(makeTpl, vars) },
     { name: "README.md", content: render(readmeTpl, vars) },
     { name: ".gitignore", content: gitignoreTpl },
@@ -100,16 +100,18 @@ export function createProblem(opts: AddOptions): string {
   const existed = existsSync(dir);
   const files = problemFiles(opts);
 
-  // 目录已存在：不带内容参数就报错；带了内容就只更新对应的 md（不碰代码 /样例）
+  // 目录已存在：不带内容参数就报错；带了内容就只更新显式给出的文件（不碰代码 / README）
   if (existed && !opts.force) {
-    const updates = files.filter(
-      (f) =>
-        (f.name === "problem.md" && opts.problem !== undefined) ||
-        (f.name === "solution.md" && opts.solution !== undefined),
-    );
+    const watch: [string, unknown][] = [
+      ["problem.md", opts.problem],
+      ["solution.md", opts.solution],
+      ["in.txt", opts.input],
+      ["out.txt", opts.expected],
+    ];
+    const updates = files.filter((f) => watch.some(([n, v]) => f.name === n && v !== undefined));
     if (updates.length === 0) {
       console.error(`${c.red("error:")} 目录已存在：./${slug}`);
-      hint(`只想补题面 /解法：algo add ${slug} --problem-file 题面.md --solution-file 解法.md`);
+      hint(`只想补内容：algo add ${slug} --problem-file 题面.md --solution-file 解法.md --in-file in.txt`);
       hint(`想全部重来：algo ${slug} --force`);
       process.exit(1);
     }
@@ -132,6 +134,7 @@ export function createProblem(opts: AddOptions): string {
   console.log();
   info("下一步：");
   hint(`cd ${slug} && micro .        # 先看 problem.md，再写 solution.cpp`);
+  hint("algo in / algo out          # 改样例输入 / 期望输出");
   hint("make run                    # 用 in.txt 跑一遍");
   hint("make check                  # 和 out.txt 比对");
   return dir;

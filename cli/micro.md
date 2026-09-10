@@ -317,6 +317,7 @@ micro 默认按键大全：编辑器内 `> help defaultkeys`；当前实际绑�
 ```bash
 algo two-sum            # 生成 ./two-sum/（problem.md 题面 + solution.md 解法 + whiteboard.excalidraw 白板 + 代码 + Makefile）
 algo add two-sum --problem-file p.md --solution-file s.md   # 或一次性把内容灌进去
+algo in / algo out      # 直接改样例输入 / 期望输出（也在 micro 里编辑）
 cd two-sum && micro .    # 开始写
 # 写完：Alt-r（需 algo setup --init）或开个终端 make run / make check
 ```

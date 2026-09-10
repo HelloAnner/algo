@@ -35,8 +35,11 @@ make install          # 打包 CLI + 装到 ~/.local/bin + 合并 micro 配置
 ```bash
 mkdir -p ~/algo/leetcode && cd ~/algo/leetcode
 
-algo two-sum          # 建 ./two-sum/（8 个文件，含题面与解法模板）
+algo two-sum          # 建 ./two-sum/（9 个文件，含题面 / 解法 / 白板模板）
 cd two-sum && micro . # 先看 problem.md，再写 solution.cpp
+algo in               # 改样例输入 in.txt
+algo out              # 改期望输出 out.txt
+algo board            # 打开白板 whiteboard.excalidraw
 
 make run              # 编译 → 用 in.txt 跑 → 立刻删掉二进制
 make check            # 和 out.txt 比对，✅ AC / ❌ WA（跑完同样清理）
@@ -74,13 +77,15 @@ algo add --json spec.json
   "tags": ["数组", "哈希表"],
   "problem": "## 题目描述\n...",
   "solution": "## 思路\n...",
+  "in": "4 9\n2 7 11 15\n",
+  "out": "0 1\n",
   "problem_file": "可选，改成从文件读题面",
   "solution_file": "可选，改成从文件读解法"
 }
 ```
 
 - `name` 可以由命令行给出（`algo add two-sum --json spec.json`），命令行优先。
-- 目录已存在时，`--force` 才会整套重来；否则**只覆盖显式给出的 md**。
+- 目录已存在时，`--force` 才会整套重来；否则**只覆盖显式给出的文件**（problem.md / solution.md / in.txt / out.txt），不动 solution.cpp，也不碰 README.md。
 - `--problem-file -` / `--solution-file -` 表示从 stdin 读；两个都用 `-` 会报错，请改用 `--json -`。
 
 ## 命令一览
@@ -91,11 +96,17 @@ algo add <名字> [选项]      新建并写入题面/解法/元信息
     --title --link --difficulty --tags
     --problem / --problem-file <文件|->
     --solution / --solution-file <文件|->
+    --in / --in-file <文件|->       样例输入 -> in.txt
+    --out / --out-file <文件|->     期望输出 -> out.txt
     --json <文件|->         一次读入全部字段（AI 推荐）
-algo list                  列出题目，显示「题面✓思路✓」进度
-algo edit [目录]           用 micro 打开 solution.cpp
+algo list                  列出题目，显示「题面✓思路✓板✓」进度
+algo edit [目录] [目标]    用 micro 打开，默认 solution.cpp
+algo in / algo out [目录]  打开 in.txt / out.txt
+algo board [目录]          用系统默认程序打开 whiteboard.excalidraw
 algo run|raw|check|debug|build|clean [目录]
-algo path [目录]           打印题目目录绝对路径
+algo path [目录] [目标]    只打印路径；目标：code/cpp · in · out ·
+                           problem · board · readme · makefile
+                           （也可以直接写文件名，自动补 .cpp/.md/.txt/.excalidraw）
 algo setup [--dry-run]     安装 / 合并 micro 配置
 algo setup --init          额外生成 ~/.config/micro/init.lua（存在则不覆盖）
 algo doctor                自检

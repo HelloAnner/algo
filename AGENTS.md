@@ -103,8 +103,10 @@ cat > /tmp/spec.json <<'EOF'
   "link": "https://leetcode.cn/problems/two-sum/",
   "difficulty": "简单",
   "tags": ["数组", "哈希表"],
-  "problem": "## 题目描述\\n...",
-  "solution": "## 思路\\n..."
+  "problem": "## 题目描述\n...",
+  "solution": "## 思路\n...",
+  "in": "4 9\n2 7 11 15\n",
+  "out": "0 1\n"
 }
 EOF
 algo add --json /tmp/spec.json     # 或 --json - 从 stdin 读
@@ -119,9 +121,13 @@ algo add two-sum --title "两数之和" --difficulty 简单 --tags 数组,哈希
 
 规则：
 
-- 目录不存在 → 建全套；**目录已存在 → 只更新显式给出的那个 md**，绝不动 `solution.cpp` / `in.txt` / `out.txt`，也**不覆盖 `README.md`**（免得冲掉复盘记录）。要整套重来用 `--force`。
+- 目录不存在 → 建全套；**目录已存在 → 只更新显式给出的文件**（`problem.md` / `solution.md` / `in.txt` / `out.txt`），绝不动 `solution.cpp`，也**不覆盖 `README.md`**（免得冲掉复盘记录）。要整套重来用 `--force`。
 - `--problem-file -` / `--solution-file -` 表示从 stdin 读；两个都用 `-` 会报错，这种情况改用 `--json -`。
 - `name` 命令行优先于 JSON；`--title` / `--link` / `--difficulty` / `--tags` 同理。
+- `--in` / `--out`（或 JSON 的 `in` / `out`）把样例输入、期望输出直接写进 `in.txt` / `out.txt`。
+
+看 / 改单个文件：`algo edit [目录] [目标]`（目标：`code` `in` `out` `problem` `board` `readme`，或直接写文件名）、
+`algo in` / `algo out` / `algo board`，以及只打印路径的 `algo path [目录] [目标]`。
 
 ---
 

@@ -19,6 +19,10 @@ const VALUE_FLAGS = new Set([
   "problem-file",
   "solution",
   "solution-file",
+  "in",
+  "in-file",
+  "out",
+  "out-file",
   "json",
 ]);
 
