@@ -36,9 +36,10 @@ mkdir -p ~/algo/leetcode && cd ~/algo/leetcode
 algo two-sum          # 建 ./two-sum/：solution.cpp / in.txt / out.txt / Makefile / README.md
 cd two-sum && micro . # 开写
 
-make run              # 用 in.txt 跑
-make check            # 和 out.txt 比对，✅ AC / ❌ WA
-make debug            # ASan + UBSan
+make run              # 编译 → 用 in.txt 跑 → 立刻删掉二进制
+make check            # 和 out.txt 比对，✅ AC / ❌ WA（跑完同样清理）
+make debug            # ASan + UBSan（跑完清理）
+make build            # 想保留二进制时用这个（之后 make clean）
 ```
 
 CLI 侧快捷命令：`algo list`、`algo run`、`algo check`、`algo edit`、`algo doctor`、`algo setup`。
@@ -62,11 +63,15 @@ two-sum/
 ├── solution.cpp     # ACM 模式：读 stdin 写 stdout
 ├── in.txt           # 样例输入
 ├── out.txt          # 期望输出
-├── Makefile         # run / raw / check / debug / clean
+├── Makefile         # run / raw / check / debug / build / clean
 ├── README.md        # 思路、边界、复杂度、复盘
 └── .gitignore       # 忽略编译产物
 ```
 
+> `make run` / `raw` / `check` / `debug` 都是「编译 → 运行 → 删掉二进制」：
+> 用 `trap ... EXIT INT TERM` 兜底，正常结束、编译报错、程序崩溃、Ctrl-C 都会清理，
+> 所以题目目录里不会攒下 `solution` 这类编译产物。只有 `make build` 会保留它。
+>
 > 本机是 Apple clang + libc++，**没有 `<bits/stdc++.h>`**（GCC 专有头），
 > 所以模板用的是显式 include。想用万能头就 `brew install gcc`，再 `make CXX=g++-14`。
 

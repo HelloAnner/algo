@@ -1,7 +1,32 @@
-node_modules/
-bun.lockb
+# ===== macOS / 编辑器 =====
 .DS_Store
-*.log
-dist/
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# ===== 依赖与运行时 =====
+node_modules/
 .env
 .env.*
+
+# ===== 构建产物 =====
+dist/
+# bun 的二进制 lock（bun.lock 是文本格式，要提交）
+bun.lockb
+
+# ===== C++ 编译产物（题目目录里生成的）=====
+solution
+solution_dbg
+a.out
+*.out
+*.o
+*.dSYM/
+
+# ===== 对拍临时文件 =====
+.out.actual
+.out.diff
+
+# ===== 日志 =====
+*.log

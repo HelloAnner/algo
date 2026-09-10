@@ -323,6 +323,7 @@ cd two-sum && micro .    # 开始写
 - `make run` 用 `in.txt` 当标准输入；
 - `make check` 和 `out.txt` 对拍，输出 `✅ AC` / `❌ WA`；
 - `make debug` 带 AddressSanitizer + UBSan，专门抓越界和未定义行为。
+- 以上目标跑完都会**自动删掉二进制**（只有 `make build` 会保留），目录里不留编译产物。
 
 在 micro 里想开个终端跑命令：`> term`（分屏终端）；或直接 `Ctrl+B` 跑一次 shell 命令（默认绑定）。
 

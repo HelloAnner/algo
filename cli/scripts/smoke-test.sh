@@ -1,7 +1,7 @@
 #!/bin/sh
-# algo 冒烟测试：建题 → 编译 → 对拍 → 配置预览
+# algo 冒烟测试：建题 → 编译/运行 → 对拍 → 清理校验 → 配置预览
 # 用法：sh scripts/smoke-test.sh [dist/algo.js 路径]
-set -e
+set -eu
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CLI="${1:-$ROOT/dist/algo.js}"
@@ -44,6 +44,14 @@ int main() {
 }
 EOF
 
+echo "→ make run"
+if (cd two-sum && make run) | grep -q '^0 1$'; then
+    echo "  ✓ 输出正确"
+else
+    echo "✗ make run 输出不对"
+    exit 1
+fi
+
 echo "→ make check"
 if (cd two-sum && make check) | grep -q "✅ AC"; then
     echo "  ✓ AC"
@@ -51,6 +59,37 @@ else
     echo "✗ 对拍失败"
     exit 1
 fi
+
+echo "→ 清理校验：跑完不许留编译产物"
+for f in solution solution_dbg .out.actual .out.diff; do
+    if [ -e "two-sum/$f" ]; then
+        echo "✗ make 之后残留了 two-sum/$f"
+        exit 1
+    fi
+done
+echo "  ✓ 无残留"
+
+echo "→ make build / make clean"
+(cd two-sum && make build > /dev/null)
+if [ ! -e two-sum/solution ]; then
+    echo "✗ make build 没有产出二进制"
+    exit 1
+fi
+(cd two-sum && make clean > /dev/null)
+if [ -e "two-sum/solution" ]; then
+    echo "✗ make clean 没有删掉二进制"
+    exit 1
+fi
+echo "  ✓ build 保留、clean 清理"
+
+echo "→ 编译失败也要清理"
+printf 'int main(){ 这不是合法的 C++ }\n' > two-sum/solution.cpp
+(cd two-sum && make run > /dev/null 2>&1) || true
+if [ -e "two-sum/solution" ]; then
+    echo "✗ 编译失败后残留了二进制"
+    exit 1
+fi
+echo "  ✓ 编译失败无残留"
 
 echo "→ algo list"
 "$BUN" "$CLI" list | grep -q "two-sum" || { echo "✗ list 没有输出 two-sum"; exit 1; }
