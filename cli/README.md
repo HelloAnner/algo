@@ -113,6 +113,7 @@ algo new three-sum --print-dir    # 只想要路径
 - 只有**真的新建了目录**才会 cd；`algo add` 更新已有题目不会把你拽走
 - `algo list` / `run` / `in` / `board` 等子命令原样直通，不受影响
 - `-e` / `--edit` 会启动 micro（全屏 TUI），函数会跳过自动 cd 直接执行
+- 装完**必须新开终端**（或 `source ~/.zshrc`）才生效；不确定当前终端加载了没：`algo doctor` 会分开报「配置里已写入」和「当前终端已加载」
 - 不要了：删掉 `~/.zshrc` 里 `# >>> algo shell integration >>>` 到 `# <<< algo shell integration <<<` 之间那段
 
 ## 命令一览

@@ -37,6 +37,9 @@ algo() {
   fi
   return $rc
 }
+
+# 让 algo doctor 知道当前这个终端有没有加载到这段
+export ALGO_SHELL_INTEGRATION=1
 ${END}`;
 
 export interface RcFile {

@@ -65,6 +65,14 @@ export function doctor(): void {
     installed ? `已写入 ${rc?.path}` : "未安装 → algo setup --shell",
     installed ? "ok" : "warn",
   );
+  const loaded = process.env.ALGO_SHELL_INTEGRATION === "1";
+  if (installed) {
+    check(
+      "当前终端已加载",
+      loaded ? "是" : "否 → 新开一个终端，或执行 source " + (rc?.path ?? "你的 rc 文件"),
+      loaded ? "ok" : "warn",
+    );
+  }
 
   console.log();
   console.log(c.bold("可选依赖（micro 插件用）"));
