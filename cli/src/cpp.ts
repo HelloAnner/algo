@@ -1,13 +1,30 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, unlinkSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import { which } from "./util";
 
 /** run / check 共用的临时二进制名，跑完立刻删掉 */
 export const BIN = ".algo_bin";
 
-/** 和题目 Makefile 里的 CXXFLAGS 保持一致 */
-export const BUILD_FLAGS = ["-std=c++20", "-O2", "-Wall", "-Wextra", "-Wno-sign-compare", "-Wno-unused-variable"];
+/**
+ * 万能头 <bits/stdc++.h> 是 GCC 专有的，本机 Apple clang + libc++ 没有；
+ * make install 会装一份兼容头到 ~/.local/include/bits/stdc++.h，
+ * 编译时用这个 -I 指过去（题目 Makefile 的 CXXFLAGS 也带同样一个）。
+ */
+export const INCLUDE_DIR = process.env.ALGO_INCLUDE_DIR?.trim() || join(homedir(), ".local", "include");
+export const INCLUDE_FLAG = `-I${INCLUDE_DIR}`;
+
+/** 和题目 Makefile 里的 CXXFLAGS 保持一致（含 INCLUDE_FLAG） */
+export const BUILD_FLAGS = [
+  "-std=c++20",
+  "-O2",
+  INCLUDE_FLAG,
+  "-Wall",
+  "-Wextra",
+  "-Wno-sign-compare",
+  "-Wno-unused-variable",
+];
 
 export function compiler(): string {
   const cxx = process.env.CXX;

@@ -438,7 +438,7 @@ bp:OpenBuffer(buf)   -- 文件不存在时 NewBufferFromFile 会返回一个空 
 | 出现 `assignment to entry in nil map` | `init.lua` 顶层调用了 `MakeCommand` | 挪进 `init()` / `preinit()` |
 | 颜色发灰、无真彩色 | 终端不认识 `truecolor` | 确认终端支持 24-bit（如 Ghostty/iTerm2），或把 `truecolor` 设 `auto` |
 | 中文/emoji 错位 | 终端宽度计算 | 属于终端层面，micro 无解；可关 `softwrap` |
-| `fatal error: 'bits/stdc++.h' file not found` | **与 micro 无关**：这是 GCC 专有头，Apple clang/libc++ 没有 | 用显式 include（脚手架默认就是），或 `brew install gcc` 后用 `make CXX=g++-14` |
+| `fatal error: 'bits/stdc++.h' file not found` | **与 micro 无关**：这是 GCC 专有头，Apple clang/libc++ 没有 | `make -C ~/algo/cli install` 装兼容头（脚手架已有 `-I` 指过去）；或 `brew install gcc` 后 `make CXX=g++-14` |
 | 插件装了没反应 | 被 `settings.json` 里同名键设成了 `false` | 改成 `true` 或删掉该键 |
 | `Alt-r` / `Alt-t` / `Alt-i` / `Alt-o` 没反应 | 没生成 `init.lua`（`algo setup` 默认不写它） | `algo setup --init`，然后在 micro 里 `Ctrl-P` → `reload` |
 | `Alt-r` 报找不到 Makefile | 当前文件不在题目目录里 | 打开某个题目的 `solution.cpp` 再按（命令是 `make -C <文件所在目录>`） |

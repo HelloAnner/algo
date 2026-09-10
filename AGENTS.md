@@ -169,7 +169,7 @@ make doctor                   # 环境自检
   `check` 的「没问题就不输出」是刻意设计（静默即通过），别给它加成功提示；`run` 正常只打印一行 `AC`。
 - **依赖**：CLI 不引入第三方运行时依赖；`assets/` 里的模板保持自包含（不依赖仓库外的文件）。
 - **题面 / 解法都是纯文本**：`problem.txt`（头部 `题目：` / `链接：` / `难度：`，章节用 `[题目描述]` 这种标记，**图一律用 ASCII 画**）、`solution.txt`（`[思路]` / `[复杂度]` / `[关键点]` / `[C++ 代码]`）。**不要往题目目录里加 Markdown 文件**（用户明确要 `cat txt`）。
-- **`solution.cpp` 永远是空模板**：include + `main` + `// TODO: 读入 -> 计算 -> 输出`，实现留给用户自己写；参考代码放在 `solution.txt` 的 `[C++ 代码]` 里。不要用参考实现覆盖 `solution.cpp`。
+- **`solution.cpp` 永远是空模板**：顶层就一行 `#include <bits/stdc++.h>`（靠兼容头 + `-I` 生效）+ `using namespace std;` + `main` + `// TODO: 读入 -> 计算 -> 输出`，实现留给用户自己写；参考代码放在 `solution.txt` 的 `[C++ 代码]` 里。不要用参考实现覆盖 `solution.cpp`，也不要往模板里堆一长串显式 include。
 - **脚手架模板**：生成的 `Makefile` 必须自清理——`run` / `raw` / `check` / `debug` 跑完都要删掉二进制和临时文件（`trap ... EXIT INT TERM` 兜底），只有 `build` 保留二进制。另外提供 `make e` / `make p` / `make s`（micro 打开代码 / 题面 / 解法）、`make r` / `make c`（`run` / `check` 的简写）、`make w`（系统默认程序打开白板）和 `make help`。改 `cli/assets/make.tmpl` 后必须跑 `make test`，冒烟脚本会断言目录里没有残留。
 - **文档**：改动架构或命令后，同步更新本文件、`cli/README.md`、`cli/micro.md` 中受影响的部分。
 
@@ -177,7 +177,7 @@ make doctor                   # 环境自检
 
 ## 环境事实（本机，会踩的坑）
 
-- **macOS + Apple clang + libc++，没有 `<bits/stdc++.h>`**（那是 GCC 专有头），所以模板用显式 include。想要万能头得 `brew install gcc` 然后 `make CXX=g++-14`。这不是 bug。
+- **macOS + Apple clang + libc++，系统里没有 `<bits/stdc++.h>`**（GCC 专有头）。为了让模板顶层只留一行 include，`cli/assets/include/bits/stdc++.h` 放了一份**兼容头**：`make -C cli install` 会把它装到 `~/.local/include/bits/stdc++.h`，题目的 `CXXFLAGS` 与 `cli/src/cpp.ts` 的 `BUILD_FLAGS` 都带 `-I$(HOME)/.local/include`（两边必须保持一致）。没装兼容头时编译会报 `'bits/stdc++.h' file not found`。想用真 GCC 就 `brew install gcc` 再 `make CXX=g++-14`。
 - micro **2.0.15**（Homebrew），配置目录 `~/.config/micro`（macOS 与 Linux 相同，可用 `MICRO_CONFIG_DIR` 覆盖）。
 - micro 内置插件只有 7 个（autoclose / comment / diff / ftoptions / linter / literate / status），**LSP 不在其中**，它是官方插件频道里的可选插件 `lsp`。
 - micro 启动顺序：`LoadAllPlugins()` → `action.InitCommands()` → `preinit()` → `init()`。因此 `init.lua` 里调用 `config.MakeCommand` **必须写在 `init()` 内**，写在顶层会报 `assignment to entry in nil map`。

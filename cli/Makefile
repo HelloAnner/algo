@@ -14,6 +14,7 @@ ROOT   := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 BUN    ?= $(shell command -v bun 2>/dev/null || echo bun)
 PREFIX ?= $(HOME)/.local
 BINDIR ?= $(PREFIX)/bin
+INCDIR ?= $(PREFIX)/include
 
 DIST   := $(ROOT)/dist
 BUNDLE := $(DIST)/algo.js
@@ -45,7 +46,13 @@ install-shim: bundle
 
 install: install-cli setup shell
 
-install-cli: install-shim
+install-cli: install-shim install-header
+
+# 万能头兼容头：<bits/stdc++.h>（本机 clang 没有 GCC 那个专有头）
+install-header:
+	@mkdir -p '$(INCDIR)/bits'
+	@install -m 644 '$(ROOT)/assets/include/bits/stdc++.h' '$(INCDIR)/bits/stdc++.h'
+	@echo "✓ 已安装万能头 $(INCDIR)/bits/stdc++.h"
 
 # 独立二进制：把 bun 运行时一起打进去，可拷到别的机器
 install-bin:
@@ -56,7 +63,8 @@ install-bin:
 
 uninstall:
 	@rm -f '$(SHIM)'
-	@echo "✓ 已移除 $(SHIM)"
+	@rm -f '$(INCDIR)/bits/stdc++.h'
+	@echo "✓ 已移除 $(SHIM) 和 $(INCDIR)/bits/stdc++.h"
 
 setup: bundle
 	@$(BUN) $(BUNDLE) setup

@@ -10,8 +10,14 @@
 ifeq ($(origin CXX), default)
 CXX := clang++
 endif
-CXXFLAGS ?= -std=c++20 -O2 -Wall -Wextra -Wno-sign-compare -Wno-unused-variable
-DBGFLAGS ?= -std=c++20 -g -O0 -fsanitize=address,undefined -fno-omit-frame-pointer
+
+# 万能头 <bits/stdc++.h> 是 GCC 专有的，本机 Apple clang + libc++ 没有：
+# `make -C ~/algo install` 会装一份兼容头到 ~/.local/include/bits/stdc++.h，
+# 下面这个 -I 就是指向它（换位置就 make INCLUDE_DIR=... run）。
+INCLUDE_DIR ?= $(HOME)/.local/include
+
+CXXFLAGS ?= -std=c++20 -O2 -I$(INCLUDE_DIR) -Wall -Wextra -Wno-sign-compare -Wno-unused-variable
+DBGFLAGS ?= -std=c++20 -g -O0 -I$(INCLUDE_DIR) -fsanitize=address,undefined -fno-omit-frame-pointer
 
 SRC      := solution.cpp
 BIN      := solution

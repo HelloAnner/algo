@@ -83,6 +83,42 @@ if [ -n "$CHK_OUT" ]; then
 fi
 echo "  ✓ run 只打印 AC，check 静默"
 
+echo "→ 万能头：solution.cpp 只写一行 #include <bits/stdc++.h> 也能过"
+if [ -e "$HOME/.local/include/bits/stdc++.h" ]; then
+    cat > two-sum/solution.cpp <<'EOF'
+#include <bits/stdc++.h>
+
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, target;
+    cin >> n >> target;
+    vector<int> a(n);
+    for (auto &x : a) cin >> x;
+    unordered_map<int, int> pos;
+    for (int i = 0; i < n; ++i) {
+        if (auto it = pos.find(target - a[i]); it != pos.end()) {
+            cout << it->second << " " << i << '\n';
+            return 0;
+        }
+        pos[a[i]] = i;
+    }
+    return 0;
+}
+EOF
+    printf '4 9\n2 7 11 15\n' > two-sum/in.txt
+    printf '0 1\n' > two-sum/out.txt
+    BITS_OUT="$(cd two-sum && PATH="$FAKEBIN:$PATH" "$BUN" "$CLI" check 2>&1 || true)"
+    if [ -n "$BITS_OUT" ]; then fail "万能头写法没通过 check：[$BITS_OUT]"; fi
+    BITS_RUN="$(cd two-sum && PATH="$FAKEBIN:$PATH" make run 2>&1 || true)"
+    [ "$BITS_RUN" = "AC" ] || fail "万能头写法 make run 应该是 AC，实际：[$BITS_RUN]"
+    echo "  ✓ 一行 #include <bits/stdc++.h> 可用"
+else
+    echo "  - 跳过（本机还没装兼容头：make -C cli install）"
+fi
+
 echo "→ 清理校验：run / check 跑完不留任何产物"
 for f in solution solution_dbg .algo_bin .out.actual .out.diff; do
     if [ -e "two-sum/$f" ]; then

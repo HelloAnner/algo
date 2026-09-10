@@ -1,13 +1,14 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
-import { BIN, cleanupBin, compareLines, compiler, hasExpectedOutput, readCase, runBinary } from "./cpp";
+import { BIN, BUILD_FLAGS, cleanupBin, compareLines, compiler, hasExpectedOutput, INCLUDE_FLAG, readCase, runBinary } from "./cpp";
 import { c, out } from "./util";
 
 /** 静态检查额外打开的警告（比日常编译更严） */
 const LINT_FLAGS = [
   "-std=c++20",
   "-fsyntax-only",
+  INCLUDE_FLAG,
   "-Wall",
   "-Wextra",
   "-Wshadow",
@@ -39,9 +40,6 @@ function styleFindings(src: string): string[] {
   src.split("\n").forEach((raw, i) => {
     const n = i + 1;
     const line = raw.replace(/\/\/.*$/, "");
-    if (/#include\s*<bits\/stdc\+\+\.h>/.test(line)) {
-      push(n, "本机是 Apple clang + libc++，没有 <bits/stdc++.h>（GCC 专有头），编不过");
-    }
     if (/\bendl\b/.test(line)) {
       push(n, "endl 会强制 flush，数据量大时明显变慢，换成 '\\n'");
     }
@@ -80,7 +78,7 @@ export function runCheck(dir: string, opts: CheckOptions = {}): never {
   try {
     // 1. 编译（含语法）
     const cxx = compiler();
-    const build = spawnSync(cxx, [...["-std=c++20", "-O2", "-Wall", "-Wextra", "-Wno-sign-compare", "-Wno-unused-variable"], "solution.cpp", "-o", BIN], {
+    const build = spawnSync(cxx, [...BUILD_FLAGS, "solution.cpp", "-o", BIN], {
       cwd: dir,
       encoding: "utf8",
     });

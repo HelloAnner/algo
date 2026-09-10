@@ -4,6 +4,7 @@ import { microStatus, microVersion } from "./micro";
 import { rcFile, shellIntegrationInstalled } from "./shell";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
+import { homedir } from "node:os";
 
 let pass = 0;
 let failCount = 0;
@@ -38,15 +39,11 @@ export function doctor(): void {
   const make = which("make");
   check("make", make ?? "未找到", make ? "ok" : "fail");
 
-  // bits/stdc++.h
-  const hasBits = detectBits();
-  if (hasBits) check("bits/stdc++.h", "可用（建议把模板改成万能头）");
-  else
-    check(
-      "bits/stdc++.h",
-      "本机 libc++ 没有这个 GCC 专有头，脚手架用的是显式 include（正常）",
-      "warn",
-    );
+  // bits/stdc++.h：GCC 专有头，本机 clang 靠 algo 装的兼容头
+  const shim = join(homedir(), ".local", "include", "bits", "stdc++.h");
+  if (existsSync(shim)) check("bits/stdc++.h", `可用（兼容头 ${shim}）`);
+  else if (detectBits()) check("bits/stdc++.h", "可用（本机装了 GCC）");
+  else check("bits/stdc++.h", "不可用 → make -C cli install 会装一份兼容头", "warn");
 
   console.log();
   console.log(c.bold("CLI 自身"));

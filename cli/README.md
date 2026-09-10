@@ -16,7 +16,7 @@ make install          # 打包 CLI + 装到 ~/.local/bin + 合并 micro 配置
 `make install` 做的事：
 
 1. `bun build` 把 TS 打成 `cli/dist/algo.js`
-2. 写一个轻量启动器 `~/.local/bin/algo`（`exec bun .../dist/algo.js`）
+2. 写一个轻量启动器 `~/.local/bin/algo`（`exec bun .../dist/algo.js`），并把万能头兼容头装到 `~/.local/include/bits/stdc++.h`
 3. 运行 `algo setup`，把 C++ 刷题 profile 合并进 `~/.config/micro/settings.json` 和 `bindings.json`（先备份再合并）
 4. 运行 `algo setup --shell`，把「建完题自动 cd」的函数写进 `~/.zshrc`（先备份再追加）
 
@@ -198,8 +198,9 @@ two-sum/
 > 用 `trap ... EXIT INT TERM` 兜底，正常结束、编译报错、程序崩溃、Ctrl-C 都会清理，
 > 所以题目目录里不会攒下 `solution` 这类编译产物。只有 `make build` 会保留它。
 >
-> 本机是 Apple clang + libc++，**没有 `<bits/stdc++.h>`**（GCC 专有头），
-> 所以模板用的是显式 include。想用万能头就 `brew install gcc`，再 `make CXX=g++-14`。
+> `solution.cpp` 顶层只有一行 `#include <bits/stdc++.h>`：这是 GCC 的万能头，本机 Apple clang + libc++ 没有，
+> 所以 `make install` 会装一份兼容头到 `~/.local/include/bits/stdc++.h`，题目 `CXXFLAGS` 和 `algo run` 都带 `-I` 指过去。
+> 换目录/换机器就 `make -C cli install`（或 `make INCLUDE_DIR=... run`）；想用真 GCC 也可以 `brew install gcc` 后 `make CXX=g++-14`。
 
 ## 源码结构
 
@@ -218,7 +219,8 @@ cli/
 │   ├── doctor.ts     # 环境自检
 │   └── util.ts       # 颜色 / 文件 / 进程小工具
 ├── scripts/          # smoke-test.sh
-└── assets/           # 模板：solution.cpp / make.tmpl / problem.txt.tmpl / solution.txt.tmpl / whiteboard.excalidraw.tmpl / init.lua
+└── assets/           # 模板：solution.cpp / make.tmpl / problem.txt.tmpl / solution.txt.tmpl /
+                      #        whiteboard.excalidraw.tmpl / init.lua / include/bits/stdc++.h（万能头兼容头）
 ```
 
 micro 编辑器（插件清单、配置逐项解释、为什么关掉下划线报错、如何还原）见 **[micro.md](./micro.md)**。
