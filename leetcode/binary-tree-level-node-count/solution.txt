@@ -1,0 +1,103 @@
+[思路]
+两种做法，答案一样。
+
+1. 递归（DFS + 层号）
+
+dfs(node, level)：每进入一个节点就把 cnt[level] 加一，然后递归 dfs(node->left, level + 1)、dfs(node->right, level + 1)。虽然遍历顺序是深度优先，但层号是显式传参的，所以统计结果与访问顺序无关：每个节点恰好被访问一次、且带着自己真实的层号，累加出来的就是每层节点数。
+
+2. 非递归（BFS 队列）
+
+把根入队，然后循环：先记下 size = queue.size()，这一批 size 个节点就是当前这一层的全部节点，于是 cnt.push_back(size)；再把这 size 个节点逐个出队，把它们的非空孩子入队，进入下一层。
+
+为什么对：BFS 按层扩展，队列里在任意时刻恰好只装着一层（或正被消费的这层加下一层的一部分，但用「先取 size 再处理」把这批固定住），所以每轮的 size 就是该层节点数。
+
+文档里的 Java 版两种写法都有：递归版用 HashMap<层号, 个数>、非递归版用 Queue 层序；C++ 里用 vector<int> 按层号直接累加更简单（也顺便避免了文档 Java 递归版在空树时直接 NPE 的问题）。
+
+[复杂度]
+时间：两种方法都是 O(n)，每个节点进出队/被访问恰好一次。
+空间：
+- BFS：队列最多同时装一层节点，最坏（满二叉树最后一层）是 O(n)，另有答案数组 O(层数)；
+- DFS：递归栈深度等于树高，最坏（链状树）是 O(n)，平均 O(log n)，另有答案数组 O(层数)。
+
+[关键点]
+- BFS 里必须先存下 queue.size() 再处理，直接写 while (!q.empty()) 会把下一层的节点算进当前层；
+- 层序序列的解析规则：空节点的孩子不出现在序列里，所以要用一个队列让「非空节点依次领取两个孩子」，不能简单地按下标 2i / 2i+1 取；
+- 递归实现要处理空树（根为 # 或输入为空），返回空数组/0，别直接对空指针取成员；
+- 空树输出 0 而不是空行，保证样例可对拍；
+- 输出用空格分隔，行末不要多出空格（algo run 会逐行比对，行尾空白虽然会被忽略，但保持干净更好）。
+
+[C++ 代码]
+// 二叉树各层节点数（原文档第 52 题，非 LeetCode 原题）
+//
+// 思路：按层序序列（空节点用 #）建树，再用队列 BFS 逐层统计节点个数。
+// 复杂度：时间 O(n) 空间 O(n)
+#include <iostream>
+#include <queue>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+struct Node {
+    int val;
+    int left;   // 左孩子下标，-1 表示空
+    int right;  // 右孩子下标，-1 表示空
+};
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    vector<string> tokens;
+    string tok;
+    while (cin >> tok) tokens.push_back(tok);
+
+    if (tokens.empty() || tokens[0] == "#") {
+        cout << 0 << '\n';  // 空树
+        return 0;
+    }
+
+    // 建树：非空节点依次从序列里领取左右两个孩子（LeetCode 的层序表示）
+    vector<Node> tree;
+    tree.push_back(Node{stoi(tokens[0]), -1, -1});
+    queue<int> pending;  // 还没分配孩子的节点
+    pending.push(0);
+
+    size_t idx = 1;
+    while (!pending.empty() && idx < tokens.size()) {
+        int cur = pending.front();
+        pending.pop();
+        for (int side = 0; side < 2 && idx < tokens.size(); ++side) {
+            if (tokens[idx] != "#") {
+                tree.push_back(Node{stoi(tokens[idx]), -1, -1});
+                int child = static_cast<int>(tree.size()) - 1;
+                if (side == 0) tree[cur].left = child;
+                else tree[cur].right = child;
+                pending.push(child);
+            }
+            ++idx;
+        }
+    }
+
+    // BFS：每轮队列里的元素正好是同一层的全部节点
+    vector<int> counts;
+    queue<int> bfs;
+    bfs.push(0);
+    while (!bfs.empty()) {
+        size_t levelSize = bfs.size();
+        counts.push_back(static_cast<int>(levelSize));
+        for (size_t i = 0; i < levelSize; ++i) {
+            int cur = bfs.front();
+            bfs.pop();
+            if (tree[cur].left != -1) bfs.push(tree[cur].left);
+            if (tree[cur].right != -1) bfs.push(tree[cur].right);
+        }
+    }
+
+    for (size_t i = 0; i < counts.size(); ++i) {
+        if (i) cout << ' ';
+        cout << counts[i];
+    }
+    cout << '\n';
+    return 0;
+}

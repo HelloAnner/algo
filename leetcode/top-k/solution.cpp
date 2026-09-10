@@ -1,57 +1,38 @@
-// 数组中前 K 大 / 前 K 小的数（文档 67 节，非 LeetCode 原题）
-// （《手撕字节跳动面试时出现过的算法题》67. top k：返回一个数组中前 k 个大的或者小的数字）
+// 数组中前 K 大（小）的数
 //
-// 思路：堆维护候选集合——前 k 大用小根堆、前 k 小用大根堆，最后按要求的顺序输出。
-// 复杂度：时间 O(n log k) 空间 O(k)
-#include <functional>
+//
+// 思路：
+// 复杂度：时间 O() 空间 O()
+//
+// 这里是空模板：实现自己写；参考解法在 solution.txt 里（实在想不出来再看）。
+#include <algorithm>
+#include <array>
+#include <climits>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <iostream>
+#include <map>
+#include <numeric>
 #include <queue>
+#include <set>
+#include <stack>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 using namespace std;
+
+// 提示：本机是 Apple clang + libc++，没有 <bits/stdc++.h>（那是 GCC 专有头）。
+// 如果想要竞赛风格的万能头，用 Homebrew 装 gcc 后把 CXX 换成 g++-14。
 
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    int n, k, type;
-    cin >> n >> k >> type;  // type = 0 取前 k 大，type = 1 取前 k 小
+    // TODO: 读入 -> 计算 -> 输出
 
-    vector<int> ans;
-    if (type == 0) {
-        priority_queue<int, vector<int>, greater<int>> heap;  // 小根堆做淘汰线
-        for (int i = 0; i < n; ++i) {
-            int x;
-            cin >> x;
-            heap.push(x);
-            if ((int)heap.size() > k) heap.pop();
-        }
-        // 小根堆弹出是升序，从后往前填得到降序
-        ans.assign(heap.size(), 0);
-        for (int i = (int)ans.size() - 1; i >= 0; --i) {
-            ans[i] = heap.top();
-            heap.pop();
-        }
-    } else {
-        priority_queue<int> heap;  // 大根堆做淘汰线
-        for (int i = 0; i < n; ++i) {
-            int x;
-            cin >> x;
-            heap.push(x);
-            if ((int)heap.size() > k) heap.pop();
-        }
-        // 大根堆弹出是降序，从后往前填得到升序
-        ans.assign(heap.size(), 0);
-        for (int i = (int)ans.size() - 1; i >= 0; --i) {
-            ans[i] = heap.top();
-            heap.pop();
-        }
-    }
-
-    for (int i = 0; i < (int)ans.size(); ++i) {
-        if (i) cout << ' ';
-        cout << ans[i];
-    }
-    cout << '\n';
     return 0;
 }

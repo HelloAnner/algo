@@ -1,0 +1,96 @@
+[思路]
+自顶向下的 DFS（递归）：从根出发，沿路把 targetSum 一直减去当前节点的值，走到叶子时看还剩多少。
+
+- 空节点直接返回 false；
+- 走到叶子节点（左右孩子都为空）时，判断剩余值是否为 0，是则说明这条根到叶子的路径就是要找的路径；
+- 否则递归询问左右子树，只要有一边为 true 就返回 true。
+
+为什么必须等到叶子才判断：题目要求路径从根一直延伸到叶子。如果在中间的某个节点发现和已经等于目标就返回 true，会把「根到内部节点」的路径也算成答案。
+
+文档里说「看来只能疯狂遍历了」——本题节点数最多 5000，一次遍历确实够用，而且也只能这么做：节点值可以是负数，路径和没有单调性，不存在剪枝的余地。
+
+[复杂度]
+时间：O(n)   空间：O(h)
+
+每个节点恰好访问一次；空间是递归调用栈的深度，树退化成链时是 O(n)。
+
+[关键点]
+- 空树要返回 false，不能因为目标和是 0 就误判为真
+- 节点值可以是负数，不能用「剩余值小于 0 就剪枝」这种优化
+- 判断叶子要同时看左右孩子，只有左孩子为空不算叶子
+- 递归时先把当前节点值减掉，再判断剩余值是否为 0，写法最简洁
+- 输入的层序序列里 null 必须占位（否则建树会错位）：用队列，出队一个节点就依次给它配左、右孩子
+- 求和用 long long 更稳（本题用 int 也在范围内）
+
+[C++ 代码]
+// 路径总和
+// https://leetcode.cn/problems/path-sum/
+//
+// 思路：自顶向下 DFS，沿路把 targetSum 减去当前节点值，走到叶子时判断剩余值是否为 0。
+// 复杂度：时间 O(n) 空间 O(h)，h 为树高（递归栈）
+#include <iostream>
+#include <queue>
+#include <sstream>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+struct TreeNode {
+    int val;
+    TreeNode *left;
+    TreeNode *right;
+    explicit TreeNode(int v) : val(v), left(nullptr), right(nullptr) {}
+};
+
+// 按 LeetCode 层序序列建树，空节点写作 null；序列为空或首元素是 null 时返回空树
+TreeNode *buildTree(const vector<string> &tokens) {
+    if (tokens.empty() || tokens[0] == "null") return nullptr;
+    TreeNode *root = new TreeNode(stoi(tokens[0]));
+    queue<TreeNode *> q;
+    q.push(root);
+    size_t i = 1;
+    while (!q.empty() && i < tokens.size()) {
+        TreeNode *cur = q.front();
+        q.pop();
+        if (tokens[i] != "null") {
+            cur->left = new TreeNode(stoi(tokens[i]));
+            q.push(cur->left);
+        }
+        ++i;
+        if (i < tokens.size()) {
+            if (tokens[i] != "null") {
+                cur->right = new TreeNode(stoi(tokens[i]));
+                q.push(cur->right);
+            }
+            ++i;
+        }
+    }
+    return root;
+}
+
+bool hasPathSum(TreeNode *root, long long remain) {
+    if (root == nullptr) return false;
+    remain -= root->val;
+    if (root->left == nullptr && root->right == nullptr) return remain == 0;
+    return hasPathSum(root->left, remain) || hasPathSum(root->right, remain);
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    string line;
+    if (!getline(cin, line)) return 0;
+
+    vector<string> tokens;
+    istringstream iss(line);
+    for (string tok; iss >> tok;) tokens.push_back(tok);
+
+    long long targetSum = 0;
+    cin >> targetSum;
+
+    TreeNode *root = buildTree(tokens);
+    cout << (hasPathSum(root, targetSum) ? "true" : "false") << '\n';
+    return 0;
+}

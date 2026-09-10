@@ -1,50 +1,38 @@
 // “马”在棋盘上的概率
 // https://leetcode.cn/problems/knight-probability-in-chessboard/
 //
-// 思路：dp[r][c] 表示当前步数下马在 (r, c) 的概率，每步把概率按 1/8
-//       分摊给棋盘内的 8 个落点，K 步之后所有格子的概率之和就是答案。
-// 复杂度：时间 O(K * N^2) 空间 O(N^2)
-#include <iomanip>
+// 思路：
+// 复杂度：时间 O() 空间 O()
+//
+// 这里是空模板：实现自己写；参考解法在 solution.txt 里（实在想不出来再看）。
+#include <algorithm>
+#include <array>
+#include <climits>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <iostream>
+#include <map>
+#include <numeric>
+#include <queue>
+#include <set>
+#include <stack>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 using namespace std;
+
+// 提示：本机是 Apple clang + libc++，没有 <bits/stdc++.h>（那是 GCC 专有头）。
+// 如果想要竞赛风格的万能头，用 Homebrew 装 gcc 后把 CXX 换成 g++-14。
 
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    int N = 0, K = 0, sr = 0, sc = 0;
-    if (!(cin >> N >> K >> sr >> sc)) return 0;
+    // TODO: 读入 -> 计算 -> 输出
 
-    const int dr[8] = {2, 2, 1, 1, -1, -1, -2, -2};
-    const int dc[8] = {1, -1, 2, -2, 2, -2, 1, -1};
-
-    vector<vector<double>> dp(N, vector<double>(N, 0.0));
-    dp[sr][sc] = 1.0;
-
-    for (int step = 0; step < K; ++step) {
-        vector<vector<double>> next(N, vector<double>(N, 0.0));
-        for (int r = 0; r < N; ++r) {
-            for (int c = 0; c < N; ++c) {
-                if (dp[r][c] <= 0.0) continue;
-                for (int k = 0; k < 8; ++k) {
-                    int nr = r + dr[k];
-                    int nc = c + dc[k];
-                    if (nr >= 0 && nr < N && nc >= 0 && nc < N) {
-                        next[nr][nc] += dp[r][c] / 8.0;
-                    }
-                }
-            }
-        }
-        dp.swap(next);
-    }
-
-    double ans = 0.0;
-    for (int r = 0; r < N; ++r) {
-        for (int c = 0; c < N; ++c) ans += dp[r][c];
-    }
-
-    cout << fixed << setprecision(5) << ans << '\n';
     return 0;
 }

@@ -1,50 +1,38 @@
-// 全排列（LeetCode 46. Permutations）
+// 全排列
 // https://leetcode.cn/problems/permutations/
 //
-// 思路：先把数组排序，再按字典序做回溯：每层选一个没用过的数，选满 n 个输出一个排列。
-//       因为每层都按升序尝试，输出顺序天然就是字典序。
-// 复杂度：时间 O(n * n!) 空间 O(n)
+// 思路：
+// 复杂度：时间 O() 空间 O()
+//
+// 这里是空模板：实现自己写；参考解法在 solution.txt 里（实在想不出来再看）。
 #include <algorithm>
+#include <array>
+#include <climits>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <iostream>
+#include <map>
+#include <numeric>
+#include <queue>
+#include <set>
+#include <stack>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 using namespace std;
 
-static int n;
-static vector<int> nums;
-static vector<int> path;
-static vector<bool> used;
-
-static void dfs() {
-    if (static_cast<int>(path.size()) == n) {
-        for (int i = 0; i < n; ++i) {
-            if (i > 0) cout << ' ';
-            cout << path[i];
-        }
-        cout << '\n';
-        return;
-    }
-    for (int i = 0; i < n; ++i) {
-        if (used[i]) continue;
-        used[i] = true;
-        path.push_back(nums[i]);
-        dfs();
-        path.pop_back();
-        used[i] = false;
-    }
-}
+// 提示：本机是 Apple clang + libc++，没有 <bits/stdc++.h>（那是 GCC 专有头）。
+// 如果想要竞赛风格的万能头，用 Homebrew 装 gcc 后把 CXX 换成 g++-14。
 
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    if (!(cin >> n)) return 0;
-    nums.resize(n);
-    for (auto &x : nums) cin >> x;
-
-    sort(nums.begin(), nums.end());  // 保证输出是字典序，判题结果才唯一
-    used.assign(n, false);
-    dfs();
+    // TODO: 读入 -> 计算 -> 输出
 
     return 0;
 }

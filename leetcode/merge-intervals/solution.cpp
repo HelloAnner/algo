@@ -1,37 +1,38 @@
 // 合并区间
 // https://leetcode.cn/problems/merge-intervals/
 //
-// 思路：按左端点排序后扫一遍，与当前区间重叠（l <= 当前右端点）就更新右端点为 max，否则另起一段。
-// 复杂度：时间 O(n log n) 空间 O(n)
+// 思路：
+// 复杂度：时间 O() 空间 O()
+//
+// 这里是空模板：实现自己写；参考解法在 solution.txt 里（实在想不出来再看）。
 #include <algorithm>
+#include <array>
+#include <climits>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <iostream>
-#include <utility>
+#include <map>
+#include <numeric>
+#include <queue>
+#include <set>
+#include <stack>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 using namespace std;
+
+// 提示：本机是 Apple clang + libc++，没有 <bits/stdc++.h>（那是 GCC 专有头）。
+// 如果想要竞赛风格的万能头，用 Homebrew 装 gcc 后把 CXX 换成 g++-14。
 
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    int n;
-    if (!(cin >> n)) return 0;
+    // TODO: 读入 -> 计算 -> 输出
 
-    vector<pair<long long, long long>> intervals(n);
-    for (auto &seg : intervals) cin >> seg.first >> seg.second;
-
-    sort(intervals.begin(), intervals.end());
-
-    vector<pair<long long, long long>> res;
-    for (const auto &seg : intervals) {
-        if (!res.empty() && seg.first <= res.back().second) {
-            res.back().second = max(res.back().second, seg.second);
-        } else {
-            res.push_back(seg);
-        }
-    }
-
-    cout << res.size() << '\n';
-    for (const auto &seg : res) cout << seg.first << ' ' << seg.second << '\n';
     return 0;
 }

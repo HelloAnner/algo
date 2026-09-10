@@ -1,0 +1,71 @@
+[思路]
+前缀和 + 哈希表。
+
+设 pre 是当前位置的前缀和，那么「以当前位置结尾、和为 k 的子数组」的个数，等于前面出现过多少个前缀和正好是 pre - k（子数组的和 = 两个前缀和之差）。
+
+所以遍历时：
+
+1. 把 pre 累加上 nums[i]；
+2. ans += cnt[pre - k]（cnt 记录每个前缀和出现过的次数）；
+3. cnt[pre]++。
+
+哈希表初始化为 cnt[0] = 1，表示「一个数都不选」的空前缀，这样从下标 0 开始的子数组也能被统计到。
+
+以示例 1（nums = [1,1,1]，k = 2）走一遍：
+
+    下标 j:        0     1     2     3
+    nums:                1     1     1
+    前缀和 pre:    0     1     2     3
+    cnt 里的前缀和: {0:1} {0:1,1:1} {0:1,1:1,2:1} ...
+    查 pre - k:      -    -1(0次)  0(1次)   1(1次)
+    命中:            -      -       +1      +1      → ans = 2
+
+[复杂度]
+时间：O(n)，一次遍历，哈希表均摊 O(1)
+空间：O(n)，最坏情况下有 n 个不同的前缀和
+
+[关键点]
+- 必须有 cnt[0] = 1，否则漏掉从第一个元素开始的子数组
+- 元素可以是负数，所以不能用滑动窗口 / 双指针
+- pre - k 可能越界或不存在，unordered_map 查不到就是 0，别直接 cnt[pre - k] 后判断（虽然也会插入 0，但会白白多建节点）
+- 前缀和与答案都可能比较大，用 long long（答案最坏是 n(n+1)/2）
+- k 用 long long 读入，范围到 10^7 也可以用 int，但统一成 long long 更省心
+
+[C++ 代码]
+// 和为 K 的子数组（LeetCode 560. Subarray Sum Equals K）
+// https://leetcode.cn/problems/subarray-sum-equals-k/
+//
+// 思路：前缀和 + 哈希表。遍历时把每个前缀和的出现次数记进 map；
+//       当前前缀和为 pre 时，以当前位置结尾且和为 k 的子数组个数就是 map[pre - k]。
+// 复杂度：时间 O(n) 空间 O(n)
+#include <iostream>
+#include <unordered_map>
+
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n;
+    long long k;
+    if (!(cin >> n >> k)) return 0;
+
+    unordered_map<long long, long long> cnt;
+    cnt.reserve(static_cast<size_t>(n) * 2 + 1);
+    cnt[0] = 1;  // 空前缀：让从下标 0 开始的子数组也能被统计
+
+    long long pre = 0;
+    long long ans = 0;
+    for (int i = 0; i < n; ++i) {
+        long long x;
+        cin >> x;
+        pre += x;
+        auto it = cnt.find(pre - k);
+        if (it != cnt.end()) ans += it->second;
+        ++cnt[pre];
+    }
+
+    cout << ans << '\n';
+    return 0;
+}

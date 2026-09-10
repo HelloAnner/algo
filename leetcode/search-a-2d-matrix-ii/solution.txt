@@ -1,0 +1,72 @@
+[思路]
+从右上角 (0, n-1) 出发（等价地，从左下角出发也可以）：
+
+- 若 matrix[i][j] == target：找到了，返回 true；
+- 若 matrix[i][j] < target：当前元素是第 i 行里最大的，这一行左边都不可能再有 target，于是整行排除，i++（往下走）；
+- 若 matrix[i][j] > target：当前元素是第 j 列里最小的，这一列下边都不可能再有 target，于是整列排除，j--（往左走）。
+
+    右上角 (0,4) 很特殊：它同时是「所在行的最大值」和「所在列的最小值」，
+    所以一次比较就能整行或整列地排除。
+
+        [15]  比 target 大 -> 这一列下面的都更大，整列排除，往左走
+        [4]   比 target 小 -> 这一行左边的都更小，整行排除，往下走
+
+为什么对：每走一步至少排除一行或一列，最多走 m + n 步就会走出边界。这就是文档里 Java 解法的「切割数组」思路。
+
+起点不能选左上角：左上角同时是最小值，无论大于还是小于都会错误地排除掉整行或整列。
+
+[复杂度]
+时间：O(m + n)   空间：O(1)
+
+行指针只向下走 m 次、列指针只向左走 n 次；额外空间是常数（存矩阵本身是 O(mn)）。
+
+[关键点]
+- 起点只能是右上角或左下角，这两个位置才同时具备「本行最大」「本列最小」（或反过来）的单调性
+- 循环条件写 i < m && j >= 0，指针越界即说明不存在
+- 输出是小写的 true / false：用 boolalpha，或者手写分支
+- 元素可达正负 10^9，用 long long 存，比较时别混入 int 造成窄化
+- 元素可能重复，但本题的走法不依赖去重，遇到相等直接返回即可
+
+[C++ 代码]
+// 搜索二维矩阵 II
+// https://leetcode.cn/problems/search-a-2d-matrix-ii/
+//
+// 思路：从右上角出发，比 target 小就下移一行、比 target 大就左移一列，
+//       每一步排除一整行或一整列，最多走 m + n 步。
+// 复杂度：时间 O(m + n) 空间 O(1)（不含输入矩阵本身）
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int m = 0, n = 0;
+    if (!(cin >> m >> n)) return 0;
+
+    vector<vector<long long>> a(m, vector<long long>(n));
+    for (int i = 0; i < m; ++i) {
+        for (int j = 0; j < n; ++j) cin >> a[i][j];
+    }
+
+    long long target = 0;
+    cin >> target;
+
+    int i = 0, j = n - 1;
+    bool found = false;
+    while (i < m && j >= 0) {
+        if (a[i][j] == target) {
+            found = true;
+            break;
+        } else if (a[i][j] < target) {
+            ++i;
+        } else {
+            --j;
+        }
+    }
+
+    cout << boolalpha << found << '\n';
+    return 0;
+}

@@ -1,55 +1,38 @@
 // 二叉树的层序遍历
 // https://leetcode.cn/problems/binary-tree-level-order-traversal/
 //
-// 思路：按层序数组建树，BFS 时先记下当前队列长度，一次处理完一整层。
-// 复杂度：时间 O(N) 空间 O(W)（W 为最大宽度）
+// 思路：
+// 复杂度：时间 O() 空间 O()
+//
+// 这里是空模板：实现自己写；参考解法在 solution.txt 里（实在想不出来再看）。
+#include <algorithm>
+#include <array>
+#include <climits>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <iostream>
+#include <map>
+#include <numeric>
 #include <queue>
+#include <set>
+#include <stack>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 using namespace std;
 
-struct Node {
-    int val = 0;
-    Node *left = nullptr;
-    Node *right = nullptr;
-};
+// 提示：本机是 Apple clang + libc++，没有 <bits/stdc++.h>（那是 GCC 专有头）。
+// 如果想要竞赛风格的万能头，用 Homebrew 装 gcc 后把 CXX 换成 g++-14。
 
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    int n = 0;
-    if (!(cin >> n)) return 0;
+    // TODO: 读入 -> 计算 -> 输出
 
-    vector<Node> nodes(n);
-    for (int i = 0; i < n; ++i) cin >> nodes[i].val;
-
-    // 层序数组：下标 i 的孩子是 2i+1 / 2i+2，-1 表示空节点
-    for (int i = 1; i < n; ++i) {
-        if (nodes[i].val == -1) continue;
-        int parent = (i - 1) / 2;
-        if (i % 2 == 1) {
-            nodes[parent].left = &nodes[i];
-        } else {
-            nodes[parent].right = &nodes[i];
-        }
-    }
-
-    queue<Node *> q;
-    if (n > 0 && nodes[0].val != -1) q.push(&nodes[0]);
-
-    while (!q.empty()) {
-        size_t size = q.size();  // 当前这一层的节点个数
-        for (size_t i = 0; i < size; ++i) {
-            Node *cur = q.front();
-            q.pop();
-            if (i > 0) cout << ' ';
-            cout << cur->val;
-            if (cur->left) q.push(cur->left);
-            if (cur->right) q.push(cur->right);
-        }
-        cout << '\n';
-    }
     return 0;
 }

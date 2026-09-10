@@ -1,59 +1,38 @@
-// 最小栈（原文档小节「最大栈」，716 为会员题，此处实现同型的最小栈）
+// 最小栈
 // https://leetcode.cn/problems/min-stack/
 //
-// 思路：双栈，data 存数据，minStack 单调非增地存到当前位置为止的最小值。
-// 复杂度：时间 O(1)/次操作 空间 O(q)
+// 思路：
+// 复杂度：时间 O() 空间 O()
+//
+// 这里是空模板：实现自己写；参考解法在 solution.txt 里（实在想不出来再看）。
+#include <algorithm>
+#include <array>
+#include <climits>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <iostream>
+#include <map>
+#include <numeric>
+#include <queue>
+#include <set>
 #include <stack>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 using namespace std;
 
-class MinStack {
-  public:
-    void push(int val) {
-        data_.push(val);
-        // 注意是 <=：相等的元素也要压入，否则弹出时会丢掉最小值
-        if (minStack_.empty() || val <= minStack_.top()) minStack_.push(val);
-    }
-
-    void pop() {
-        int x = data_.top();
-        data_.pop();
-        if (!minStack_.empty() && minStack_.top() == x) minStack_.pop();
-    }
-
-    int top() const { return data_.top(); }
-
-    int getMin() const { return minStack_.top(); }
-
-  private:
-    stack<int> data_;
-    stack<int> minStack_;
-};
+// 提示：本机是 Apple clang + libc++，没有 <bits/stdc++.h>（那是 GCC 专有头）。
+// 如果想要竞赛风格的万能头，用 Homebrew 装 gcc 后把 CXX 换成 g++-14。
 
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    int q;
-    if (!(cin >> q)) return 0;
+    // TODO: 读入 -> 计算 -> 输出
 
-    MinStack st;
-    string op;
-    while (q-- > 0) {
-        cin >> op;
-        if (op == "push") {
-            int x = 0;
-            cin >> x;
-            st.push(x);
-        } else if (op == "pop") {
-            st.pop();
-        } else if (op == "top") {
-            cout << st.top() << '\n';
-        } else if (op == "getMin") {
-            cout << st.getMin() << '\n';
-        }
-    }
     return 0;
 }

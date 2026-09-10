@@ -1,0 +1,68 @@
+[思路]
+二分答案（文档里的 Java 解法就是二分）。
+
+在区间 [0, max(1, x)] 上二分：每轮取 mid = (low + high) / 2，比较 mid * mid 与 x：
+
+- mid * mid < x：答案在右半边，low = mid；
+- mid * mid >= x：答案在左半边，high = mid。
+
+    0 = low                mid                 high = max(1, x)
+    +-----------------------+-----------------------+
+        mid * mid < x             mid * mid >= x
+      答案在右半边 →            ← 答案在左半边
+      low = mid                  high = mid
+
+循环固定迭代 100 次。double 只有 53 位有效位，100 次迭代早就把区间缩到机器精度以下，一定能收敛；最后把 low 按 e 的小数位数四舍五入输出。
+
+文档里的写法是把 mid * mid 与 [x - e, x + e] 比较作为命中条件并提前 break，思路一样，但固定迭代次数更简单，也不会出现「区间缩到浮点精度以下、mid 反复等于端点」导致退不出循环的问题。
+
+[复杂度]
+时间：O(log(max(1, x) / 精度))，实际就是常数次（100 次）迭代
+空间：O(1)
+
+[关键点]
+- 上界要取 max(1, x)：x < 1 时如果上界取 x 就错了（√0.045 ≈ 0.212 > 0.045）
+- 不要用 mid * mid == x 这类浮点相等判断（本仓库静态检查会报 -Wfloat-equal），用固定迭代次数或区间宽度收敛
+- 精度位数 k 直接从 e 的字符串里数小数点后的位数最稳（0.001 在 double 里并不精确），不要用浮点运算反推
+- 输出用 fixed + setprecision(k)，四舍五入；x = 0、k = 0 等边界也要能正常输出
+- x 最大 10^9，mid * mid 也在 10^9 量级，double 不会溢出
+
+[C++ 代码]
+// 求平方根（带精度）
+// 面试经典题（非 LeetCode 原题）：给定 x 和精度 e，求 sqrt(x)
+//
+// 思路：在 [0, max(1, x)] 上二分 100 轮，mid*mid 与 x 比较收缩区间，最后按 e 的小数位数输出。
+// 复杂度：时间 O(log(max(1,x)/精度))（实际常数 100 轮） 空间 O(1)
+#include <iomanip>
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    double x = 0.0;
+    string eps;
+    if (!(cin >> x >> eps)) return 0;
+
+    // e = 10^-k，小数位数就是要求保留的位数
+    int k = 0;
+    size_t dot = eps.find('.');
+    if (dot != string::npos) k = static_cast<int>(eps.size() - dot - 1);
+
+    double low = 0.0;
+    double high = x > 1.0 ? x : 1.0;
+    for (int iter = 0; iter < 100; ++iter) {
+        double mid = (low + high) / 2.0;
+        if (mid * mid < x) {
+            low = mid;
+        } else {
+            high = mid;
+        }
+    }
+
+    cout << fixed << setprecision(k) << low << '\n';
+    return 0;
+}

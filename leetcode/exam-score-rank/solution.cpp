@@ -1,42 +1,38 @@
-// 找范围（高考成绩分桶排名）
+// 找范围
 // https://www.nowcoder.com/discuss/425581
 //
-// 思路：分数只有 0~750，按分数分桶计数，再从高到低求后缀和得到每个分数的排名。
-// 复杂度：时间 O(n + 751 + q) 空间 O(751)
+// 思路：
+// 复杂度：时间 O() 空间 O()
+//
+// 这里是空模板：实现自己写；参考解法在 solution.txt 里（实在想不出来再看）。
+#include <algorithm>
+#include <array>
+#include <climits>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <iostream>
+#include <map>
+#include <numeric>
+#include <queue>
+#include <set>
+#include <stack>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 using namespace std;
+
+// 提示：本机是 Apple clang + libc++，没有 <bits/stdc++.h>（那是 GCC 专有头）。
+// 如果想要竞赛风格的万能头，用 Homebrew 装 gcc 后把 CXX 换成 g++-14。
 
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    long long n, q;
-    if (!(cin >> n >> q)) return 0;
+    // TODO: 读入 -> 计算 -> 输出
 
-    const int MAXS = 750;
-    vector<long long> cnt(MAXS + 1, 0);
-    for (long long i = 0; i < n; ++i) {
-        int s;
-        cin >> s;
-        if (s < 0) s = 0;
-        if (s > MAXS) s = MAXS;
-        ++cnt[s];
-    }
-
-    // rankOf[s] = 严格高于 s 的人数 + 1（从高到低求后缀和）
-    vector<long long> rankOf(MAXS + 1, 1);
-    long long higher = 0;
-    for (int s = MAXS; s >= 0; --s) {
-        rankOf[s] = higher + 1;
-        higher += cnt[s];
-    }
-
-    for (long long k = 0; k < q; ++k) {
-        int s;
-        cin >> s;
-        cout << rankOf[s] << ' ' << cnt[s] << '\n';
-    }
     return 0;
 }

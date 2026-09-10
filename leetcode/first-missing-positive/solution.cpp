@@ -1,39 +1,38 @@
-// 缺失的第一个正数（LeetCode 41）
+// 缺失的第一个正数
 // https://leetcode.cn/problems/first-missing-positive/
 //
-// 思路：原地哈希——把值 v (1<=v<=n) 换到下标 v-1 上，再从头找第一个 nums[i] != i+1 的位置。
-// 复杂度：时间 O(n) 空间 O(1)
+// 思路：
+// 复杂度：时间 O() 空间 O()
+//
+// 这里是空模板：实现自己写；参考解法在 solution.txt 里（实在想不出来再看）。
 #include <algorithm>
+#include <array>
+#include <climits>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <iostream>
+#include <map>
+#include <numeric>
+#include <queue>
+#include <set>
+#include <stack>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 using namespace std;
+
+// 提示：本机是 Apple clang + libc++，没有 <bits/stdc++.h>（那是 GCC 专有头）。
+// 如果想要竞赛风格的万能头，用 Homebrew 装 gcc 后把 CXX 换成 g++-14。
 
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    int n;
-    cin >> n;
+    // TODO: 读入 -> 计算 -> 输出
 
-    vector<int> nums(n);
-    for (auto &x : nums) cin >> x;
-
-    for (int i = 0; i < n; ++i) {
-        // 只处理 [1, n] 内的值；目标位置已经是对的就不再动，避免重复元素死循环
-        while (nums[i] > 0 && nums[i] <= n && nums[nums[i] - 1] != nums[i]) {
-            swap(nums[i], nums[nums[i] - 1]);
-        }
-    }
-
-    int ans = n + 1;  // 1..n 都出现过时的答案
-    for (int i = 0; i < n; ++i) {
-        if (nums[i] != i + 1) {
-            ans = i + 1;
-            break;
-        }
-    }
-
-    cout << ans << '\n';
     return 0;
 }

@@ -1,0 +1,105 @@
+[思路]
+
+按层遍历（BFS）：右视图的每一层只取一个节点，就是这个层的最右节点。
+
+- 第一遍：把层序序列还原成二叉树。用一个队列保存「已经建好、还没分配孩子的节点」，同时用一个指针 idx 指向序列中下一个待分配的孩子 token：每次从队首取出一个节点，把 tok[idx] 作为它的左孩子、tok[idx + 1] 作为它的右孩子，idx += 2；孩子非空时才入队、才参与后续分配。
+- 第二遍：从根开始做 BFS，一次处理一整层（先记下当前队列大小 sz），这一层里第 sz 个（最后一个）节点的值就是右视图里的一个答案。
+
+为什么对：站在右侧时，同一层里只有最右边的节点不会被同一层的其他节点挡住（下层节点只会挡住它上方节点右边的视野，而同一层最右节点上方的那列才是可见的），因此右视图 = 每层最右节点、自上而下。
+
+也可以不用 BFS：按「根 → 右 → 左」做 DFS，每个深度第一次访问到的节点必定是该层最右节点，同样能收集答案（文档里没有给解法，两种都可以）。
+
+[复杂度]
+
+时间：O(n)，建树与层序遍历各扫一遍
+空间：O(n)，存树与队列
+
+[关键点]
+
+- LeetCode 的层序序列里，null 节点的孩子不会出现，所以要用「队列 + 双 token 分配」的方式建树，不能直接按下标 2i+1 / 2i+2 取孩子
+- 记录每层最后一个节点时，要在出队前用 sz = q.size() 固定本层节点数，否则会把下一层混进来
+- 空树要输出空行，不要输出任何数字
+- 输入含 null 这种非数字 token，读进来用 string 再判断 / 转换
+- 节点值可能为负，判断「空」不能用 -1 之类的哨兵值去替代 null
+
+[C++ 代码]
+// 二叉树的右视图（LeetCode 199）
+// https://leetcode.cn/problems/binary-tree-right-side-view/
+//
+// 思路：按 LeetCode 层序序列建树，再层序遍历，取每一层的最后一个节点。
+// 复杂度：时间 O(n) 空间 O(n)
+#include <iostream>
+#include <queue>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n;
+    if (!(cin >> n) || n <= 0) {
+        cout << '\n';  // 空树
+        return 0;
+    }
+
+    vector<string> tok(n);
+    for (auto &s : tok) cin >> s;
+
+    // 建树：下标 0 是根；leftChild / rightChild 为 -1 表示空
+    vector<int> val(n, 0), leftChild(n, -1), rightChild(n, -1);
+    vector<bool> isNull(n, false);
+    for (int i = 0; i < n; ++i) {
+        if (tok[i] == "null") {
+            isNull[i] = true;
+        } else {
+            val[i] = stoi(tok[i]);
+        }
+    }
+
+    queue<int> q;                  // 已建好、还没分配孩子的节点
+    if (!isNull[0]) q.push(0);
+    int idx = 1;                   // 下一个待分配的孩子 token
+    while (!q.empty() && idx < n) {
+        int cur = q.front();
+        q.pop();
+        if (idx < n) {             // 左孩子
+            if (!isNull[idx]) {
+                leftChild[cur] = idx;
+                q.push(idx);
+            }
+            ++idx;
+        }
+        if (idx < n) {             // 右孩子
+            if (!isNull[idx]) {
+                rightChild[cur] = idx;
+                q.push(idx);
+            }
+            ++idx;
+        }
+    }
+
+    // 层序遍历，每层最后一个节点即右视图看到的节点
+    vector<int> ans;
+    queue<int> level;
+    level.push(0);
+    while (!level.empty()) {
+        int sz = (int)level.size();
+        for (int i = 0; i < sz; ++i) {
+            int cur = level.front();
+            level.pop();
+            if (i == sz - 1) ans.push_back(val[cur]);
+            if (leftChild[cur] != -1) level.push(leftChild[cur]);
+            if (rightChild[cur] != -1) level.push(rightChild[cur]);
+        }
+    }
+
+    for (size_t i = 0; i < ans.size(); ++i) {
+        if (i) cout << ' ';
+        cout << ans[i];
+    }
+    cout << '\n';
+    return 0;
+}

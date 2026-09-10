@@ -1,0 +1,73 @@
+[思路]
+双指针（对撞指针）：i 指向数组最小值，j 指向数组最大值，然后向中间收缩：
+
+- 若 nums[i] + nums[j] > target：由于数组有序，任何 i' >= i 都有 nums[i'] + nums[j] >= nums[i] + nums[j] > target，也就是说 nums[j] 和谁都配不成答案，可以放心 --j；
+- 若 nums[i] + nums[j] < target：对称地，任何 j' <= j 都有 nums[i] + nums[j'] <= nums[i] + nums[j] < target，所以 nums[i] 也配不成答案，可以放心 ++i；
+- 相等即找到答案，直接返回。
+
+    i ->                                              <- j
+    +-----+-----+-----+-----+-----+-----+-----+-----+
+    |  1  |  2  |  4  |  7  |  9  | 11  | 13  | 15  |
+    +-----+-----+-----+-----+-----+-----+-----+-----+
+    每次比较两端之和：和大了就 --j，和小了就 ++i，直到相等
+
+为什么对：每一步都排除掉一个确定不可能出现在答案里的元素，而且排除的都不是答案元素，所以不会漏解；又因为题目保证有解，循环结束时一定能返回。两指针一共最多移动 n 步，所以是线性的。
+
+对比其他做法：
+
+- 哈希表：O(n) 时间 + O(n) 空间，可行但没有利用「有序」这个条件；
+- 对每个 i 二分查找 target - nums[i]：O(n log n)，能过但不是最优；
+- 暴力双重循环：O(n²)，会超时。
+
+文档里的 Java 版就是标准的双指针写法。
+
+[复杂度]
+时间：O(n)，i 只右移、j 只左移，合计最多 n 次移动。
+空间：O(1)（除输入数组本身外没有额外空间）。
+
+[关键点]
+- 循环条件必须是 i < j：题目要求两个不同位置的数，i == j 时等于同一个元素用了两次；
+- 局部变量 sum 用 long long 更保险（本题 nums[i] <= 10^6，int 其实够）；
+- 数组只是「非递减」，允许重复元素，双指针同样成立（nums[i] == nums[j] 时和相等也算合法答案）；
+- 输出时小的在前：因为 i < j 且数组非递减，nums[i] <= nums[j]，直接先输出 nums[i] 即可；
+- 若写成「固定一个数再二分」，注意二分范围要从 i+1 开始，避免用到同一个元素。
+
+[C++ 代码]
+// 和为 s 的两个数字（原文档小节：找出和为 k 的数对）
+// https://leetcode.cn/problems/he-wei-sde-liang-ge-shu-zi-lcof/
+//
+// 思路：数组有序，双指针对撞：和大了右指针左移，和小了左指针右移，相等即答案。
+// 复杂度：时间 O(n) 空间 O(1)
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n = 0;
+    long long target = 0;
+    if (!(cin >> n >> target)) return 0;
+
+    vector<int> nums(n);
+    for (auto &x : nums) cin >> x;
+
+    int i = 0, j = n - 1;
+    while (i < j) {
+        long long sum = static_cast<long long>(nums[i]) + nums[j];
+        if (sum > target) {
+            --j;
+        } else if (sum < target) {
+            ++i;
+        } else {
+            cout << nums[i] << ' ' << nums[j] << '\n';
+            return 0;
+        }
+    }
+
+    // 题目保证有解，这里只是防御性输出
+    cout << -1 << ' ' << -1 << '\n';
+    return 0;
+}

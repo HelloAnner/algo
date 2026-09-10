@@ -1,0 +1,73 @@
+[思路]
+
+滑动窗口（双指针）。窗口是左闭右开区间 [l, r)，sum 表示窗口内整数之和，初始 l = r = 1、sum = 0，然后反复做三件事：
+
+- sum < target：把 r 纳入窗口，sum += r; ++r；
+- sum > target：把 l 移出窗口，sum -= l; ++l；
+- sum == target：此刻 l..r-1 就是一个答案，记录下来后继续 sum -= l; ++l，去找下一个解。
+
+循环条件是 l <= target / 2：序列至少两个数，首项一旦超过 target/2，l + (l+1) 就已经大于 target，不可能再有解。
+
+正确性：固定左端点 l 时，窗口和随右端点 r 单调递增，所以每个 l 至多对应一个满足 sum == target 的 r。双指针按当前和的大小决定移动哪一端，l、r 都只增不减，既不会跳过解，也不会重复记录（记录后立刻左移，保证同一组不会记录两次）。这正对应文档里 Java 解法的 sum += j++ / sum -= i++。
+
+[复杂度]
+
+时间：O(target)。r 从 1 单调增到 target/2 + 1，l 也单调递增，两端总共移动 O(target) 步；构造答案的代价（各序列长度之和）也被 O(target) 包住
+空间：O(1)（不计输出）
+
+[关键点]
+
+- 窗口是左闭右开 [l, r)，记录的是 l 到 r - 1
+- sum == target 记录完必须立刻 sum -= l; ++l，否则会死循环
+- 循环条件用 l <= target / 2；写成 l < target 会白跑很多步
+- target = 1 或 2 无解，要能输出 0
+- 序列至少两个数，target 自己单个数不算答案
+- 输出时行尾不要留多余空格
+
+[C++ 代码]
+// 和为s的连续正数序列
+// https://leetcode.cn/problems/he-wei-sde-lian-xu-zheng-shu-xu-lie-lcof/
+//
+// 思路：滑动窗口（双指针），窗口 [l, r) 的和小于 target 就右扩、大于就左缩、相等就记录后左缩。
+// 复杂度：时间 O(target) 空间 O(1)（不计输出）
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    long long target = 0;
+    if (!(cin >> target)) return 0;
+
+    vector<vector<long long>> res;
+    long long l = 1, r = 1, sum = 0;  // 窗口 [l, r)
+    while (l <= target / 2) {
+        if (sum < target) {
+            sum += r;
+            ++r;
+        } else if (sum > target) {
+            sum -= l;
+            ++l;
+        } else {
+            vector<long long> seq;
+            seq.reserve(static_cast<size_t>(r - l));
+            for (long long x = l; x < r; ++x) seq.push_back(x);
+            res.push_back(seq);
+            sum -= l;
+            ++l;
+        }
+    }
+
+    cout << res.size() << '\n';
+    for (const auto &seq : res) {
+        for (size_t i = 0; i < seq.size(); ++i) {
+            if (i > 0) cout << ' ';
+            cout << seq[i];
+        }
+        cout << '\n';
+    }
+    return 0;
+}

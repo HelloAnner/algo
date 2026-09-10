@@ -1,0 +1,157 @@
+[思路]
+
+中文数字的读法是「节」式的：万、亿 把数字切成若干节，每节内部用 十/百/千 做十进制累加。所以从左到右扫一遍、边走边结算即可，维护三个量：
+
+- number：当前手上还没用掉的一位数字（例如读到「二」时 number = 2）；
+- section：当前这一节（万以下）的值；
+- total：已经结算完的高位部分。
+
+遇到不同字符时的处理：
+
+字符                 处理
+数字（一/两/三…）    number = d
+十 / 百 / 千         section += (number == 0 ? 1 : number) * unit，然后 number = 0
+万                   section = (section + number) * 10000；total += section；section = number = 0
+亿                   total = (total + section + number) * 100000000；section = number = 0
+零 / 〇              跳过（纯占位）
+负                   记录符号位
+
+扫完后答案是 total + section + number（再乘符号）。
+
+正确性：section 始终等于「当前正在读的这一节」的值，节内按十进制权重累加；遇到 万 时这一节读完了，乘上 10^4 并累加进 total，同时把 section 清零开始读下一节（这正是「两万三千」= (2)×10^4 + 3000 的读法）。亿 比 万 更大，所以要把「已经攒下的所有东西」整体乘 10^8，这样「一亿零五百万」「一万亿」都能正确解析。
+
+「十 前面没数字按 1 算」这个特例就体现在 number == 0 ? 1 : number 上，它同时覆盖了「十二」（1×10 + 2）和「二十」（2×10）。
+
+[复杂度]
+
+时间：O(L)，L 为字符串字符数，一遍扫描
+空间：O(L)，把字符串切成字符数组；若直接按 UTF-8 字节比较，可以做到 O(1)
+
+[关键点]
+
+- UTF-8 是变长编码：一个中文字符占 3 个字节，绝不能按字节和「十」这种字面量比较，必须先按首字节判长度切分成「字符」
+- 「十二」= 12 而不是 2：十 前面没有数字时要按 1 处理
+- 「零」只是占位符，直接跳过；但别把整个字符丢掉导致「一百零八」被读成 18
+- 万 是「乘完再累加」：section = (section + number) * 10000; total += section;，顺序写反就错
+- 亿 要在 total 层面做乘法（(total + section + number) * 10^8），因为亿比万高一级
+- 结果可能到 10^12 量级，必须用 long long，不能用 int
+- 读入用 getline，并且要处理行尾 \r 与首尾空白，否则会影响字符切分
+
+[C++ 代码]
+// 中文数字转阿拉伯数字
+// 题目：给定一个中文字符串，转换成对应的阿拉伯数字（《手撕字节跳动面试时出现过的算法题》第 33 题）
+//
+// 思路：按「节」扫描，number 存当前一位数字，section 存当前万以下的节，遇万/亿结算进 total。
+// 复杂度：时间 O(L) 空间 O(L)（L 为字符数）
+#include <iostream>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+// 把一行 UTF-8 文本按「字符」切开（中文是 3 字节，不能按字节比较）
+static vector<string> splitUtf8(const string &s) {
+    vector<string> out;
+    for (size_t i = 0; i < s.size();) {
+        unsigned char c = static_cast<unsigned char>(s[i]);
+        size_t len = 1;
+        if ((c & 0x80) == 0x00) {
+            len = 1;
+        } else if ((c & 0xE0) == 0xC0) {
+            len = 2;
+        } else if ((c & 0xF0) == 0xE0) {
+            len = 3;
+        } else if ((c & 0xF8) == 0xF0) {
+            len = 4;
+        }
+        if (i + len > s.size()) len = 1;  // 防御被截断的非法字节
+        out.push_back(s.substr(i, len));
+        i += len;
+    }
+    return out;
+}
+
+// 数字字符 -> 数值，不是数字返回 -1
+static int digitOf(const string &ch) {
+    if (ch == "一") return 1;
+    if (ch == "二" || ch == "两") return 2;
+    if (ch == "三") return 3;
+    if (ch == "四") return 4;
+    if (ch == "五") return 5;
+    if (ch == "六") return 6;
+    if (ch == "七") return 7;
+    if (ch == "八") return 8;
+    if (ch == "九") return 9;
+    return -1;
+}
+
+// 小节单位：十 / 百 / 千
+static long long smallUnitOf(const string &ch) {
+    if (ch == "十") return 10;
+    if (ch == "百") return 100;
+    if (ch == "千") return 1000;
+    return 0;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    string line;
+    if (!getline(cin, line)) {
+        cout << 0 << '\n';
+        return 0;
+    }
+
+    // 去掉首尾空白（含行尾的 \r）
+    size_t begin = line.find_first_not_of(" \t\r\n");
+    size_t end = line.find_last_not_of(" \t\r\n");
+    string s = (begin == string::npos) ? string() : line.substr(begin, end - begin + 1);
+
+    long long total = 0;    // 已结算的高位部分
+    long long section = 0;  // 当前「万」以下这一节的值
+    long long number = 0;   // 当前待用的一位数字
+    int sign = 1;
+
+    for (const string &ch : splitUtf8(s)) {
+        if (ch == "负") {
+            sign = -1;
+            continue;
+        }
+        if (ch == "零" || ch == "〇") continue;  // 占位符，跳过
+
+        int d = digitOf(ch);
+        if (d >= 0) {
+            number = d;
+            continue;
+        }
+
+        long long unit = smallUnitOf(ch);
+        if (unit > 0) {
+            // 「十」前面没有数字时按 1 算：十二 = 12，二十 = 20
+            section += (number == 0 ? 1 : number) * unit;
+            number = 0;
+            continue;
+        }
+
+        if (ch == "万") {
+            section = (section + number) * 10000;
+            total += section;
+            section = 0;
+            number = 0;
+            continue;
+        }
+
+        if (ch == "亿") {
+            total = (total + section + number) * 100000000LL;
+            section = 0;
+            number = 0;
+            continue;
+        }
+
+        // 其它字符（空白、标点）忽略
+    }
+
+    cout << sign * (total + section + number) << '\n';
+    return 0;
+}

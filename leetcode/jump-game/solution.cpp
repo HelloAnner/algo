@@ -1,40 +1,38 @@
 // 跳跃游戏
 // https://leetcode.cn/problems/jump-game/
 //
-// 思路：一次遍历贪心维护最远可达下标 reach，i > reach 说明断档，返回 false。
-// 复杂度：时间 O(n) 空间 O(1)
+// 思路：
+// 复杂度：时间 O() 空间 O()
+//
+// 这里是空模板：实现自己写；参考解法在 solution.txt 里（实在想不出来再看）。
 #include <algorithm>
+#include <array>
+#include <climits>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <iostream>
+#include <map>
+#include <numeric>
+#include <queue>
+#include <set>
+#include <stack>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 using namespace std;
+
+// 提示：本机是 Apple clang + libc++，没有 <bits/stdc++.h>（那是 GCC 专有头）。
+// 如果想要竞赛风格的万能头，用 Homebrew 装 gcc 后把 CXX 换成 g++-14。
 
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    int n;
-    if (!(cin >> n) || n <= 0) {
-        cout << "false" << '\n';
-        return 0;
-    }
+    // TODO: 读入 -> 计算 -> 输出
 
-    vector<int> nums(n);
-    for (auto &x : nums) cin >> x;
-
-    int reach = 0;
-    for (int i = 0; i < n; ++i) {
-        if (i > reach) {
-            cout << "false" << '\n';
-            return 0;
-        }
-        reach = max(reach, i + nums[i]);
-        if (reach >= n - 1) {
-            cout << "true" << '\n';
-            return 0;
-        }
-    }
-
-    cout << "false" << '\n';
     return 0;
 }

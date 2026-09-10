@@ -1,0 +1,62 @@
+[思路]
+排序 + 一次线性扫描（文档里说的「暴力」其实就是这个标准解法）：
+
+1. 把所有区间按左端点升序排序；
+2. 维护结果数组 res，依次看每个区间 [l, r]：
+   - 如果 res 非空且 l <= res.back().second，说明它和结果中最后一个区间重叠（或恰好相接），把最后一个区间的右端点更新为 max(res.back().second, r)；
+   - 否则说明它和前面所有区间都不重叠，直接作为新区间追加到 res。
+
+为什么按左端点排序后扫一遍就够：排序后可能重叠的区间在数组里一定相邻。若当前区间 [l, r] 与结果中最后一个区间 [L, R] 不重叠（即 l > R），那么后面所有区间的左端点都 >= l > R，也不可能再和 [L, R] 相交——此时把 [L, R] 定稿是安全的，不会有遗漏；反过来，l <= R 就一定有交集，取并集即可。
+
+右端点必须取 max：像 [1,10]、[2,3] 这种被完全包含的区间，如果把右端点直接覆盖成 3 就错了。
+
+[复杂度]
+时间：O(n log n)，瓶颈在排序；扫描是 O(n)
+空间：O(n) 存结果（sort 自身 O(log n) 栈空间）
+
+[关键点]
+- 排序键是左端点，不是右端点
+- 判断重叠用 l <= 右端点（是 <= 不是 <），端点相接也要合并
+- 合并时右端点取 max，不能直接覆盖
+- n = 0 要输出 0，别漏掉退化情况
+- 题目保证 l <= r，不需要额外交换端点
+- 数据范围内 int 够用，用 long long 也可以
+
+[C++ 代码]
+// 合并区间
+// https://leetcode.cn/problems/merge-intervals/
+//
+// 思路：按左端点排序后扫一遍，与当前区间重叠（l <= 当前右端点）就更新右端点为 max，否则另起一段。
+// 复杂度：时间 O(n log n) 空间 O(n)
+#include <algorithm>
+#include <iostream>
+#include <utility>
+#include <vector>
+
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n;
+    if (!(cin >> n)) return 0;
+
+    vector<pair<long long, long long>> intervals(n);
+    for (auto &seg : intervals) cin >> seg.first >> seg.second;
+
+    sort(intervals.begin(), intervals.end());
+
+    vector<pair<long long, long long>> res;
+    for (const auto &seg : intervals) {
+        if (!res.empty() && seg.first <= res.back().second) {
+            res.back().second = max(res.back().second, seg.second);
+        } else {
+            res.push_back(seg);
+        }
+    }
+
+    cout << res.size() << '\n';
+    for (const auto &seg : res) cout << seg.first << ' ' << seg.second << '\n';
+    return 0;
+}

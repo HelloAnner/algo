@@ -1,41 +1,38 @@
 // 最长连续序列
 // https://leetcode.cn/problems/longest-consecutive-sequence/
 //
-// 思路：所有数字入哈希集合，只从「x-1 不在集合里」的 x 出发向后数连续段，每段恰好枚举一次。
-// 复杂度：时间 O(n) 空间 O(n)
+// 思路：
+// 复杂度：时间 O() 空间 O()
+//
+// 这里是空模板：实现自己写；参考解法在 solution.txt 里（实在想不出来再看）。
 #include <algorithm>
+#include <array>
+#include <climits>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <iostream>
+#include <map>
+#include <numeric>
+#include <queue>
+#include <set>
+#include <stack>
+#include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
 using namespace std;
 
+// 提示：本机是 Apple clang + libc++，没有 <bits/stdc++.h>（那是 GCC 专有头）。
+// 如果想要竞赛风格的万能头，用 Homebrew 装 gcc 后把 CXX 换成 g++-14。
+
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    int n;
-    if (!(cin >> n) || n <= 0) {
-        cout << 0 << '\n';
-        return 0;
-    }
+    // TODO: 读入 -> 计算 -> 输出
 
-    vector<int> nums(n);
-    unordered_set<int> seen;
-    seen.reserve(static_cast<size_t>(n) * 2);
-    for (int i = 0; i < n; ++i) {
-        cin >> nums[i];
-        seen.insert(nums[i]);
-    }
-
-    int best = 0;
-    for (int x : nums) {
-        if (seen.count(x - 1)) continue;  // x 不是起点，跳过
-        int len = 1;
-        while (seen.count(x + len)) ++len;  // 从起点向后数
-        best = max(best, len);
-    }
-
-    cout << best << '\n';
     return 0;
 }

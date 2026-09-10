@@ -1,0 +1,98 @@
+[思路]
+这是「第 K 大」的推广：不只要求出分界值，还要输出前 k 个。
+
+堆维护候选集合：
+
+- 求前 k 大：用小根堆。遍历数组逐个入堆，堆大小超过 k 就弹出堆顶；遍历完堆里就是前 k 大的数。
+- 求前 k 小：用大根堆（priority_queue<int>），同样限制堆大小为 k；遍历完堆里就是前 k 小的数。
+
+求前 k 大的过程（k = 2，数组 3 1 4 1 5）：
+
+    读入 3:   堆 = {3}
+    读入 1:   堆 = {1,3}
+    读入 4:   堆 = {1,3,4} -> 超了，弹掉堆顶 1 -> 堆 = {3,4}
+    读入 1:   堆 = {1,3,4} -> 超了，弹掉堆顶 1 -> 堆 = {3,4}
+    读入 5:   堆 = {3,4,5} -> 超了，弹掉堆顶 3 -> 堆 = {4,5}
+
+              4            <- 堆顶（门槛，候选里最小的）
+               \
+                5
+
+    小根堆弹出顺序是 4、5（升序），要求降序输出 5 4 -> 从答案数组末尾往前填
+
+为什么对：堆顶是候选集合里「最差」的那个元素，也就是进入前 k 名的门槛（求前 k 大时门槛是候选里的最小值，求前 k 小时门槛是候选里的最大值）。新元素一旦比门槛还差就进不了前 k，弹掉门槛值即可，所以堆里始终恰好是已扫描元素的前 k 名。
+
+输出顺序：小根堆弹出是升序、大根堆弹出是降序，而题目要求「前 k 大降序、前 k 小升序」，两种情况都恰好与弹出顺序相反，所以统一从数组末尾往前填即可。
+
+文档里说的「先排序后输出」是最直白的做法（sort 之后按方向取前 k 个），复杂度 O(n log n)；堆的写法在 k 远小于 n 时更快。
+
+[复杂度]
+时间：O(n log k)，每个元素入堆一次，堆大小不超过 k；排序法为 O(n log n)
+空间：O(k)；排序法 O(1)（原地排序）
+
+[关键点]
+- 求前 k 大用小根堆、求前 k 小用大根堆，别搞反（堆顶是淘汰线）
+- 堆大小判断是 > k 才弹，弹的是堆顶（最差的那个）
+- 弹出顺序与要求的输出顺序相反，记得倒序填充数组
+- 重复元素各算一个，不能去重
+- k = n 时等价于整体排序，也要正确输出 n 个数字
+- 输出格式是「一行、空格分隔」，行末不要多打空格
+
+[C++ 代码]
+// 数组中前 K 大 / 前 K 小的数（文档 67 节，非 LeetCode 原题）
+// （《手撕字节跳动面试时出现过的算法题》67. top k：返回一个数组中前 k 个大的或者小的数字）
+//
+// 思路：堆维护候选集合——前 k 大用小根堆、前 k 小用大根堆，最后按要求的顺序输出。
+// 复杂度：时间 O(n log k) 空间 O(k)
+#include <functional>
+#include <iostream>
+#include <queue>
+#include <vector>
+
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n, k, type;
+    cin >> n >> k >> type;  // type = 0 取前 k 大，type = 1 取前 k 小
+
+    vector<int> ans;
+    if (type == 0) {
+        priority_queue<int, vector<int>, greater<int>> heap;  // 小根堆做淘汰线
+        for (int i = 0; i < n; ++i) {
+            int x;
+            cin >> x;
+            heap.push(x);
+            if ((int)heap.size() > k) heap.pop();
+        }
+        // 小根堆弹出是升序，从后往前填得到降序
+        ans.assign(heap.size(), 0);
+        for (int i = (int)ans.size() - 1; i >= 0; --i) {
+            ans[i] = heap.top();
+            heap.pop();
+        }
+    } else {
+        priority_queue<int> heap;  // 大根堆做淘汰线
+        for (int i = 0; i < n; ++i) {
+            int x;
+            cin >> x;
+            heap.push(x);
+            if ((int)heap.size() > k) heap.pop();
+        }
+        // 大根堆弹出是降序，从后往前填得到升序
+        ans.assign(heap.size(), 0);
+        for (int i = (int)ans.size() - 1; i >= 0; --i) {
+            ans[i] = heap.top();
+            heap.pop();
+        }
+    }
+
+    for (int i = 0; i < (int)ans.size(); ++i) {
+        if (i) cout << ' ';
+        cout << ans[i];
+    }
+    cout << '\n';
+    return 0;
+}

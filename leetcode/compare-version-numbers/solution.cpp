@@ -1,45 +1,38 @@
 // 比较版本号
 // https://leetcode.cn/problems/compare-version-numbers/
 //
-// 思路：双指针逐段扫描，边扫边累加出每个修订号的数值（自动忽略前导零），逐段比较，缺段视为 0。
-// 复杂度：时间 O(n + m) 空间 O(1)
+// 思路：
+// 复杂度：时间 O() 空间 O()
+//
+// 这里是空模板：实现自己写；参考解法在 solution.txt 里（实在想不出来再看）。
+#include <algorithm>
+#include <array>
+#include <climits>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <iostream>
+#include <map>
+#include <numeric>
+#include <queue>
+#include <set>
+#include <stack>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 using namespace std;
 
-// 从 s[i] 开始读一个修订号的数值，返回其值，并把 i 停在 '.' 之后（或末尾）
-long long nextRevision(const string &s, size_t &i) {
-    long long v = 0;
-    while (i < s.size() && s[i] != '.') {
-        v = v * 10 + (s[i] - '0');
-        ++i;
-    }
-    if (i < s.size()) ++i;  // 跳过 '.'
-    return v;
-}
+// 提示：本机是 Apple clang + libc++，没有 <bits/stdc++.h>（那是 GCC 专有头）。
+// 如果想要竞赛风格的万能头，用 Homebrew 装 gcc 后把 CXX 换成 g++-14。
 
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    string v1, v2;
-    if (!(cin >> v1) || !(cin >> v2)) return 0;
+    // TODO: 读入 -> 计算 -> 输出
 
-    size_t i = 0, j = 0;
-    while (i < v1.size() || j < v2.size()) {
-        // 越界的一方按补 0 处理
-        long long a = (i < v1.size()) ? nextRevision(v1, i) : 0;
-        long long b = (j < v2.size()) ? nextRevision(v2, j) : 0;
-        if (a > b) {
-            cout << 1 << '\n';
-            return 0;
-        }
-        if (a < b) {
-            cout << -1 << '\n';
-            return 0;
-        }
-    }
-    cout << 0 << '\n';
     return 0;
 }

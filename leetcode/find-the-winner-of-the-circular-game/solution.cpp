@@ -1,25 +1,38 @@
-// 找出游戏的获胜者 / 约瑟夫环（LeetCode 1823，同剑指 Offer 62）
+// 找出游戏的获胜者（约瑟夫环）
 // https://leetcode.cn/problems/find-the-winner-of-the-circular-game/
 //
-// 思路：倒推。只剩 1 人时获胜者下标为 0；把人数从 2 推到 n，
-//       每轮 ans = (ans + m) % i，最后换算成 1~n 的编号。
-// 复杂度：时间 O(n) 空间 O(1)
+// 思路：
+// 复杂度：时间 O() 空间 O()
+//
+// 这里是空模板：实现自己写；参考解法在 solution.txt 里（实在想不出来再看）。
+#include <algorithm>
+#include <array>
+#include <climits>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <iostream>
+#include <map>
+#include <numeric>
+#include <queue>
+#include <set>
+#include <stack>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 using namespace std;
+
+// 提示：本机是 Apple clang + libc++，没有 <bits/stdc++.h>（那是 GCC 专有头）。
+// 如果想要竞赛风格的万能头，用 Homebrew 装 gcc 后把 CXX 换成 g++-14。
 
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    long long n, m;
-    if (!(cin >> n >> m)) return 0;
+    // TODO: 读入 -> 计算 -> 输出
 
-    long long ans = 0;  // 0 起始编号下的获胜者下标
-    for (long long i = 2; i <= n; ++i) {
-        ans = (ans + m) % i;
-    }
-
-    cout << ans + 1 << '\n';  // 本题编号是 1~n
     return 0;
 }

@@ -1,38 +1,38 @@
-// 剪绳子（剑指 Offer 14- I）
+// 剪绳子
 // https://leetcode.cn/problems/jian-sheng-zi-lcof/
 //
-// 思路：dp[i] 为长度 i 至少剪一刀的最大乘积，枚举第一刀长度 j 做转移。
-// 复杂度：时间 O(n^2) 空间 O(n)
+// 思路：
+// 复杂度：时间 O() 空间 O()
+//
+// 这里是空模板：实现自己写；参考解法在 solution.txt 里（实在想不出来再看）。
 #include <algorithm>
+#include <array>
+#include <climits>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <iostream>
+#include <map>
+#include <numeric>
+#include <queue>
+#include <set>
+#include <stack>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 using namespace std;
+
+// 提示：本机是 Apple clang + libc++，没有 <bits/stdc++.h>（那是 GCC 专有头）。
+// 如果想要竞赛风格的万能头，用 Homebrew 装 gcc 后把 CXX 换成 g++-14。
 
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    int n;
-    if (!(cin >> n)) return 0;
-    if (n <= 3) {
-        // 2 -> 1 + 1 = 1, 3 -> 1 + 2 = 2
-        cout << n - 1 << '\n';
-        return 0;
-    }
+    // TODO: 读入 -> 计算 -> 输出
 
-    vector<long long> dp(n + 1, 0);
-    dp[1] = 1;
-    dp[2] = 1;
-    dp[3] = 2;
-    for (int i = 4; i <= n; ++i) {
-        for (int j = 1; j < i; ++j) {
-            long long cut = (long long)j * (i - j);      // 剩下的不剪
-            long long keep = (long long)j * dp[i - j];   // 剩下的继续剪
-            dp[i] = max(dp[i], max(cut, keep));
-        }
-    }
-
-    cout << dp[n] << '\n';
     return 0;
 }

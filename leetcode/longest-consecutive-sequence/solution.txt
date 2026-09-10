@@ -1,0 +1,68 @@
+[思路]
+
+因为要求 O(n)，所以不能排序（排序是 O(n log n)）。用哈希集合：
+
+1. 先把所有数字放进 unordered_set（重复元素自动去重）；
+2. 再遍历数组中的每个数字 x：只有当 x - 1 不在集合里时，x 才可能是某段连续序列的起点；否则 x 已经被以更小数字为起点的那一段覆盖过了，直接跳过（这一步是复杂度不退化到 O(n^2) 的关键）；
+3. 从起点 x 出发，不断检查 x + 1、x + 2 … 是否在集合里，数出这一段长度 len，用它更新答案。
+
+正确性：任意一段「极大连续序列」[a, a+1, ..., b]，只有它的最小值 a 满足「a - 1 不在集合中」，因此每段连续序列恰好被枚举一次，不会漏也不会重复计数。
+
+复杂度分析的关键：内层 while 只在起点处进入，且每个数字只会被「从起点往后数」的过程访问一次，所以内层总代价是 O(n)，整体 O(n)。
+
+[复杂度]
+
+时间：O(n)（哈希表单次操作平均 O(1)）   空间：O(n)
+
+空间用于存放哈希集合。
+
+[关键点]
+
+- 必须判断 x - 1 是否存在于集合中，否则每个元素都会向后数一遍，最坏 O(n^2)
+- 重复元素：用集合天然去重，例如 [0, 0, 1] 的答案是 2 而不是 3
+- n = 0 时输出 0，注意不要读入越界
+- 元素可能是负数、也可能很大，不要用「数组下标计数」代替哈希表
+- unordered_set 在极端构造数据下可能被卡成 O(n^2)（哈希碰撞），赛场上可以加随机偏移或自定义哈希；面试场景用 unordered_set 即可，说清「平均 O(n)」即可
+
+[C++ 代码]
+// 最长连续序列
+// https://leetcode.cn/problems/longest-consecutive-sequence/
+//
+// 思路：所有数字入哈希集合，只从「x-1 不在集合里」的 x 出发向后数连续段，每段恰好枚举一次。
+// 复杂度：时间 O(n) 空间 O(n)
+#include <algorithm>
+#include <iostream>
+#include <unordered_set>
+#include <vector>
+
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n;
+    if (!(cin >> n) || n <= 0) {
+        cout << 0 << '\n';
+        return 0;
+    }
+
+    vector<int> nums(n);
+    unordered_set<int> seen;
+    seen.reserve(static_cast<size_t>(n) * 2);
+    for (int i = 0; i < n; ++i) {
+        cin >> nums[i];
+        seen.insert(nums[i]);
+    }
+
+    int best = 0;
+    for (int x : nums) {
+        if (seen.count(x - 1)) continue;  // x 不是起点，跳过
+        int len = 1;
+        while (seen.count(x + len)) ++len;  // 从起点向后数
+        best = max(best, len);
+    }
+
+    cout << best << '\n';
+    return 0;
+}

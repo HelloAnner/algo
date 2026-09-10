@@ -1,0 +1,85 @@
+[思路]
+
+动态规划（概率按步数往外扩散）。设 dp[r][c] 表示「当前这一步」马位于 (r, c) 的概率：
+
+1. 初始 dp[sr][sc] = 1，其余为 0；
+2. 重复 K 轮：每轮开一张新的全零表 next，对棋盘内每个概率非零的格子，把它 dp[r][c] / 8 的概率加到 8 个落点中仍在棋盘内的格子上（落到棋盘外的那些份额直接消失，这正是「跳出棋盘」）；
+3. 走满 K 步后，sum(dp) 就是马仍留在棋盘上的概率。
+
+概率扩散示意：
+
+    第 0 步:  只有起点 dp[sr][sc] = 1
+    第 1 步:  8 个落点各 +1/8，棋盘外的份额直接丢失
+    第 2 步:  每个非零格子再各自按 1/8 往外扩散
+    ...
+    第 K 步:  棋盘内所有格子的概率之和 = 答案
+
+为什么对：马没有记忆，下一步只取决于当前位置，满足无后效性；每步 8 个方向等概率，所以概率按 1/8 分摊到落点。最终「还在棋盘上」就是棋盘内所有格子的概率之和。
+
+文档里的方法 1（递归数出所有走法再除以 8^K）思路正确但会超时：走法数是 8^K 量级，K = 100 时连 long long 都放不下，所以必须用方法 2 的 DP 把状态数压到 N^2。
+
+[复杂度]
+
+时间：O(K * N^2)   空间：O(N^2)
+
+每一步遍历整个棋盘并尝试 8 个方向；K <= 100、N <= 25，约 5 * 10^5 次转移。空间上是两张 N x N 的概率表滚动使用。
+
+[关键点]
+
+- 概率必须用 double，每步除以 8.0；用整数统计走法在 K 稍大时必然溢出
+- 越界的落点是「概率丢失」，不是「留在原地」，所以只对棋盘内的落点累加
+- K = 0 时不需要任何转移，答案直接是 1.0
+- 输出保留 5 位小数：cout << fixed << setprecision(5)
+- 概率为 0 的格子可以跳过，但判断时别用 == 0.0 这种浮点相等比较，写成 <= 0.0
+
+[C++ 代码]
+// “马”在棋盘上的概率
+// https://leetcode.cn/problems/knight-probability-in-chessboard/
+//
+// 思路：dp[r][c] 表示当前步数下马在 (r, c) 的概率，每步把概率按 1/8
+//       分摊给棋盘内的 8 个落点，K 步之后所有格子的概率之和就是答案。
+// 复杂度：时间 O(K * N^2) 空间 O(N^2)
+#include <iomanip>
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int N = 0, K = 0, sr = 0, sc = 0;
+    if (!(cin >> N >> K >> sr >> sc)) return 0;
+
+    const int dr[8] = {2, 2, 1, 1, -1, -1, -2, -2};
+    const int dc[8] = {1, -1, 2, -2, 2, -2, 1, -1};
+
+    vector<vector<double>> dp(N, vector<double>(N, 0.0));
+    dp[sr][sc] = 1.0;
+
+    for (int step = 0; step < K; ++step) {
+        vector<vector<double>> next(N, vector<double>(N, 0.0));
+        for (int r = 0; r < N; ++r) {
+            for (int c = 0; c < N; ++c) {
+                if (dp[r][c] <= 0.0) continue;
+                for (int k = 0; k < 8; ++k) {
+                    int nr = r + dr[k];
+                    int nc = c + dc[k];
+                    if (nr >= 0 && nr < N && nc >= 0 && nc < N) {
+                        next[nr][nc] += dp[r][c] / 8.0;
+                    }
+                }
+            }
+        }
+        dp.swap(next);
+    }
+
+    double ans = 0.0;
+    for (int r = 0; r < N; ++r) {
+        for (int c = 0; c < N; ++c) ans += dp[r][c];
+    }
+
+    cout << fixed << setprecision(5) << ans << '\n';
+    return 0;
+}

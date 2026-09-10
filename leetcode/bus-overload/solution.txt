@@ -1,0 +1,53 @@
+[思路]
+
+「会不会超载」只取决于每一站之后车上的实际人数，所以边读边把净变化累加，随时和核载人数 n 比较即可：
+
+    load += delta;
+    if (load > n) return true;
+
+文档里的 Java 代码就是这个意思：load = n 是核载人数，count 是当前车上人数（原文里的 cout > load 是笔误，应为 count > load）。一趟扫描就能出结果，不用保存整个数组。
+
+[复杂度]
+
+时间：O(m)，一遍扫描
+空间：O(1)，边读边加
+
+[关键点]
+
+- 判断条件是 > n 而不是 >= n：刚好坐满 n 人不算超载
+- 累计人数可能超过 int，用 long long
+- m = 0 时一趟车都没开，输出 false
+- 输入里的负数表示净下车，直接相加即可，不用单独区分上下车
+
+[C++ 代码]
+// 公交车超载
+// 字节跳动面试手写题（《手撕字节跳动面试时出现过的算法题》第 80 题）
+//
+// 思路：边读边把每站的净变化累加到当前人数上，任何一站之后超过核载人数就超载。
+// 复杂度：时间 O(m) 空间 O(1)
+#include <iostream>
+
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int m;
+    long long n;
+    if (!(cin >> m >> n)) return 0;
+
+    long long load = 0;  // 当前车上人数
+    for (int i = 0; i < m; ++i) {
+        long long delta;
+        cin >> delta;
+        load += delta;
+        if (load > n) {
+            cout << "true" << '\n';
+            return 0;
+        }
+    }
+
+    cout << "false" << '\n';
+    return 0;
+}

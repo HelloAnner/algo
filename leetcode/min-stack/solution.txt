@@ -1,0 +1,88 @@
+[思路]
+用两个栈：
+
+- data：正常存所有元素；
+- minStack：单调非增地存「到当前位置为止的最小值」——压栈时只有当 x <= minStack.top() 才把它压进 minStack。
+
+操作：
+
+- push(x)：data.push(x)；若 minStack 为空或 x <= minStack.top()，则 minStack.push(x)。
+- pop()：记下 data.top() 再弹出；如果它等于 minStack.top()，minStack 也弹一个。
+- top()：返回 data.top()。
+- getMin()：返回 minStack.top()。
+
+为什么对（归纳）：minStack 是单调非增的，且其栈顶恰好等于 data 中所有元素的最小值。压入 x 时若 x 不大于当前最小值就更新，否则当前最小值不变；弹出时若弹出的正是当前最小值，说明这个最小值是「最后一个」被记下的（因为相等的元素也被记了），弹掉它之后 minStack 的新栈顶就是剩下的元素里的最小值。两个操作都保持不变式，因此 getMin 永远正确。
+
+另一种等价写法：一个栈存 pair(值, 当前最小值)；或者只用一个栈存「与当前最小值的差值」（进阶写法，能省一半空间，但要小心溢出）。文档里的 Java 版本就是双栈。
+
+[复杂度]
+时间：每个操作 O(1)
+空间：O(q)（最坏情况下 minStack 和数据栈一样大，例如元素单调不增地压入）
+
+[关键点]
+- 判断压入条件时必须用 <= 而不是 <：相等的元素也要记录，否则弹出时会丢掉最小值（示例 2 就是抓这个的）；
+- pop 里先取出 data.top() 再弹，然后和 minStack.top() 比较；
+- 空栈保护：minStack 的 empty() 判断别省（本题数据保证不会在空栈上调用，但写成防御式更稳）；
+- 不要把 0 / -1 当哨兵值，元素可能取到 INT_MIN；
+- top() 和 getMin() 都是读操作，不应改变栈的状态。
+
+[C++ 代码]
+// 最小栈（原文档小节「最大栈」，716 为会员题，此处实现同型的最小栈）
+// https://leetcode.cn/problems/min-stack/
+//
+// 思路：双栈，data 存数据，minStack 单调非增地存到当前位置为止的最小值。
+// 复杂度：时间 O(1)/次操作 空间 O(q)
+#include <iostream>
+#include <stack>
+#include <string>
+
+using namespace std;
+
+class MinStack {
+  public:
+    void push(int val) {
+        data_.push(val);
+        // 注意是 <=：相等的元素也要压入，否则弹出时会丢掉最小值
+        if (minStack_.empty() || val <= minStack_.top()) minStack_.push(val);
+    }
+
+    void pop() {
+        int x = data_.top();
+        data_.pop();
+        if (!minStack_.empty() && minStack_.top() == x) minStack_.pop();
+    }
+
+    int top() const { return data_.top(); }
+
+    int getMin() const { return minStack_.top(); }
+
+  private:
+    stack<int> data_;
+    stack<int> minStack_;
+};
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int q;
+    if (!(cin >> q)) return 0;
+
+    MinStack st;
+    string op;
+    while (q-- > 0) {
+        cin >> op;
+        if (op == "push") {
+            int x = 0;
+            cin >> x;
+            st.push(x);
+        } else if (op == "pop") {
+            st.pop();
+        } else if (op == "top") {
+            cout << st.top() << '\n';
+        } else if (op == "getMin") {
+            cout << st.getMin() << '\n';
+        }
+    }
+    return 0;
+}

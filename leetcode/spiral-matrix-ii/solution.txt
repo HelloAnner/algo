@@ -1,0 +1,81 @@
+[思路]
+维护四条边界：l（左）、r（右）、u（上）、d（下），每一轮 while 循环填一圈：
+
+1. 上边：res[u][i]，i 从 l 到 r，填完 u++；
+2. 右边：res[i][r]，i 从 u 到 d，填完 r--；
+3. 下边：res[d][i]，i 从 r 到 l（倒序），填完 d--；
+4. 左边：res[i][l]，i 从 d 到 u（倒序），填完 l++。
+
+四条边界的含义，以及每轮走的四条边：
+
+              l                        r
+              v                        v
+          u-> +------------------------+
+              | 1 >  >  >  >  >  >  v  |
+              | ^             2     v  |
+              | ^                   v  |   1：上边，从左到右
+              | ^                   v  |   2：右边，从上到下
+              | ^                   v  |   3：下边，从右到左
+              | ^             4     v  |   4：左边，从下到上
+              | ^  <  <  <  <  <  <  v  |
+          d-> +------------------------+
+
+循环条件是 num <= n * n，即「还有数字没填就再走一圈」。
+
+正确性：每一轮开始时，[u, d] × [l, r] 正好是还没填的矩形区域，四条边界依次走完恰好把最外圈填满，填完后 u/d/l/r 各收缩一格，剩下的仍是同形状的子问题。因此循环结束时 1..n^2 恰好各填一次。
+
+需要注意的是 n 为奇数时最后一圈只剩一个格子（如 n = 3 的 9）。此时在四条边循环里加上 num <= target 的判断，就能避免越界或重复覆盖——文档里的 Java 写法靠「四条边恰好都为空」自然退出，这里显式加判断更稳。
+
+[复杂度]
+时间：O(n^2)，每个格子恰好填一次
+空间：O(1) 额外空间（返回的 n × n 矩阵本身不计入）
+
+[关键点]
+- 四条边的遍历方向别写反：上边左→右，右边上→下，下边右→左，左边下→上
+- 每填完一条边立刻收缩对应边界，顺序是 u++ → r-- → d-- → l++
+- 循环里加 num <= n * n 保护，处理奇数 n 的最后一格
+- 下标从 0 开始，且 n = 1 是最小边界情况，值得单测
+- 输出格式是每行 n 个数字、空格分隔、行尾换行，注意别多打尾随空格（本题不强制，但保持一致更安全）
+
+[C++ 代码]
+// 螺旋矩阵 II
+// https://leetcode.cn/problems/spiral-matrix-ii/
+//
+// 思路：维护上下左右四条边界，每轮填一圈，填完收缩边界，直到 1..n^2 全部填完。
+// 复杂度：时间 O(n^2) 空间 O(1) 额外空间
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n;
+    if (!(cin >> n) || n <= 0) return 0;
+
+    vector<vector<int>> res(n, vector<int>(n, 0));
+    int l = 0, r = n - 1, u = 0, d = n - 1;
+    int num = 1, target = n * n;
+
+    while (num <= target) {
+        for (int i = l; i <= r && num <= target; ++i) res[u][i] = num++;
+        ++u;
+        for (int i = u; i <= d && num <= target; ++i) res[i][r] = num++;
+        --r;
+        for (int i = r; i >= l && num <= target; --i) res[d][i] = num++;
+        --d;
+        for (int i = d; i >= u && num <= target; --i) res[i][l] = num++;
+        ++l;
+    }
+
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            if (j > 0) cout << ' ';
+            cout << res[i][j];
+        }
+        cout << '\n';
+    }
+    return 0;
+}

@@ -1,71 +1,38 @@
 // LRU 缓存
 // https://leetcode.cn/problems/lru-cache/
 //
-// 思路：哈希表（key -> 链表节点）+ 双向链表维护使用顺序，表头是最近使用、表尾是最久未使用。
-// 复杂度：时间 O(1)/次操作（平均） 空间 O(capacity)
+// 思路：
+// 复杂度：时间 O() 空间 O()
+//
+// 这里是空模板：实现自己写；参考解法在 solution.txt 里（实在想不出来再看）。
+#include <algorithm>
+#include <array>
+#include <climits>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <iostream>
-#include <list>
+#include <map>
+#include <numeric>
+#include <queue>
+#include <set>
+#include <stack>
 #include <string>
 #include <unordered_map>
-#include <utility>
+#include <unordered_set>
+#include <vector>
 
 using namespace std;
 
-class LRUCache {
-  public:
-    explicit LRUCache(int capacity) : cap_(capacity) {}
-
-    int get(int key) {
-        auto it = pos_.find(key);
-        if (it == pos_.end()) return -1;
-        // 命中：把节点搬到链表头部（变成最近使用）
-        data_.splice(data_.begin(), data_, it->second);
-        return it->second->second;
-    }
-
-    void put(int key, int value) {
-        auto it = pos_.find(key);
-        if (it != pos_.end()) {
-            // key 已存在：改值 + 刷新为最近使用，不新增条目
-            it->second->second = value;
-            data_.splice(data_.begin(), data_, it->second);
-            return;
-        }
-        if (static_cast<int>(data_.size()) == cap_) {
-            // 先取尾节点的 key，再删节点，最后清哈希表
-            int oldKey = data_.back().first;
-            data_.pop_back();
-            pos_.erase(oldKey);
-        }
-        data_.emplace_front(key, value);
-        pos_[key] = data_.begin();
-    }
-
-  private:
-    int cap_;
-    list<pair<int, int>> data_;                                // front = 最近使用
-    unordered_map<int, list<pair<int, int>>::iterator> pos_;   // key -> 对应节点
-};
+// 提示：本机是 Apple clang + libc++，没有 <bits/stdc++.h>（那是 GCC 专有头）。
+// 如果想要竞赛风格的万能头，用 Homebrew 装 gcc 后把 CXX 换成 g++-14。
 
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    int capacity;
-    if (!(cin >> capacity)) return 0;
-    LRUCache cache(capacity);
+    // TODO: 读入 -> 计算 -> 输出
 
-    string op;
-    while (cin >> op) {
-        if (op == "put") {
-            int k = 0, v = 0;
-            cin >> k >> v;
-            cache.put(k, v);
-        } else if (op == "get") {
-            int k = 0;
-            cin >> k;
-            cout << cache.get(k) << '\n';
-        }
-    }
     return 0;
 }

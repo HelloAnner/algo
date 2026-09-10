@@ -1,51 +1,38 @@
 // 归并排序
 // https://leetcode.cn/problems/sort-an-array/
 //
-// 思路：分治，递归排好左右两半后，用双指针把两个有序段合并到临时数组再写回。
-// 复杂度：时间 O(n log n) 空间 O(n)
+// 思路：
+// 复杂度：时间 O() 空间 O()
+//
+// 这里是空模板：实现自己写；参考解法在 solution.txt 里（实在想不出来再看）。
+#include <algorithm>
+#include <array>
+#include <climits>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <iostream>
+#include <map>
+#include <numeric>
+#include <queue>
+#include <set>
+#include <stack>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 using namespace std;
 
-vector<long long> tmp;  // 复用的临时数组
-
-void mergeSort(vector<long long> &a, int l, int r) {
-    if (l >= r) return;  // 长度 0 或 1，天然有序
-
-    int mid = l + (r - l) / 2;
-    mergeSort(a, l, mid);
-    mergeSort(a, mid + 1, r);
-
-    int i = l, j = mid + 1, k = l;
-    while (i <= mid && j <= r) {
-        // 相等时取左边，保证排序稳定
-        if (a[i] <= a[j]) tmp[k++] = a[i++];
-        else tmp[k++] = a[j++];
-    }
-    while (i <= mid) tmp[k++] = a[i++];
-    while (j <= r) tmp[k++] = a[j++];
-
-    for (int t = l; t <= r; ++t) a[t] = tmp[t];
-}
+// 提示：本机是 Apple clang + libc++，没有 <bits/stdc++.h>（那是 GCC 专有头）。
+// 如果想要竞赛风格的万能头，用 Homebrew 装 gcc 后把 CXX 换成 g++-14。
 
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    int n;
-    if (!(cin >> n)) return 0;
+    // TODO: 读入 -> 计算 -> 输出
 
-    vector<long long> a(n);
-    for (auto &x : a) cin >> x;
-
-    tmp.assign(n, 0);
-    if (n > 0) mergeSort(a, 0, n - 1);
-
-    for (int i = 0; i < n; ++i) {
-        if (i) cout << ' ';
-        cout << a[i];
-    }
-    cout << '\n';
     return 0;
 }

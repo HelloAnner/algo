@@ -1,0 +1,69 @@
+[思路]
+按空白切词 + 逆序拼接：
+
+1. 用 getline 读入整行（不能直接用 cin >> s，那样会在第一个空格处截断）；
+2. 用 istringstream 配合 >> 逐个取词：operator>> 会自动跳过任意多个空白字符，等价于按空白切分并丢掉空串，正好解决前导 / 尾随 / 连续空格的问题；
+3. 把单词依次存进 vector<string>，再倒着拼接，单词之间补一个空格。
+
+    输入：  "  hello   world!  "
+             \____/   \_____/
+              word      word
+
+    istringstream >> 依次取出：  "hello"  "world!"
+
+    倒序拼接（单词之间恰好一个空格）：  "world! hello"
+
+文档里 Java 的做法是 split(" ") 之后再过滤空串、倒序拼接；istringstream 是同样的思路，只是切分更省事。
+
+文档还说「Java 的 String 不可变，所以原地解法做不了 O(1) 额外空间」——C++ 的 string 是可变的，可以真正做到原地：先把整个字符串翻转，再逐个翻转每个单词，最后用双指针原地压缩多余空格。本题规模用不上，但面试追问时值得说出来。
+
+    原地解法三步：
+      1) 整体翻转：  "  hello   world!  " -> "  !dlrow   olleh  "
+      2) 逐个单词翻转：                     -> "  world!   hello  "
+      3) 压缩多余空格：                     -> "world! hello"
+
+[复杂度]
+时间：O(n)   空间：O(n)
+
+每个字符只被扫描常数次；空间用于存所有单词。若用上面的原地解法，额外空间 O(1)。
+
+[关键点]
+- 必须整行读入（getline），否则 cin >> s 遇到空格就停下
+- 用 istringstream >> word 切词，天然处理多余空格，不用手写 split 再过滤空串
+- 空格只在单词之间输出，不要每个词后面都补空格再 trim
+- 只有一个单词、或单词全是数字也要正确
+- 输入行可能是空行（没有单词），此时输出一个空行即可，注意不要越界
+- 原地解法三步：整体翻转 -> 逐个单词翻转 -> 压缩多余空格
+
+[C++ 代码]
+// 翻转字符串里的单词
+// https://leetcode.cn/problems/reverse-words-in-a-string/
+//
+// 思路：getline 读整行，istringstream 按空白切词（自动跳过多余空格），再倒序用单个空格拼接。
+// 复杂度：时间 O(n) 空间 O(n)
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    string line;
+    if (!getline(cin, line)) return 0;
+
+    vector<string> words;
+    istringstream iss(line);
+    for (string word; iss >> word;) words.push_back(word);
+
+    int total = static_cast<int>(words.size());
+    for (int i = total - 1; i >= 0; --i) {
+        if (i != total - 1) cout << ' ';
+        cout << words[i];
+    }
+    cout << '\n';
+    return 0;
+}

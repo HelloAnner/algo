@@ -1,51 +1,38 @@
-// 有序数组中不重复元素的个数（平方后不同值的个数）
+// 有序数组中不重复元素的个数
 // https://www.nowcoder.com/discuss/425581
 //
-// 思路：双指针从两端比较绝对值，按从大到小归并平方值并线性去重。
-// 复杂度：时间 O(n) 空间 O(1)
-#include <cstdlib>
+// 思路：
+// 复杂度：时间 O() 空间 O()
+//
+// 这里是空模板：实现自己写；参考解法在 solution.txt 里（实在想不出来再看）。
+#include <algorithm>
+#include <array>
+#include <climits>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <iostream>
+#include <map>
+#include <numeric>
+#include <queue>
+#include <set>
+#include <stack>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 using namespace std;
+
+// 提示：本机是 Apple clang + libc++，没有 <bits/stdc++.h>（那是 GCC 专有头）。
+// 如果想要竞赛风格的万能头，用 Homebrew 装 gcc 后把 CXX 换成 g++-14。
 
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    int n;
-    if (!(cin >> n) || n <= 0) {
-        cout << 0 << '\n';
-        return 0;
-    }
+    // TODO: 读入 -> 计算 -> 输出
 
-    vector<long long> nums(n);
-    for (auto &x : nums) cin >> x;
-
-    long long last = -1;  // 平方值非负，用 -1 当哨兵
-    int count = 0;
-    int l = 0, r = n - 1;
-    while (l <= r) {
-        long long a = llabs(nums[l]);
-        long long b = llabs(nums[r]);
-        long long cur;
-        if (a > b) {
-            cur = a * a;
-            ++l;
-        } else if (a < b) {
-            cur = b * b;
-            --r;
-        } else {
-            cur = a * a;
-            ++l;
-            --r;
-        }
-        if (cur != last) {
-            ++count;
-            last = cur;
-        }
-    }
-
-    cout << count << '\n';
     return 0;
 }

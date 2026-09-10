@@ -1,0 +1,114 @@
+[思路]
+题目来自文档中的 Java 解法，这里翻译成 C++ 的两种写法。
+
+写法一：递归
+
+reverseList(head) 的定义是「反转以 head 为头的链表，返回新的头」：
+
+1. 边界：head == nullptr || head->next == nullptr 时直接返回 head（空链表或单节点无需反转）；
+2. 否则先递归反转 head->next，得到反转后的新头 cur；
+3. 此时 head->next 是后半段反转后的尾节点，让 head->next->next = head、head->next = nullptr，就把 head 接到了尾部；
+4. 返回 cur。
+
+正确性来自归纳：假设递归调用已经把「除 head 外的 n-1 个节点」正确反转并返回新头，那么把 head 挂到它的尾部，就得到整条链的反转。
+
+写法二：迭代（本题 solution.cpp 采用，也是面试首选）
+
+三个指针：pre 是已反转部分的头（初始 nullptr），cur 是尚未处理部分的头（初始 head）。循环里先用 nxt 暂存 cur->next（否则改指针后后半段就丢了），然后 cur->next = pre、pre = cur、cur = nxt。
+
+    初始：
+      pre = nullptr            cur = 1
+      nullptr                  1 -> 2 -> 3 -> 4 -> 5 -> nullptr
+
+    一轮之后（1 的 next 指向 pre，两个指针同时后移）：
+      nullptr <- 1             2 -> 3 -> 4 -> 5 -> nullptr
+                  ^            ^
+                 pre          cur
+
+    循环结束时 cur 走到 nullptr，整条链已经反向，pre 就是新头：
+      nullptr <- 1 <- 2 <- 3 <- 4 <- 5     nullptr
+                                         ^
+                                        pre（返回它）
+
+不变量：从 head 到 cur（不含 cur）这一段已经全部反转，且 pre 指向它的头。每轮把 cur 摘下来头插到 pre 前面，不变量保持。cur 走到 nullptr 时整条链反转完毕，pre 就是新头。
+
+本题只需要输出反转后的序列，但 solution.cpp 里依然真的建了链表并改指针——这正是这道题要练的手写链表能力。节点内存用 std::unique_ptr 池统一持有，不会泄漏。
+
+[复杂度]
+时间：O(n)   空间：迭代 O(1)，递归 O(n)
+
+每个节点恰好被访问（并改一次指针）一次；迭代只用常数个指针，递归写法用的是递归栈，深度为 n。
+
+[关键点]
+- 迭代时必须先保存 cur->next，再改 cur->next，顺序反了就断链
+- 循环结束时返回的是 pre 而不是 cur（cur 已经是 nullptr）
+- 空链表 n = 0 要单独处理，别去解引用空指针
+- 递归写法在 n = 5000 时递归深度 5000，一般不会爆栈，但工程上更推荐迭代
+- 本题只要求输出值，所以「不改变节点值、只改指针」这个要求在这里体现为：solution.cpp 确实做了指针操作，而不是把数组 reverse 一下
+
+[C++ 代码]
+// 反转链表
+// https://leetcode.cn/problems/reverse-linked-list/
+//
+// 思路：迭代反转单链表，pre/cur 双指针逐个把节点头插到已反转部分前面。
+// 复杂度：时间 O(n) 空间 O(1)
+#include <iostream>
+#include <memory>
+#include <vector>
+
+using namespace std;
+
+struct ListNode {
+    int val;
+    ListNode *next;
+    explicit ListNode(int v) : val(v), next(nullptr) {}
+};
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n;
+    if (!(cin >> n) || n <= 0) {
+        // 空链表：直接输出空行
+        cout << '\n';
+        return 0;
+    }
+
+    // 用 unique_ptr 池持有所有节点，避免手写 delete，也保证不泄漏
+    vector<unique_ptr<ListNode>> pool;
+    pool.reserve(n);
+
+    ListNode *head = nullptr;
+    ListNode *tail = nullptr;
+    for (int i = 0; i < n; ++i) {
+        int v;
+        cin >> v;
+        pool.push_back(make_unique<ListNode>(v));
+        ListNode *node = pool.back().get();
+        if (tail == nullptr) {
+            head = node;
+        } else {
+            tail->next = node;
+        }
+        tail = node;
+    }
+
+    // 迭代反转：pre 指向已反转部分的头，cur 指向未处理部分的头
+    ListNode *pre = nullptr;
+    ListNode *cur = head;
+    while (cur != nullptr) {
+        ListNode *nxt = cur->next;  // 先存后继，防止断链
+        cur->next = pre;
+        pre = cur;
+        cur = nxt;
+    }
+    head = pre;
+
+    for (ListNode *p = head; p != nullptr; p = p->next) {
+        if (p != head) cout << ' ';
+        cout << p->val;
+    }
+    cout << '\n';
+    return 0;
+}

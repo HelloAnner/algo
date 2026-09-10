@@ -1,0 +1,125 @@
+[思路]
+设 f(u) 表示「从节点 u 出发往下走到某个叶子」的最小路径和，则：
+
+- u 是叶子（左右孩子都为空）：f(u) = val(u)；
+- u 只有左孩子：必须走左孩子，f(u) = val(u) + f(left)；
+- u 只有右孩子：必须走右孩子，f(u) = val(u) + f(right)；
+- u 两个孩子都有：f(u) = val(u) + min(f(left), f(right))。
+
+答案是 f(root)。
+
+为什么对：任何一条从 u 出发到叶子的路径，第一步只能走进「存在的那些孩子」中的一个，之后是一条从那个孩子出发到叶子的路径；对所有可能取最小值，正好就是上面的递推。
+
+特别地，「只有一个孩子」时不能把缺失的那个孩子当成 0 去参与 min（那样等价于允许路径停在当前节点，就会得到文档里 1 那个错误答案），也不能把 null 的贡献记成 0 —— 这是本题唯一的坑。
+
+实现方式：节点数最多 10^5，链状树用递归会爆栈，所以这里用迭代后序：
+
+1. 用「根 → 右 → 左」的迭代前序（就是 145 题里那个技巧）收集一遍节点，再整体反转，得到后序序列（左 → 右 → 根）；
+2. 按后序序列做上面的 DP：孩子一定先于父亲被计算，所以 f 数组可以顺序填完。
+
+这样既避免了递归，也和「二叉树的后序遍历（非递归）」一题共用同一套迭代写法。
+
+[复杂度]
+时间：O(n)，建树、求后序、DP 各扫一遍
+空间：O(n)，存节点、显式栈、后序序列与 f 数组
+
+[关键点]
+- 叶子判定必须是「左右孩子都为空」；只有一个孩子的节点不是叶子，不能作为路径终点
+- 只有一个孩子时只能走那一个孩子，不能写成 val + min(f(child), 0)
+- 节点值可以是负数，所以不能提前剪枝（例如「当前和已经很小就返回」），必须老老实实走到叶子
+- 树可能是链状的，递归会爆栈，用迭代后序
+- 累加时注意上界：10^5 个节点 × 最大权值 10^4 = 10^9，int 够用但不宽裕，long long 更稳妥
+
+[C++ 代码]
+// 二叉树的最小路径和（根 -> 叶子）
+// https://leetcode.cn/problems/path-sum/（本题是它的最小和变体；原文档第 28 题没有独立原题链接）
+//
+// 思路：迭代求出后序序列，再按后序 DP：f(u) = val(u) + 唯一/较小孩子的 f 值，叶子处 f = val。
+// 复杂度：时间 O(n) 空间 O(n)
+#include <algorithm>
+#include <iostream>
+#include <queue>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+struct Node {
+    int val;
+    int left;
+    int right;
+};
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    // 读入层序数组表示（null 表示空节点）
+    vector<string> tok;
+    string s;
+    while (cin >> s) tok.push_back(s);
+
+    if (tok.empty() || (tok.size() == 1 && tok[0] == "null")) {
+        return 0;  // 空树：题目保证不会出现
+    }
+
+    vector<Node> tr;
+    tr.push_back(Node{stoi(tok[0]), -1, -1});
+    queue<int> q;
+    q.push(0);
+    size_t i = 1;
+    while (!q.empty() && i < tok.size()) {
+        int u = q.front();
+        q.pop();
+        if (i < tok.size()) {
+            if (tok[i] != "null") {
+                tr.push_back(Node{stoi(tok[i]), -1, -1});
+                tr[u].left = static_cast<int>(tr.size()) - 1;
+                q.push(tr[u].left);
+            }
+            ++i;
+        }
+        if (i < tok.size()) {
+            if (tok[i] != "null") {
+                tr.push_back(Node{stoi(tok[i]), -1, -1});
+                tr[u].right = static_cast<int>(tr.size()) - 1;
+                q.push(tr[u].right);
+            }
+            ++i;
+        }
+    }
+
+    // 迭代前序的镜像：根 -> 右 -> 左；反转后得到后序：左 -> 右 -> 根
+    vector<int> post;
+    vector<int> st;
+    st.push_back(0);
+    while (!st.empty()) {
+        int u = st.back();
+        st.pop_back();
+        post.push_back(u);
+        if (tr[u].left != -1) st.push_back(tr[u].left);
+        if (tr[u].right != -1) st.push_back(tr[u].right);
+    }
+    reverse(post.begin(), post.end());
+
+    // 后序 DP：孩子先于父亲算好
+    vector<long long> f(tr.size(), 0);
+    for (int u : post) {
+        int l = tr[u].left;
+        int r = tr[u].right;
+        long long best;
+        if (l == -1 && r == -1) {
+            best = 0;  // 叶子：没有后继
+        } else if (l == -1) {
+            best = f[r];  // 只有右孩子，必须走它
+        } else if (r == -1) {
+            best = f[l];  // 只有左孩子，必须走它
+        } else {
+            best = min(f[l], f[r]);
+        }
+        f[u] = tr[u].val + best;
+    }
+
+    cout << f[0] << '\n';
+    return 0;
+}

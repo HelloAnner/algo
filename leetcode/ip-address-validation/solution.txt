@@ -1,0 +1,94 @@
+[思路]
+
+按规则逐条模拟即可，不需要任何高级数据结构。对每一行字符串 s：
+
+1. 字符检查 + 切分：遍历 s，只允许数字和 .，一旦出现别的字符（空格、字母、-、: 等）直接判 invalid；同时按 . 手工切分出各段，空串也要作为一段保留下来，否则发现不了 1..2.3 这种空段。
+2. 段数检查：切分结果必须恰好 4 段。
+3. 逐段检查：
+   - 段为空 -> 非法；
+   - 段长度大于 3 -> 非法（4 位以上必然大于 255，可以直接判掉）；
+   - 段长度大于 1 且首字符是 '0' -> 前导零，非法（单独一段的 0 合法）；
+   - 把该段转成整数，大于 255 -> 非法。
+
+全部通过才输出 valid。
+
+读入细节：先用 cin >> n 读个数，此时第一行行尾的换行符还留在缓冲区里，必须用 cin.ignore(...) 吃掉，否则第一次 getline 只会读到一个空串，导致所有答案整体错位一行。之后每行都用 getline 读，空行也要当成一个待判定字符串（判 invalid），不能跳过。
+
+手工切分比 stringstream 更可控：stringstream >> 会跳过连续的分隔符，1..2.3 里的空段会被它悄悄吃掉，反而被判成合法。这也是本题最容易踩的坑。
+
+[复杂度]
+
+时间：O(L)（L 为所有字符串的总长度，每个字符只扫一遍）   空间：O(1)
+
+除输入缓冲区外，只需要常量个临时变量；切分出的 4 段用一个定长结构存也够。
+
+[关键点]
+
+- cin >> n 之后必须 cin.ignore(numeric_limits<streamsize>::max(), '\n')，否则第一行读到空串，整个输出错位一行
+- 空行是合法输入，要照常判 invalid，不能 break、也不能跳过
+- 前导零：0 合法，00 / 01 / 000 非法
+- 段数必须恰好 4：1.2.3 少一段、1.2.3.4.5 多一段、1.2.3.4. 末尾空段都非法
+- 只允许数字和 .：带尾随空格或 \r 的串按规则判非法（真实工程里可以先 strip，本题规则不 strip，只顺手去掉 Windows 的 \r）
+- 段值上限 255 用 int 就够；注意别写成「长度 <= 3 就合法」，999 同样非法
+
+[C++ 代码]
+// IP 地址判断（IPv4 合法性校验）
+// https://leetcode.cn/problems/validate-ip-address/
+//
+// 思路：逐行读入，手工按 '.' 切分，检查字符、段数、空段、前导零与 0~255 范围。
+// 复杂度：时间 O(L)（L 为总字符数） 空间 O(1)
+#include <iostream>
+#include <limits>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+// 判断 s 是否为合法 IPv4
+bool isIPv4(const string &s) {
+    if (s.empty()) return false;
+
+    // 手工切分，空段也要保留（1..2.3 里的空段不能被吞掉）
+    vector<string> parts;
+    string cur;
+    for (char c : s) {
+        if (c == '.') {
+            parts.push_back(cur);
+            cur.clear();
+        } else if (c >= '0' && c <= '9') {
+            cur.push_back(c);
+        } else {
+            return false;  // 出现了数字和 '.' 之外的字符
+        }
+    }
+    parts.push_back(cur);
+
+    if (parts.size() != 4) return false;  // 段数必须恰好为 4
+
+    for (const string &p : parts) {
+        if (p.empty()) return false;                    // 空段
+        if (p.size() > 3) return false;                 // 4 位以上必然 > 255
+        if (p.size() > 1 && p[0] == '0') return false;  // 前导零
+        int v = 0;
+        for (char c : p) v = v * 10 + (c - '0');
+        if (v > 255) return false;                      // 超出范围
+    }
+    return true;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n;
+    if (!(cin >> n)) return 0;
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');  // 吃掉第一行行尾，否则首个 getline 读到空串
+
+    string line;
+    for (int i = 0; i < n; ++i) {
+        if (!getline(cin, line)) line.clear();  // 输入不足按空行处理
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+        cout << (isIPv4(line) ? "valid" : "invalid") << '\n';
+    }
+    return 0;
+}

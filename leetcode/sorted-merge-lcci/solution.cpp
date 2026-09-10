@@ -1,39 +1,38 @@
-// 合并排序的数组（面试题 10.01）
+// 合并排序的数组
 // https://leetcode.cn/problems/sorted-merge-lcci/
 //
-// 思路：双指针从后往前原地归并，每次把两个剩余序列的较大者写到 A 的末尾。
-// 复杂度：时间 O(m+n) 空间 O(1)
+// 思路：
+// 复杂度：时间 O() 空间 O()
+//
+// 这里是空模板：实现自己写；参考解法在 solution.txt 里（实在想不出来再看）。
+#include <algorithm>
+#include <array>
+#include <climits>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <iostream>
+#include <map>
+#include <numeric>
+#include <queue>
+#include <set>
+#include <stack>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 using namespace std;
+
+// 提示：本机是 Apple clang + libc++，没有 <bits/stdc++.h>（那是 GCC 专有头）。
+// 如果想要竞赛风格的万能头，用 Homebrew 装 gcc 后把 CXX 换成 g++-14。
 
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    int m, n;
-    if (!(cin >> m >> n)) return 0;
+    // TODO: 读入 -> 计算 -> 输出
 
-    vector<int> A(m + n, 0), B(n);
-    for (int i = 0; i < m; ++i) cin >> A[i];
-    for (int j = 0; j < n; ++j) cin >> B[j];
-
-    int i = m - 1, j = n - 1, k = m + n - 1;
-    while (i >= 0 && j >= 0) {
-        if (A[i] > B[j]) {
-            A[k--] = A[i--];
-        } else {
-            A[k--] = B[j--];
-        }
-    }
-    while (i >= 0) A[k--] = A[i--];
-    while (j >= 0) A[k--] = B[j--];
-
-    for (int t = 0; t < m + n; ++t) {
-        if (t) cout << ' ';
-        cout << A[t];
-    }
-    cout << '\n';
     return 0;
 }

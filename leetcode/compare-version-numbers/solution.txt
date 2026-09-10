@@ -1,0 +1,74 @@
+[思路]
+
+双指针逐段扫描，不使用 split：
+
+- 指针 i、j 分别指向两个字符串当前修订号的起始位置；
+- 读到 . 或字符串结尾为止，把这一段边扫边累加成整数（v = v * 10 + (c - '0')），累加天然忽略前导零；
+- 一段比完立刻判大小：谁大就返回 1 / -1；
+- 相等则两个指针都跳过 .，进入下一段；
+- 如果某个字符串已经扫完，它的后续修订号一律视为 0（相当于补 0）；
+- 两个字符串都扫完且每一段都相等，返回 0。
+
+为什么对：版本号的大小关系就是「逐段数值比较」的字典序关系，补 0 规则保证了段数不同也能逐段对齐；每次比较的都是两个版本号同一位置的修订号，所以只要有一处不等就能定论，全部相等才是同一个版本。
+
+文档里的 Java 版用 substring + parseInt 取段，本质一样；C++ 里直接用累加更省事，也顺便处理了前导零。
+
+[复杂度]
+
+时间：O(n + m)，两个字符串各扫一遍（n、m 为两个版本号长度）
+空间：O(1)，只用了几个指针和累加变量
+
+[关键点]
+
+- 累加取段天然忽略前导零，不需要单独去零
+- 一段扫完后指针要跳过 .，否则下一轮会读到 . 而算错
+- 两串长度不同时不要提前返回 0：要用「越界视为 0」继续比（1.0 vs 1.0.0.1 的答案是 -1）
+- 循环条件是 i < v1.size() || j < v2.size()，两个都扫完才结束
+- 用 long long 承接每段数值，避免有人拿超长修订号来卡（题目保证在 32 位内，但这样写更稳）
+
+[C++ 代码]
+// 比较版本号
+// https://leetcode.cn/problems/compare-version-numbers/
+//
+// 思路：双指针逐段扫描，边扫边累加出每个修订号的数值（自动忽略前导零），逐段比较，缺段视为 0。
+// 复杂度：时间 O(n + m) 空间 O(1)
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+// 从 s[i] 开始读一个修订号的数值，返回其值，并把 i 停在 '.' 之后（或末尾）
+long long nextRevision(const string &s, size_t &i) {
+    long long v = 0;
+    while (i < s.size() && s[i] != '.') {
+        v = v * 10 + (s[i] - '0');
+        ++i;
+    }
+    if (i < s.size()) ++i;  // 跳过 '.'
+    return v;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    string v1, v2;
+    if (!(cin >> v1) || !(cin >> v2)) return 0;
+
+    size_t i = 0, j = 0;
+    while (i < v1.size() || j < v2.size()) {
+        // 越界的一方按补 0 处理
+        long long a = (i < v1.size()) ? nextRevision(v1, i) : 0;
+        long long b = (j < v2.size()) ? nextRevision(v2, j) : 0;
+        if (a > b) {
+            cout << 1 << '\n';
+            return 0;
+        }
+        if (a < b) {
+            cout << -1 << '\n';
+            return 0;
+        }
+    }
+    cout << 0 << '\n';
+    return 0;
+}

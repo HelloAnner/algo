@@ -1,0 +1,103 @@
+[思路]
+
+利用完全二叉树的性质：
+
+- 从某个节点出发，沿最左路径一直走到底，得到的节点数记为它所在满二叉树的高度。
+- 对根节点分别求左子树的最左深度 ld 和右子树的最左深度 rd：
+  - ld == rd：说明左子树是一棵高度为 ld 的满二叉树，节点数是 2^ld - 1，加上根节点就是 2^ld 个，剩下只需递归数右子树；
+  - ld != rd：说明右子树是一棵高度为 rd 的满二叉树，节点数是 2^rd - 1，加上根节点就是 2^rd 个，剩下只需递归数左子树。
+
+每递归一层都能「白拿」一整棵子树，而求最左深度只要 O(log n)，递归深度也只有 O(log n)，所以总复杂度是 O(log^2 n)。
+
+说明：本题的 ACM 输入是序列化后的树，所以直接数一数非 # 的 token 也能得到答案；但面试考的正是上面这个「不遍历所有节点」的做法，solution.cpp 实现的就是它。
+
+[复杂度]
+
+时间：O(log^2 n)，每层用 O(log n) 求最左深度，一共 O(log n) 层
+空间：O(log n) 递归栈（建树本身要 O(n)）
+
+[关键点]
+
+- 判满的条件是「左子树最左深度 == 右子树最左深度」，不是比较两棵子树的高度
+- 完全二叉树里空节点只会出现在最后，不会出现「左边缺、右边有」
+- (1 << ld) 在节点数 <= 10^5 时不会溢出（ld <= 17）
+- 边界：空树返回 0；单节点树返回 1
+
+[C++ 代码]
+// 完全二叉树的节点个数（LeetCode 222. Count Complete Tree Nodes）
+// https://leetcode.cn/problems/count-complete-tree-nodes/
+//
+// 思路：完全二叉树中，若左、右子树的最左深度相同，则左子树是满二叉树，节点数是
+//       2^ld（含根），只需再递归右子树；否则右子树是满的，只需再递归左子树。
+// 复杂度：时间 O(log^2 n) 空间 O(log n)（递归栈，不含建树的 O(n)）
+#include <iostream>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+struct TreeNode {
+    int val;
+    TreeNode *left;
+    TreeNode *right;
+    explicit TreeNode(int v) : val(v), left(nullptr), right(nullptr) {}
+};
+
+static vector<string> tokens;
+static size_t pos = 0;
+
+// 按先序序列建树：# 表示空节点
+static TreeNode *build() {
+    if (pos >= tokens.size()) return nullptr;
+    const string &tok = tokens[pos++];
+    if (tok == "#") return nullptr;
+    TreeNode *node = new TreeNode(stoi(tok));
+    node->left = build();
+    node->right = build();
+    return node;
+}
+
+// 沿最左路径走到底的节点数，也就是以 node 为根的满二叉树的高度
+static int leftDepth(TreeNode *node) {
+    int d = 0;
+    while (node != nullptr) {
+        ++d;
+        node = node->left;
+    }
+    return d;
+}
+
+static int countNodes(TreeNode *root) {
+    if (root == nullptr) return 0;
+    int ld = leftDepth(root->left);
+    int rd = leftDepth(root->right);
+    if (ld == rd) {
+        // 左子树是满的：2^ld - 1 个节点 + 根节点，再数右子树
+        return (1 << ld) + countNodes(root->right);
+    }
+    // 右子树是满的：2^rd - 1 个节点 + 根节点，再数左子树
+    return (1 << rd) + countNodes(root->left);
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    string tok;
+    while (cin >> tok) tokens.push_back(tok);
+
+    TreeNode *root = build();
+    cout << countNodes(root) << '\n';
+
+    // 释放整棵树：用显式栈避免递归析构的深度问题
+    vector<TreeNode *> stk;
+    if (root != nullptr) stk.push_back(root);
+    while (!stk.empty()) {
+        TreeNode *cur = stk.back();
+        stk.pop_back();
+        if (cur->left != nullptr) stk.push_back(cur->left);
+        if (cur->right != nullptr) stk.push_back(cur->right);
+        delete cur;
+    }
+    return 0;
+}

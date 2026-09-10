@@ -1,0 +1,55 @@
+[思路]
+一次遍历（贪心）：维护两个量
+
+- minPrice：到目前为止见过的最低买入价；
+- best：到目前为止能获得的最大利润。
+
+遍历第 i 天时，如果当天卖出，利润是 prices[i] - minPrice，用它更新 best；再用 prices[i] 更新 minPrice。
+
+这等价于文档里 Java 解法的做法：把价格数组转成相邻差值数组，再求最大子段和（差值数组的最大连续子段和就是一次买卖的最大利润）。
+
+[复杂度]
+时间：O(n)，只扫一遍
+空间：O(1)（读入数组本身 O(n)，也可以边读边算）
+
+[关键点]
+- 初始 best = 0，天然覆盖「一路下跌」和 n == 1 的情况
+- 先算利润再更新 minPrice，语义更清楚（同一天不能又买又卖）
+- 本题数据范围内 int 足够；如果价格范围放大，用 long long
+
+[C++ 代码]
+// 买卖股票的最佳时机
+// https://leetcode.cn/problems/best-time-to-buy-and-sell-stock/
+//
+// 思路：一次遍历，维护历史最低价 minPrice 和当前最大利润 best。
+// 复杂度：时间 O(n) 空间 O(1)
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n;
+    if (!(cin >> n) || n <= 1) {
+        // 少于两天不可能完成一次交易
+        cout << 0 << '\n';
+        return 0;
+    }
+
+    vector<int> prices(n);
+    for (auto &p : prices) cin >> p;
+
+    int minPrice = prices[0];
+    int best = 0;
+    for (int i = 1; i < n; ++i) {
+        best = max(best, prices[i] - minPrice);
+        minPrice = min(minPrice, prices[i]);
+    }
+
+    cout << best << '\n';
+    return 0;
+}

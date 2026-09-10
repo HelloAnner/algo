@@ -1,40 +1,38 @@
 // 手写二分查找
 // https://leetcode.cn/problems/binary-search/
 //
-// 思路：在升序数组上用左闭右开区间 [lo, hi) 二分，找第一个 >= target 的位置，再确认是否命中。
-// 复杂度：时间 O(log n) 空间 O(1)
+// 思路：
+// 复杂度：时间 O() 空间 O()
+//
+// 这里是空模板：实现自己写；参考解法在 solution.txt 里（实在想不出来再看）。
+#include <algorithm>
+#include <array>
+#include <climits>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <iostream>
+#include <map>
+#include <numeric>
+#include <queue>
+#include <set>
+#include <stack>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 using namespace std;
+
+// 提示：本机是 Apple clang + libc++，没有 <bits/stdc++.h>（那是 GCC 专有头）。
+// 如果想要竞赛风格的万能头，用 Homebrew 装 gcc 后把 CXX 换成 g++-14。
 
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    int n = 0;
-    if (!(cin >> n) || n <= 0) {
-        cout << -1 << '\n';
-        return 0;
-    }
+    // TODO: 读入 -> 计算 -> 输出
 
-    vector<long long> nums(n);
-    for (auto &x : nums) cin >> x;
-
-    long long target = 0;
-    cin >> target;
-
-    int lo = 0, hi = n;  // 左闭右开 [lo, hi)
-    while (lo < hi) {
-        int mid = lo + (hi - lo) / 2;
-        if (nums[mid] < target) {
-            lo = mid + 1;
-        } else {
-            hi = mid;
-        }
-    }
-
-    if (lo < n && nums[static_cast<size_t>(lo)] == target) cout << lo << '\n';
-    else cout << -1 << '\n';
     return 0;
 }

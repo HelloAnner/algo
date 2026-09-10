@@ -1,0 +1,111 @@
+[思路]
+
+方法一：递归（本题 solution.cpp 采用）
+
+前序遍历的第一个元素一定是根；在中序遍历里找到这个根的位置 pos，则：
+
+- inorder[inL, pos-1] 是左子树的中序，长度 leftLen = pos - inL；
+- inorder[pos+1, inR] 是右子树的中序；
+- 对应到前序：根之后连续的 leftLen 个元素是左子树的前序，即 [preL+1, preL+leftLen]，剩下的是右子树的前序 [preL+leftLen+1, preR]。
+
+于是递归地「用左子树的前序 + 中序建左子树，用右子树的前序 + 中序建右子树」，就是文档里 Java 方法 1 的做法。
+
+为了不用每次都线性扫描中序，先用哈希表存下「值 → 中序下标」，找根的位置变成 O(1)，整体 O(n)（题目保证值互不相同，所以哈希表不会冲突）。
+
+方法二：迭代 + 栈（文档里的方法 2）
+
+用一个栈保存「当前正在走的这条从根出发的路径」，中序指针 inorderIndex 指向中序里还没被访问的最左节点：
+
+- 前序每读到一个新值 preorderVal，若栈顶的值 != inorder[inorderIndex]，说明还没走到最左端，新节点是栈顶的左孩子，压栈；
+- 否则不断弹栈（每弹一个 inorderIndex++），直到栈空或栈顶与中序当前值不同，此时新节点是最后一个被弹出节点的右孩子，压栈。
+
+它和前序/中序的定义是对偶的，效果与递归一致，只是把递归栈显式化了。这里按文档保留思路说明，代码用递归版（更好写好讲）。
+
+[复杂度]
+
+时间：O(n)。每个节点进递归一次；哈希表让「找根在中序中的位置」是 O(1)（朴素线性查找是 O(n^2)，n = 5000 也能过但不值得）
+空间：O(n)。哈希表 O(n) + 递归栈 O(h)（最坏退化成链时 h = n），另外存放重建出的树 O(n)
+
+[关键点]
+
+- 递归函数的区间是闭区间 [preL, preR] / [inL, inR]，终止条件是 preL > preR
+- 左子树长度一定要用 pos - inL 算，而不是 pos（后者在递归到右子树时会错）
+- 前序里左子树区间是 [preL+1, preL+leftLen]，右子树是 [preL+leftLen+1, preR]，两段别写重
+- n = 0 时直接输出空行，不要访问 preorder[0]
+- 值为负数时快读/输出都要正常（用 cin >> int 即可）
+- 重建出的树用「数组池 + 左右孩子下标」表示，避免指针和内存管理；节点下标不会因为 vector 扩容而失效
+- 题目保证前序与中序无重复值，否则哈希表定位根就不成立了
+
+[C++ 代码]
+// 重建二叉树（前序 + 中序）
+// https://leetcode.cn/problems/zhong-jian-er-cha-shu-lcof/ （LeetCode 105 同题）
+//
+// 思路：前序首元素是根，用哈希表在中序里 O(1) 定位根，递归划分左右子树，最后输出后序。
+// 复杂度：时间 O(n) 空间 O(n)
+#include <iostream>
+#include <unordered_map>
+#include <vector>
+
+using namespace std;
+
+struct Node {
+    int val;
+    int left;   // 左孩子下标，-1 表示空
+    int right;  // 右孩子下标，-1 表示空
+};
+
+static vector<int> preorderSeq;
+static vector<int> inorderSeq;
+static unordered_map<int, int> inPos;  // 值 -> 中序下标
+static vector<Node> tree;
+
+// 区间都是闭区间，返回新建子树根节点的下标；空区间返回 -1
+static int build(int preL, int preR, int inL, int inR) {
+    if (preL > preR) return -1;
+
+    int val = preorderSeq[preL];  // 前序第一个就是根
+    int idx = static_cast<int>(tree.size());
+    tree.push_back({val, -1, -1});
+
+    int pos = inPos[val];              // 根在中序里的位置
+    int leftLen = pos - inL;           // 左子树节点个数
+    tree[idx].left = build(preL + 1, preL + leftLen, inL, pos - 1);
+    tree[idx].right = build(preL + leftLen + 1, preR, pos + 1, inR);
+    return idx;
+}
+
+static void postOrder(int root, bool &first) {
+    if (root == -1) return;
+    postOrder(tree[root].left, first);
+    postOrder(tree[root].right, first);
+    if (!first) cout << ' ';
+    cout << tree[root].val;
+    first = false;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n;
+    if (!(cin >> n) || n <= 0) {
+        cout << '\n';
+        return 0;
+    }
+
+    preorderSeq.resize(n);
+    inorderSeq.resize(n);
+    for (int i = 0; i < n; ++i) cin >> preorderSeq[i];
+    for (int i = 0; i < n; ++i) cin >> inorderSeq[i];
+
+    inPos.reserve(static_cast<size_t>(n) * 2);
+    for (int i = 0; i < n; ++i) inPos[inorderSeq[i]] = i;
+
+    tree.reserve(n);
+    int root = build(0, n - 1, 0, n - 1);
+
+    bool first = true;
+    postOrder(root, first);
+    cout << '\n';
+    return 0;
+}

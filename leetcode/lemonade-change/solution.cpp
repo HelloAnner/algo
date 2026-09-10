@@ -1,48 +1,38 @@
 // 柠檬水找零（LeetCode 860. Lemonade Change）
 // https://leetcode.cn/problems/lemonade-change/
 //
-// 思路：贪心。只记 5 元和 10 元的张数：收 10 元找 1 张 5 元；
-//       收 20 元优先找 10 + 5，不够再找 3 张 5 元。找不开就失败。
-// 复杂度：时间 O(n) 空间 O(1)
+// 思路：
+// 复杂度：时间 O() 空间 O()
+//
+// 这里是空模板：实现自己写；参考解法在 solution.txt 里（实在想不出来再看）。
+#include <algorithm>
+#include <array>
+#include <climits>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <iostream>
+#include <map>
+#include <numeric>
+#include <queue>
+#include <set>
+#include <stack>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 using namespace std;
+
+// 提示：本机是 Apple clang + libc++，没有 <bits/stdc++.h>（那是 GCC 专有头）。
+// 如果想要竞赛风格的万能头，用 Homebrew 装 gcc 后把 CXX 换成 g++-14。
 
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    int n;
-    if (!(cin >> n)) return 0;
+    // TODO: 读入 -> 计算 -> 输出
 
-    int five = 0;  // 手里的 5 元张数
-    int ten = 0;   // 手里的 10 元张数（20 元永远不用找出去，不必统计）
-    for (int i = 0; i < n; ++i) {
-        int bill;
-        cin >> bill;
-        if (bill == 5) {
-            ++five;
-        } else if (bill == 10) {
-            ++ten;
-            --five;  // 找出一张 5 元
-            if (five < 0) {
-                cout << "false" << '\n';
-                return 0;
-            }
-        } else {  // 20 元，需要找 15 元
-            if (ten > 0) {
-                --ten;
-                --five;
-            } else {
-                five -= 3;
-            }
-            if (five < 0) {
-                cout << "false" << '\n';
-                return 0;
-            }
-        }
-    }
-
-    cout << "true" << '\n';
     return 0;
 }
