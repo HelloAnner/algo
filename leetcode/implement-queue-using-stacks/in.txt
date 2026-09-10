@@ -1,0 +1,4 @@
+3
+appendTail 3
+deleteHead
+deleteHead
