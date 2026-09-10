@@ -71,13 +71,13 @@ chmod +x fakebin/algo
 FAKEBIN="$PWD/fakebin"
 
 echo "→ make run：编译 + 跑 in.txt，对了只打印一行 AC"
-RUN_OUT="$(cd two-sum && PATH="$FAKEBIN:$PATH" make run 2>&1 || true)"
+RUN_OUT="$(cd two-sum && PATH="$FAKEBIN:$PATH" make run ALGO="$BUN $CLI" 2>&1 || true)"
 [ "$RUN_OUT" = "AC" ] || fail "make run 应该只输出 AC，实际：[$RUN_OUT]"
 # 单独查一次：run 成功时走的是 process.exit，曾经因此漏删 .algo_bin
 [ -e "two-sum/.algo_bin" ] && fail "make run 之后残留了 .algo_bin"
 
 echo "→ make check：静默即通过"
-CHK_OUT="$(cd two-sum && PATH="$FAKEBIN:$PATH" make check 2>&1 || true)"
+CHK_OUT="$(cd two-sum && PATH="$FAKEBIN:$PATH" make check ALGO="$BUN $CLI" 2>&1 || true)"
 if [ -n "$CHK_OUT" ]; then
     fail "make check 没问题时不该有任何输出，实际：[$CHK_OUT]"
 fi
@@ -112,7 +112,7 @@ EOF
     printf '0 1\n' > two-sum/out.txt
     BITS_OUT="$(cd two-sum && PATH="$FAKEBIN:$PATH" "$BUN" "$CLI" check 2>&1 || true)"
     if [ -n "$BITS_OUT" ]; then fail "万能头写法没通过 check：[$BITS_OUT]"; fi
-    BITS_RUN="$(cd two-sum && PATH="$FAKEBIN:$PATH" make run 2>&1 || true)"
+    BITS_RUN="$(cd two-sum && PATH="$FAKEBIN:$PATH" make run ALGO="$BUN $CLI" 2>&1 || true)"
     [ "$BITS_RUN" = "AC" ] || fail "万能头写法 make run 应该是 AC，实际：[$BITS_RUN]"
     echo "  ✓ 一行 #include <bits/stdc++.h> 可用"
 else
@@ -274,9 +274,9 @@ int main() {
 }
 EOF
 printf 'hi\n' > two-sum/out.txt
-R_OUT="$(cd two-sum && PATH="$FAKEBIN:$PATH" make r 2>&1 || true)"
+R_OUT="$(cd two-sum && PATH="$FAKEBIN:$PATH" make r ALGO="$BUN $CLI" 2>&1 || true)"
 [ "$R_OUT" = "AC" ] || fail "make r 应该等价于 make run（只输出 AC），实际：[$R_OUT]"
-C_OUT="$(cd two-sum && PATH="$FAKEBIN:$PATH" make c 2>&1 || true)"
+C_OUT="$(cd two-sum && PATH="$FAKEBIN:$PATH" make c ALGO="$BUN $CLI" 2>&1 || true)"
 if [ -n "$C_OUT" ]; then
     fail "make c 应该等价于 make check（静默），实际：[$C_OUT]"
 fi

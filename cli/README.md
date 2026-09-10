@@ -200,6 +200,9 @@ two-sum/
 > 没有 README.md，也没有任何 Markdown —— 题面和解法都直接 `cat`。
 >
 > `Makefile` 是生成物：改了 `cli/assets/make.tmpl` 之后，老题目目录要 `algo remake <题库目录>` 刷一遍。
+>
+> `make r` / `make c` 默认调用 `~/.local/bin/algo`（优先绝对路径，免得 PATH 上同名的别的工具抢走）；
+> `make help` 最后一行会打印实际用的是哪个，想换就 `make ALGO='bun ~/algo/cli/src/index.ts' r`。
 
 > `make run` / `raw` / `check` / `debug` 都是「编译 → 运行 → 删掉二进制」：
 > 用 `trap ... EXIT INT TERM` 兜底，正常结束、编译报错、程序崩溃、Ctrl-C 都会清理，

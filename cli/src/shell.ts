@@ -15,22 +15,32 @@ const END = "# <<< algo shell integration <<<";
 export const SHELL_SNIPPET = `${BEGIN}
 # algo new / algo add 建完题目后自动 cd 进新目录。
 # 由 \`algo setup --shell\` 写入；不要了就删掉这一段（或重跑安装覆盖）。
+# 真正执行 algo：优先本仓库装的 ~/.local/bin/algo（PATH 上可能有同名的别的工具排在前面）。
+# 回退用 command algo（而不是 command -v）：函数本身也叫 algo，zsh 里 command -v 会返回函数名。
+_algo_bin() {
+  if [ -x "$HOME/.local/bin/algo" ]; then
+    "$HOME/.local/bin/algo" "$@"
+  else
+    command algo "$@"
+  fi
+}
+
 algo() {
   local dir rc
   case "$1" in
-    ""|help|-h|--help|version|-v|--version|list|ls|run|raw|check|debug|build|clean|edit|micro|in|out|board|path|setup|doctor)
-      command algo "$@"
+    ""|help|-h|--help|version|-v|--version|list|ls|run|raw|check|debug|build|clean|edit|micro|in|out|board|path|remake|setup|doctor)
+      _algo_bin "$@"
       return $?
       ;;
   esac
   # -e / --edit 会启动 micro（全屏 TUI），不能塞进命令替换里
   case " $* " in
     *" -e "*|*" --edit "*)
-      command algo "$@"
+      _algo_bin "$@"
       return $?
       ;;
   esac
-  dir="$(command algo --print-dir "$@")"
+  dir="$(_algo_bin --print-dir "$@")"
   rc=$?
   if [ "$rc" -eq 0 ] && [ -n "$dir" ] && [ -d "$dir" ]; then
     cd "$dir" || return $rc
