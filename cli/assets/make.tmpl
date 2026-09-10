@@ -1,0 +1,42 @@
+# {{TITLE}} — 本地编译 / 运行 / 对拍
+# 用法：make run | make raw | make check | make debug | make clean
+
+# make 自带 CXX=g++ 的默认值会盖掉 ?= ，所以只在“没人指定过”时才设成 clang++
+ifeq ($(origin CXX), default)
+CXX := clang++
+endif
+CXXFLAGS ?= -std=c++20 -O2 -Wall -Wextra -Wno-sign-compare -Wno-unused-variable
+DBGFLAGS ?= -std=c++20 -g -O0 -fsanitize=address,undefined -fno-omit-frame-pointer
+
+BIN    := solution
+DBGBIN := solution_dbg
+
+.PHONY: all run raw check debug clean
+all: $(BIN)
+
+$(BIN): solution.cpp
+	@$(CXX) $(CXXFLAGS) $< -o $@
+
+$(DBGBIN): solution.cpp
+	@$(CXX) $(DBGFLAGS) $< -o $@
+
+# 用 in.txt 作为标准输入跑一遍
+run: $(BIN)
+	@./$(BIN) < in.txt
+
+# 直接跑，标准输入接终端（手动输入测试）
+raw: $(BIN)
+	@./$(BIN)
+
+# 与 out.txt 比对
+check: $(BIN)
+	@./$(BIN) < in.txt > .out.actual 2>&1 || true
+	@if diff -u out.txt .out.actual > .out.diff; then echo "✅ AC"; else echo "❌ WA"; cat .out.diff; fi
+	@rm -f .out.actual .out.diff
+
+# AddressSanitizer + UBSan，专门抓越界 / 未定义行为
+debug: $(DBGBIN)
+	@./$(DBGBIN) < in.txt
+
+clean:
+	@rm -f $(BIN) $(DBGBIN) .out.actual .out.diff
