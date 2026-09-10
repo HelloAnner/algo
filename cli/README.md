@@ -15,6 +15,7 @@ make install          # 打包 CLI + 装到 ~/.local/bin + 合并 micro 配置
 1. `bun build` 把 TS 打成 `cli/dist/algo.js`
 2. 写一个轻量启动器 `~/.local/bin/algo`（`exec bun .../dist/algo.js`）
 3. 运行 `algo setup`，把 C++ 刷题 profile 合并进 `~/.config/micro/settings.json`（先备份再合并）
+4. 运行 `algo setup --shell`，把「建完题自动 cd」的函数写进 `~/.zshrc`（先备份再追加）
 
 其它目标：
 
@@ -23,6 +24,7 @@ make install          # 打包 CLI + 装到 ~/.local/bin + 合并 micro 配置
 | `make install-bin` | 装独立二进制（约 61MB，无 bun 也能跑） |
 | `make install-cli` | 只装 CLI，不碰 micro 配置 |
 | `make setup` / `make init` | 只合并 micro 配置 / 额外写 `init.lua`（存在则不动） |
+| `make shell` | 只装 shell 集成（`algo new` 之后自动 cd） |
 | `make doctor` | 环境自检 |
 | `make typecheck` | `tsc --noEmit` |
 | `make test` | 冒烟测试：建题 → 编译 → 对拍 → 清理校验 → add → 列表 |
@@ -91,6 +93,26 @@ algo add --json spec.json
 - 目录已存在时，`--force` 才会整套重来；否则**只覆盖显式给出的文件**（problem.md / solution.md / in.txt / out.txt），不动 solution.cpp，也不碰 README.md。
 - `--problem-file -` / `--solution-file -` 表示从 stdin 读；两个都用 `-` 会报错，请改用 `--json -`。
 
+## `algo new` 之后自动 cd
+
+子进程改不了父 shell 的目录，所以这一条靠一层 shell 函数实现（`algo setup --shell` 写入）：
+
+- CLI 侧：`algo new xxx --print-dir` 把**新建目录的路径**打到 stdout，人看的输出全部走 stderr
+- shell 侧：一个 `algo()` 函数包住真命令，拿到路径后自己 `cd` 过去
+
+```bash
+algo new two-sum                  # 建完直接站在 two-sum/ 里
+algo add two-sum --in "1 2"       # 只更新已有目录 → 不 cd
+algo new three-sum --print-dir    # 只想要路径
+```
+
+细节：
+
+- 只有**真的新建了目录**才会 cd；`algo add` 更新已有题目不会把你拽走
+- `algo list` / `run` / `in` / `board` 等子命令原样直通，不受影响
+- `-e` / `--edit` 会启动 micro（全屏 TUI），函数会跳过自动 cd 直接执行
+- 不要了：删掉 `~/.zshrc` 里 `# >>> algo shell integration >>>` 到 `# <<< algo shell integration <<<` 之间那段
+
 ## 命令一览
 
 ```
@@ -111,6 +133,7 @@ algo path [目录] [目标]    只打印路径；目标：code/cpp · in · out 
                            problem · board · readme · makefile
                            （也可以直接写文件名，自动补 .cpp/.md/.txt/.excalidraw）
 algo setup [--dry-run]     安装 / 合并 micro 配置
+algo setup --shell         装 shell 集成（algo new 之后自动 cd）
 algo setup --init          额外生成 ~/.config/micro/init.lua（存在则不覆盖）
 algo doctor                自检
 ```
@@ -121,7 +144,7 @@ algo doctor                自检
 two-sum/
 ├── problem.md       # 题面描述（独立 md）
 ├── solution.md      # 解法思路（独立 md）
-├── whiteboard.excalidraw  # 白板：画思路 / 图解
+├── whiteboard.excalidraw  # 白板：空白场景，打开就能画
 ├── solution.cpp     # ACM 模式：读 stdin 写 stdout
 ├── in.txt           # 样例输入
 ├── out.txt          # 期望输出

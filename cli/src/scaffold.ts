@@ -10,7 +10,7 @@ import readmeTpl from "../assets/README.tmpl" with { type: "text" };
 import inTpl from "../assets/in.txt" with { type: "text" };
 import outTpl from "../assets/out.txt" with { type: "text" };
 import gitignoreTpl from "../assets/gitignore" with { type: "text" };
-import { c, die, hint, info, ok, render, slugify, titleize, today, warn, writeText } from "./util";
+import { c, die, hint, info, ok, out, render, slugify, titleize, today, warn, writeText } from "./util";
 
 /** 模板里留的占位标记：还在 = 这一项还没写 */
 export const TODO_MARK = "algo:todo";
@@ -20,30 +20,6 @@ export function isFilled(md: string | null | undefined): boolean {
 }
 
 const withNewline = (s: string) => (s.endsWith("\n") ? s : s + "\n");
-
-/** 白板模板自带的元素数（标题 + 链接），超过这个数说明已经画过东西 */
-export const BOARD_BASE_ELEMENTS = 2;
-
-/** 粗略估算文本宽度：CJK 按一个字宽，ASCII 按 0.55 字宽 */
-function estimateWidth(text: string, fontSize: number): number {
-  let w = 0;
-  for (const ch of text) {
-    const code = ch.codePointAt(0) ?? 0;
-    if (code > 0x2e80) w += fontSize;
-    else if (ch === " ") w += fontSize * 0.3;
-    else w += fontSize * 0.55;
-  }
-  return Math.max(40, Math.round(w));
-}
-
-/** 往 JSON 模板里填值：字符串做 JSON 转义（不额外加引号），数字直接写 */
-function renderJson(tpl: string, vars: Record<string, string | number>): string {
-  return tpl.replace(/\{\{(\w+)\}\}/g, (_m, k: string) => {
-    const v = vars[k];
-    if (v === undefined) return "";
-    return typeof v === "number" ? String(v) : JSON.stringify(v).slice(1, -1);
-  });
-}
 
 export function renderVars(opts: AddOptions): Record<string, string> {
   const slug = slugify(opts.name);
@@ -60,9 +36,6 @@ export function renderVars(opts: AddOptions): Record<string, string> {
 
 export function problemFiles(opts: AddOptions): { name: string; content: string }[] {
   const vars = renderVars(opts);
-  const title = vars.TITLE ?? "";
-  const link = vars.LINK ?? "";
-
   return [
     {
       name: "problem.md",
@@ -78,21 +51,17 @@ export function problemFiles(opts: AddOptions): { name: string; content: string 
     { name: "Makefile", content: render(makeTpl, vars) },
     { name: "README.md", content: render(readmeTpl, vars) },
     { name: ".gitignore", content: gitignoreTpl },
-    {
-      name: "whiteboard.excalidraw",
-      content: renderJson(boardTpl, {
-        TITLE: title,
-        LINK: link,
-        TITLE_W: estimateWidth(title, 28),
-        TITLE_H: 35,
-        LINK_W: estimateWidth(link, 16),
-        LINK_H: 20,
-      }),
-    },
+    { name: "whiteboard.excalidraw", content: boardTpl },
   ];
 }
 
-export function createProblem(opts: AddOptions): string {
+export interface CreateResult {
+  dir: string;
+  /** 目录是这次新建（或 --force 重写）的吗 */
+  created: boolean;
+}
+
+export function createProblem(opts: AddOptions): CreateResult {
   const slug = slugify(opts.name);
   if (!slug) die(`无效的题目名：${JSON.stringify(opts.name)}`);
 
@@ -121,7 +90,7 @@ export function createProblem(opts: AddOptions): string {
     if (opts.title || opts.link || opts.difficulty || opts.tags.length > 0) {
       hint("README.md 的元信息保持不变——要改请直接编辑它，免得覆盖你的复盘记录");
     }
-    return dir;
+    return { dir, created: false };
   }
 
   mkdirSync(dir, { recursive: true });
@@ -129,13 +98,13 @@ export function createProblem(opts: AddOptions): string {
 
   if (existed) warn(`目录已存在，已覆盖同名文件：./${slug}`);
   ok(`已创建题目 ./${slug}`);
-  console.log();
-  for (const f of files) console.log("  " + c.cyan(f.name));
-  console.log();
+  out();
+  for (const f of files) out("  " + c.cyan(f.name));
+  out();
   info("下一步：");
   hint(`cd ${slug} && micro .        # 先看 problem.md，再写 solution.cpp`);
   hint("algo in / algo out          # 改样例输入 / 期望输出");
   hint("make run                    # 用 in.txt 跑一遍");
   hint("make check                  # 和 out.txt 比对");
-  return dir;
+  return { dir, created: true };
 }

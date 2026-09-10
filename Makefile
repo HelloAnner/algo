@@ -2,7 +2,7 @@
 #   make install / install-bin / uninstall / setup / doctor / test
 
 CLI := cli
-TARGETS := help install install-cli install-shim install-bin uninstall setup init doctor typecheck test bundle clean deps
+TARGETS := help install install-cli install-shim install-bin uninstall setup shell init doctor typecheck test bundle clean deps
 
 .PHONY: $(TARGETS)
 .DEFAULT_GOAL := help

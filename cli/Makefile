@@ -1,7 +1,8 @@
 # algo CLI — bun + TypeScript
 #
-#   make install      打包 + 装到 ~/.local/bin/algo + 合并 micro 配置（推荐）
+#   make install      打包 + 装到 ~/.local/bin/algo + 合并 micro 配置 + 装 shell 集成（推荐）
 #   make install-cli  只装 CLI，不动 micro 配置
+#   make shell        只装 shell 集成（algo new 之后自动 cd）
 #   make install-bin  安装独立二进制（约 61MB，无 bun 也能跑）
 #   make uninstall    移除 ~/.local/bin/algo
 #   make test         冒烟测试（建题 → 编译 → 对拍）
@@ -19,7 +20,7 @@ BUNDLE := $(DIST)/algo.js
 BINARY := $(DIST)/algo
 SHIM   := $(BINDIR)/algo
 
-.PHONY: all help deps bundle install install-cli install-shim install-bin uninstall setup init doctor typecheck test clean
+.PHONY: all help deps bundle install install-cli install-shim install-bin uninstall setup shell init doctor typecheck test clean
 
 all: bundle
 
@@ -42,7 +43,7 @@ install-shim: bundle
 	@echo "✓ 已安装 $(SHIM)"
 	@echo "  → $(BUN) $(BUNDLE)"
 
-install: install-cli setup
+install: install-cli setup shell
 
 install-cli: install-shim
 
@@ -59,6 +60,10 @@ uninstall:
 
 setup: bundle
 	@$(BUN) $(BUNDLE) setup
+
+# 把「建完题自动 cd」的 shell 函数写进 ~/.zshrc / ~/.bash_profile
+shell: bundle
+	@$(BUN) $(BUNDLE) setup --shell
 
 init: bundle
 	@$(BUN) $(BUNDLE) setup --init

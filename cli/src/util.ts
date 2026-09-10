@@ -17,15 +17,35 @@ export const c = {
   gray: wrap("90"),
 };
 
+// ---------- 输出 ----------
+// --print-dir 模式（给 shell 集成用）下，人看的输出走 stderr，
+// stdout 只留给机器可读的路径，这样 $(...) 才拿得干净。
+let humanToStderr = false;
+
+export function routeHumanToStderr(on: boolean): void {
+  humanToStderr = on;
+}
+
+/** 人看的输出 */
+export function out(line = ""): void {
+  if (humanToStderr) console.error(line);
+  else console.log(line);
+}
+
+/** 机器可读的输出，永远走 stdout */
+export function emit(line: string): void {
+  console.log(line);
+}
+
 export function die(msg: string): never {
   console.error(`${c.red("error:")} ${msg}`);
   process.exit(1);
 }
-export const ok = (m: string) => console.log(`${c.green("✓")} ${m}`);
-export const warn = (m: string) => console.log(`${c.yellow("!")} ${m}`);
-export const bad = (m: string) => console.log(`${c.red("✗")} ${m}`);
-export const info = (m: string) => console.log(`${c.blue("›")} ${m}`);
-export const hint = (m: string) => console.log(`  ${c.gray(m)}`);
+export const ok = (m: string) => out(`${c.green("✓")} ${m}`);
+export const warn = (m: string) => out(`${c.yellow("!")} ${m}`);
+export const bad = (m: string) => out(`${c.red("✗")} ${m}`);
+export const info = (m: string) => out(`${c.blue("›")} ${m}`);
+export const hint = (m: string) => out(`  ${c.gray(m)}`);
 
 // ---------- 文件 ----------
 export function readText(path: string): string | null {
@@ -38,7 +58,6 @@ export function readText(path: string): string | null {
 
 export function writeText(path: string, data: string): void {
   mkdirSync(dirname(path), { recursive: true });
-  // 直接写，保持内容原样（含 tab / 空文件）
   writeFileSync(path, data, "utf8");
 }
 
@@ -56,11 +75,10 @@ export function which(bin: string): string | null {
   return r.status === 0 && out ? out.split("\n")[0] : null;
 }
 
-/** 取命令的首行输出，失败返回 null */
 export function versionOf(cmd: string, args: string[] = ["--version"]): string | null {
   const r = spawnSync(cmd, args, { encoding: "utf8" });
-  const out = `${r.stdout ?? ""}${r.stderr ?? ""}`.split("\n").map((s) => s.trim()).filter(Boolean);
-  return out.length > 0 ? out[0] : null;
+  const lines = `${r.stdout ?? ""}${r.stderr ?? ""}`.split("\n").map((s) => s.trim()).filter(Boolean);
+  return lines.length > 0 ? lines[0] : null;
 }
 
 export function run(cmd: string, args: string[], cwd: string): number {
@@ -106,7 +124,6 @@ export function render(tpl: string, vars: Record<string, string>): string {
 }
 
 export function pad(s: string, width: number): string {
-  // 粗略按可见宽度补空格（够用即可，不处理 CJK 宽度）
   const visible = [...s].length;
   return s + " ".repeat(Math.max(1, width - visible));
 }

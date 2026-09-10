@@ -1,5 +1,6 @@
 import { c, hint, isDir, isFile, versionOf, which } from "./util";
 import { microStatus, microVersion } from "./micro";
+import { rcFile, shellIntegrationInstalled } from "./shell";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
 
@@ -54,6 +55,16 @@ export function doctor(): void {
   check("linter = false", st.linterOff ? "已关闭（无下划线报错）" : "仍是开启 → algo setup", st.linterOff ? "ok" : "warn");
   check("autoclose", st.autocloseOn ? "已开启（括号/引号自动补全）" : "被关闭了", st.autocloseOn ? "ok" : "warn");
   check("syntax", st.syntaxOn ? "语法高亮开启" : "语法高亮关闭", st.syntaxOn ? "ok" : "warn");
+
+  console.log();
+  console.log(c.bold("shell 集成"));
+  const rc = rcFile();
+  const installed = shellIntegrationInstalled();
+  check(
+    "建完题自动 cd",
+    installed ? `已写入 ${rc?.path}` : "未安装 → algo setup --shell",
+    installed ? "ok" : "warn",
+  );
 
   console.log();
   console.log(c.bold("可选依赖（micro 插件用）"));

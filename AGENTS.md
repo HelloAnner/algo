@@ -61,7 +61,7 @@ feat: 支持随机数据对拍（algo gen + make stress）
 algo/
 ├── Makefile            # 根入口：原样转发到 cli/Makefile
 └── cli/                # 全部实现
-    ├── src/            # index(分发) / flags(参数) / add(题面解法) / scaffold / list / run / micro / doctor / util
+    ├── src/            # index(分发) / flags / add(题面解法) / scaffold / list / run / targets / open / shell / micro / doctor / util
     ├── assets/         # 模板：solution.cpp / make.tmpl / problem.md.tmpl / solution.md.tmpl / whiteboard.excalidraw.tmpl / README.tmpl / init.lua
     ├── scripts/        # smoke-test.sh
     ├── micro.md        # micro 编辑器插件与配置详解 —— micro 相关改动的唯一依据
@@ -74,7 +74,7 @@ algo/
 <slug>/
 ├── problem.md     # 题面描述（独立 md）
 ├── solution.md    # 解法思路（独立 md）
-├── whiteboard.excalidraw  # 白板（Excalidraw 场景，打开可直接画）
+├── whiteboard.excalidraw  # 白板（空白 Excalidraw 场景，打开就能画）
 ├── solution.cpp   # ACM 实现：读 stdin、写 stdout
 ├── in.txt         # 样例输入
 ├── out.txt        # 期望输出
@@ -83,14 +83,14 @@ algo/
 └── .gitignore     # 忽略编译产物
 ```
 
-安装方式是 `make install`：`bun build` 出 `cli/dist/algo.js`，在 `~/.local/bin/algo` 放一个 `exec bun ...` 的轻量启动器，然后合并 micro 配置。源码改动**即刻生效**，无需重新安装（除非改的是启动器本身）。
+安装方式是 `make install`：`bun build` 出 `cli/dist/algo.js`，在 `~/.local/bin/algo` 放一个 `exec bun ...` 的轻量启动器，然后合并 micro 配置并装 shell 集成。源码改动**即刻生效**，无需重新安装（除非改的是启动器本身）。
 
 ---
 
 ## 添加题目（`algo add`，AI 常用）
 
 题面和解法各占一个独立 md：`problem.md`（题面）与 `solution.md`（解法思路）。
-每个题目目录还会带一个 `whiteboard.excalidraw`（合法的 Excalidraw 场景，标题 + 链接已填好），用 VS Code 的 Excalidraw 插件或 Obsidian 打开就能画。
+每个题目目录还会带一个 `whiteboard.excalidraw`——**空白**的合法 Excalidraw 场景（不要往里塞预置内容），用 VS Code 的 Excalidraw 插件或 Obsidian 打开就能画。
 两个模板里都埋了 `<!-- algo:todo ... -->` 标记，`algo list` 靠它判断写没写，写完删掉即可。
 
 给 AI 用最顺手的是 **JSON 一次性投喂**：
@@ -128,6 +128,10 @@ algo add two-sum --title "两数之和" --difficulty 简单 --tags 数组,哈希
 
 看 / 改单个文件：`algo edit [目录] [目标]`（目标：`code` `in` `out` `problem` `board` `readme`，或直接写文件名）、
 `algo in` / `algo out` / `algo board`，以及只打印路径的 `algo path [目录] [目标]`。
+
+`algo new` 之后自动 cd 进新目录，靠 `algo setup --shell` 写进 `~/.zshrc` 的 `algo` shell 函数；
+CLI 侧配合的接口是 `--print-dir`（人看的输出走 stderr，stdout 只留新建目录路径，且只在**真的新建**时输出）。
+改这两边时注意保持配套，别让 stdout 混进别的东西。
 
 ---
 

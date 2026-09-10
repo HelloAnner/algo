@@ -1,6 +1,6 @@
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { BOARD_BASE_ELEMENTS, isFilled } from "./scaffold";
+import { isFilled } from "./scaffold";
 import { c, isDir, isFile, pad, readText } from "./util";
 
 export interface ProblemRow {
@@ -13,13 +13,13 @@ export interface ProblemRow {
   tags: string;
 }
 
-/** 白板上画过东西没有：元素数超过模板自带的标题 + 链接就算画过 */
+/** 白板上画过东西没有：元素表非空就算画过 */
 function boardHasDrawing(path: string): boolean {
   const raw = readText(path);
   if (raw === null) return false;
   try {
     const scene = JSON.parse(raw) as { elements?: unknown[] };
-    return Array.isArray(scene.elements) && scene.elements.length > BOARD_BASE_ELEMENTS;
+    return Array.isArray(scene.elements) && scene.elements.length > 0;
   } catch {
     return false;
   }

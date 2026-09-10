@@ -21,8 +21,7 @@ cat > check-board.ts <<'EOF'
 const text = await Bun.file(process.argv[2]).text();
 const scene = JSON.parse(text);
 if (scene.type !== "excalidraw") throw new Error("type 不是 excalidraw");
-if (!Array.isArray(scene.elements) || scene.elements.length !== 2) throw new Error("elements 数量不对");
-if (!String(scene.elements[0].text).includes("Two Sum")) throw new Error("缺少标题: " + scene.elements[0].text);
+if (!Array.isArray(scene.elements) || scene.elements.length !== 0) throw new Error("白板默认应该是空的");
 if (scene.appState === undefined || scene.files === undefined) throw new Error("缺少 appState / files");
 EOF
 
@@ -137,14 +136,12 @@ grep -q "后补的题面" three-sum/problem.md || fail "更新 problem.md 失败
 grep -q "排序 + 双指针夹逼" three-sum/solution.md || fail "未指定的 solution.md 被改动了"
 echo "  ✓ 只更新目标文件"
 
-echo "→ 标题里有引号 / 反斜杠也要是合法 JSON"
-"$BUN" "$CLI" add quote-test --title 'a "b" \\ c' > /dev/null
-"$BUN" check-board.ts quote-test/whiteboard.excalidraw 2>/dev/null || true
-"$BUN" -e '
-const s = JSON.parse(await Bun.file("quote-test/whiteboard.excalidraw").text());
-if (s.elements[0].text !== process.argv[1]) throw new Error("标题被破坏了: " + s.elements[0].text);
-' 'a "b" \\ c' || fail "特殊字符破坏了白板 JSON"
-echo "  ✓ JSON 转义正确"
+echo "→ 标题里有引号也不该出问题"
+"$BUN" "$CLI" add quote-test --title 'a "b" c' > /dev/null
+grep -q 'a "b" c' quote-test/README.md || fail "README.md 里的标题没写对"
+"$BUN" check-board.ts quote-test/whiteboard.excalidraw || fail "白板不是合法 JSON"
+"$BUN" "$CLI" list > /dev/null || fail "list 在特殊标题下报错"
+echo "  ✓ 特殊字符正常"
 
 echo "→ algo list 进度标记"
 "$BUN" "$CLI" list | grep -q "three-sum" || fail "list 没有输出 three-sum"
@@ -184,6 +181,32 @@ PATH="$PWD/fakebin:$PATH" "$BUN" "$CLI" out three-sum | grep -q "MOCK-MICRO out.
 PATH="$PWD/fakebin:$PATH" "$BUN" "$CLI" edit three-sum problem | grep -q "MOCK-MICRO problem.md" || fail "edit problem 没交给 micro"
 PATH="$PWD/fakebin:$PATH" "$BUN" "$CLI" board three-sum | grep -q "MOCK-OPEN .*whiteboard.excalidraw" || fail "algo board 没走系统打开"
 echo "  ✓ 路径与打开都正常"
+
+echo "→ --print-dir（给 shell 集成用：stdout 只给路径）"
+PD="$("$BUN" "$CLI" new print-dir-test --print-dir 2>/dev/null)"
+case "$PD" in */print-dir-test) ;; *) fail "--print-dir 没在 stdout 给出路径（得到：$PD）" ;; esac
+"$BUN" "$CLI" new print-dir-test2 --print-dir 2>&1 >/dev/null | grep -q "已创建" || fail "--print-dir 的人话没走 stderr"
+case "$("$BUN" "$CLI" add print-dir-test --in "1" --print-dir 2>/dev/null)" in
+    "") ;;
+    *) fail "只更新已有目录时不该输出路径" ;;
+esac
+echo "  ✓ print-dir 行为正确"
+
+echo "→ setup --shell（写进临时 HOME）"
+mkdir -p fakehome
+HOME="$PWD/fakehome" SHELL=/bin/zsh "$BUN" "$CLI" setup --shell | grep "已写入" > /dev/null || fail "setup --shell 没写入"
+grep -q "algo shell integration" fakehome/.zshrc || fail ".zshrc 里没有集成块"
+HOME="$PWD/fakehome" SHELL=/bin/zsh "$BUN" "$CLI" setup --shell | grep "已是最新" > /dev/null || fail "重复安装不幂等"
+
+# 用真的 zsh 验证：algo 建完题目会自动 cd 进去
+printf '#!/bin/sh\nexec "%s" "%s" "$@"\n' "$BUN" "$CLI" > fakebin/algo
+chmod +x fakebin/algo
+ZSH_PWD="$(HOME="$PWD/fakehome" SHELL=/bin/zsh PATH="$PWD/fakebin:$PATH" zsh -c 'source "$HOME/.zshrc"; cd "$HOME"; algo zsh-cd-test >/dev/null 2>&1; pwd')"
+case "$ZSH_PWD" in
+    */zsh-cd-test) echo "  ✓ 建完题目自动 cd 生效" ;;
+    *) fail "shell 函数没有自动 cd（得到：$ZSH_PWD）" ;;
+esac
+[ -e fakehome/zsh-cd-test/Makefile ] || fail "自动 cd 的目录里没有 Makefile"
 
 echo "→ algo setup --dry-run（只读，不写配置）"
 "$BUN" "$CLI" setup --dry-run > /dev/null

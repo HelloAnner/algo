@@ -7,8 +7,9 @@ import { installInitLua, installMicroProfile } from "./micro";
 import { openTarget } from "./open";
 import { make, printPath, resolveProblemDir } from "./run";
 import { createProblem } from "./scaffold";
+import { installShellIntegration } from "./shell";
 import { isTargetName, resolveTarget, TARGET_HELP } from "./targets";
-import { c, die, hint, isFile, run as exec, warn, which } from "./util";
+import { c, die, emit, hint, isFile, routeHumanToStderr, run as exec, warn, which } from "./util";
 
 const HELP = `${c.bold("algo")} — 面试算法练习脚手架（C++ / ACM 模式 + micro 编辑器）
 
@@ -40,7 +41,9 @@ ${c.bold("刷题")}
   algo clean [目录]               清掉编译产物
 
 ${c.bold("环境")}
-  algo setup [--dry-run] [--init] 安装 / 合并 micro 的 C++ 刷题配置
+  algo setup                      安装 / 合并 micro 的 C++ 刷题配置
+  algo setup --shell              把「建完题自动 cd」写进 shell 配置（~/.zshrc 等）
+  algo setup --init               额外生成 ~/.config/micro/init.lua（存在则不覆盖）
   algo doctor                     自检依赖与配置
   algo version                    版本
   algo help                       本帮助
@@ -48,6 +51,7 @@ ${c.bold("环境")}
 ${c.bold("选项")}
   -e, --edit                      新建后立刻用 micro 打开
   -f, --force                     目录已存在时覆盖全部文件
+      --print-dir                 只把新建目录的路径打到 stdout（给 shell 集成用）
   -h, --help                      帮助
 `;
 
@@ -67,6 +71,10 @@ export function main(argv: string[]): void {
   const has = (...k: string[]) => flagOn(flags, ...k);
   const cmd = positionals[0];
 
+  // 给 shell 集成：stdout 只留路径，人看的输出改到 stderr
+  const printDir = has("print-dir");
+  if (printDir) routeHumanToStderr(true);
+
   if (!cmd || has("help") || cmd === "help") {
     console.log(HELP);
     return;
@@ -76,14 +84,22 @@ export function main(argv: string[]): void {
     return;
   }
 
-  switch (cmd) {
-    case "add":
-    case "new": {
-      const opts = resolveAddOptions(positionals.slice(1), flags);
-      const dir = createProblem(opts);
-      if (opts.edit) openTarget(dir, resolveTarget(dir, "code"));
+  const create = (args: string[]): void => {
+    const opts = resolveAddOptions(args, flags);
+    const res = createProblem(opts);
+    if (printDir) {
+      // 只有真的新建了目录才输出路径，shell 函数据此决定要不要 cd
+      if (res.created) emit(res.dir);
       return;
     }
+    if (opts.edit) openTarget(res.dir, resolveTarget(res.dir, "code"));
+  };
+
+  switch (cmd) {
+    case "add":
+    case "new":
+      create(positionals.slice(1));
+      return;
 
     case "edit":
     case "micro": {
@@ -133,6 +149,10 @@ export function main(argv: string[]): void {
 
     case "setup": {
       const dryRun = has("dry-run");
+      if (has("shell")) {
+        installShellIntegration({ dryRun });
+        return;
+      }
       installMicroProfile({ dryRun });
       if (has("init")) installInitLua({ dryRun });
       return;
@@ -141,13 +161,10 @@ export function main(argv: string[]): void {
       doctor();
       return;
 
-    default: {
+    default:
       // 兜底：第一个位置参数当作题目名，等价于 algo add <名字>
-      const opts = resolveAddOptions([cmd, ...positionals.slice(1)], flags);
-      const dir = createProblem(opts);
-      if (opts.edit) openTarget(dir, resolveTarget(dir, "code"));
+      create([cmd, ...positionals.slice(1)]);
       return;
-    }
   }
 }
 
