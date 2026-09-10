@@ -1,4 +1,5 @@
 solution
 solution_dbg
+.algo_bin
 .out.actual
 .out.diff

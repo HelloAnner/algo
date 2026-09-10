@@ -1,11 +1,12 @@
 import pkg from "../package.json";
 import { resolveAddOptions } from "./add";
+import { runCheck } from "./check";
 import { doctor } from "./doctor";
-import { flagOn, parseArgs } from "./flags";
+import { flagOn, flagStr, parseArgs } from "./flags";
 import { printProblems } from "./list";
 import { installInitLua, installMicroProfile } from "./micro";
 import { openTarget } from "./open";
-import { make, printPath, resolveProblemDir } from "./run";
+import { make, printPath, resolveProblemDir, runSolution } from "./run";
 import { createProblem } from "./scaffold";
 import { installShellIntegration } from "./shell";
 import { isTargetName, resolveTarget, TARGET_HELP } from "./targets";
@@ -34,9 +35,10 @@ ${c.bold("看 / 改文件")}
 
 ${c.bold("刷题")}
   algo list                       列出当前目录下的题目（题面/思路/板 进度）
-  algo run [目录]                 编译运行（标准输入 = in.txt，跑完删二进制）
+  algo run [目录]                 编译 + 跑 in.txt，和 out.txt 一致就打印一行 AC
   algo raw [目录]                 编译运行（手动输入）
-  algo check [目录]               跑一遍并和 out.txt 比对
+  algo check [目录]               编译 + 静态检查 + 写法检查 + 对拍；没问题不输出任何内容
+      --timeout <秒>              跑样例的超时（默认 5 秒，防死循环，run / check 都认）
   algo debug [目录]               带 ASan/UBSan 编译运行，抓越界
   algo build [目录]               只编译（唯一会留下二进制的目标）
   algo clean [目录]               清掉编译产物
@@ -56,6 +58,12 @@ ${c.bold("选项")}
       --print-dir                 只把新建目录的路径打到 stdout（给 shell 集成用）
   -h, --help                      帮助
 `;
+
+/** --timeout <秒>，默认 5 */
+function timeoutOf(flags: Parameters<typeof flagStr>[0]): number {
+  const t = Number(flagStr(flags, "timeout") ?? "5");
+  return Number.isFinite(t) && t > 0 ? t : 5;
+}
 
 /** edit / path 的位置参数：可能是 [目录]、[目标] 或 [目录, 目标] */
 function dirAndTarget(args: string[]): { dir: string; target: string | undefined } {
@@ -130,15 +138,19 @@ export function main(argv: string[]): void {
     case "ls":
       printProblems(process.cwd());
       return;
-    case "run":
-      make(resolveProblemDir(positionals[1]), "run");
+    case "run": {
+      const dir = resolveProblemDir(positionals[1]);
+      runSolution(dir, { timeoutSec: timeoutOf(flags) });
       return;
+    }
     case "raw":
       make(resolveProblemDir(positionals[1]), "raw");
       return;
-    case "check":
-      make(resolveProblemDir(positionals[1]), "check");
+    case "check": {
+      const dir = resolveProblemDir(positionals[1]);
+      runCheck(dir, { timeoutSec: timeoutOf(flags) });
       return;
+    }
     case "debug":
       make(resolveProblemDir(positionals[1]), "debug");
       return;

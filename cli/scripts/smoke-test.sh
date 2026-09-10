@@ -62,40 +62,72 @@ int main() {
 }
 EOF
 
-echo "→ make run"
-if (cd two-sum && make run) | grep -q '^0 1$'; then
-    echo "  ✓ 输出正确"
-else
-    fail "make run 输出不对"
-fi
+# make run / make check 里的 algo 指向被测的这份 bundle
+mkdir -p fakebin
+printf '#!/bin/sh\nexec "%s" "%s" "$@"\n' "$BUN" "$CLI" > fakebin/algo
+chmod +x fakebin/algo
+FAKEBIN="$PWD/fakebin"
 
-echo "→ make check"
-if (cd two-sum && make check) | grep -q "✅ AC"; then
-    echo "  ✓ AC"
-else
-    fail "对拍失败"
-fi
+echo "→ make run：编译 + 跑 in.txt，对了只打印一行 AC"
+RUN_OUT="$(cd two-sum && PATH="$FAKEBIN:$PATH" make run 2>&1 || true)"
+[ "$RUN_OUT" = "AC" ] || fail "make run 应该只输出 AC，实际：[$RUN_OUT]"
 
-echo "→ 清理校验：跑完不许留编译产物"
-for f in solution solution_dbg .out.actual .out.diff; do
+echo "→ make check：静默即通过"
+CHK_OUT="$(cd two-sum && PATH="$FAKEBIN:$PATH" make check 2>&1 || true)"
+if [ -n "$CHK_OUT" ]; then
+    fail "make check 没问题时不该有任何输出，实际：[$CHK_OUT]"
+fi
+echo "  ✓ run 只打印 AC，check 静默"
+
+echo "→ 清理校验：run / check 跑完不留任何产物"
+for f in solution solution_dbg .algo_bin .out.actual .out.diff; do
     if [ -e "two-sum/$f" ]; then
-        fail "make 之后残留了 two-sum/$f"
+        fail "run / check 之后残留了 two-sum/$f"
     fi
 done
 echo "  ✓ 无残留"
 
-echo "→ make build / make clean"
-(cd two-sum && make build > /dev/null)
+echo "→ 写法检查：endl 会被 check 抓出来"
+cat > two-sum/solution.cpp <<'EOF'
+#include <iostream>
+#include <vector>
+using namespace std;
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, target;
+    cin >> n >> target;
+    vector<int> a(n);
+    for (auto &x : a) cin >> x;
+    long long s = 0;
+    for (int v : a) s += v;
+    cout << s << endl;   // 故意用 endl
+}
+EOF
+ENDL_OUT="$(cd two-sum && PATH="$FAKEBIN:$PATH" "$BUN" "$CLI" check 2>&1 || true)"
+printf "%s" "$ENDL_OUT" | grep -q "endl" || fail "check 没有抓出 endl"
+echo "  ✓ 抓出 endl"
+
+echo "→ 编译不通过：要有清楚的报错，且不留文件"
+printf 'int main(){ 这不是合法的 C++ }\n' > two-sum/solution.cpp
+if (cd two-sum && PATH="$FAKEBIN:$PATH" "$BUN" "$CLI" check) > check-fail.log 2>&1; then
+    fail "编译不通过时 check 应该以非 0 退出"
+fi
+grep -q "编译不通过" check-fail.log || fail "check 没说清是编译不通过"
+[ -e "two-sum/.algo_bin" ] && fail "编译失败后残留了 .algo_bin"
+echo "  ✓ 编译失败有报错且无残留"
+
+echo "→ make build / make clean（这两条仍由 Makefile 自己编译）"
+# 上一节故意写坏了代码，这里换回一份能编译的
+cat > two-sum/solution.cpp <<'EOF'
+#include <iostream>
+int main() { std::cout << "hi\n"; }
+EOF
+(cd two-sum && PATH="$FAKEBIN:$PATH" make build > /dev/null)
 [ -e two-sum/solution ] || fail "make build 没有产出二进制"
-(cd two-sum && make clean > /dev/null)
+(cd two-sum && PATH="$FAKEBIN:$PATH" make clean > /dev/null)
 [ -e "two-sum/solution" ] && fail "make clean 没有删掉二进制"
 echo "  ✓ build 保留、clean 清理"
-
-echo "→ 编译失败也要清理"
-printf 'int main(){ 这不是合法的 C++ }\n' > two-sum/solution.cpp
-(cd two-sum && make run > /dev/null 2>&1) || true
-[ -e "two-sum/solution" ] && fail "编译失败后残留了二进制"
-echo "  ✓ 编译失败无残留"
 
 echo "→ add 只补题面（不碰 solution.md 和代码）"
 printf '## 题目描述\n\n两数之和。\n' > only-problem.md
@@ -221,6 +253,15 @@ case "$ZSH_PWD" in
     *) fail "shell 函数没有自动 cd（得到：$ZSH_PWD）" ;;
 esac
 [ -e fakehome/zsh-cd-test/Makefile ] || fail "自动 cd 的目录里没有 Makefile"
+
+echo "→ micro profile（含静默 autosave）"
+rm -rf fakecfg
+mkdir -p fakecfg
+MICRO_CONFIG_DIR="$PWD/fakecfg" "$BUN" "$CLI" setup > /dev/null
+grep -q '"autosave": 2' fakecfg/settings.json || fail "profile 里没有 autosave=2"
+grep -q '"linter": false' fakecfg/settings.json || fail "profile 里没有 linter=false"
+grep -q '"autoclose": true' fakecfg/settings.json || fail "profile 里没有 autoclose=true"
+echo "  ✓ profile 内容正确"
 
 echo "→ algo setup --dry-run（只读，不写配置）"
 "$BUN" "$CLI" setup --dry-run > /dev/null

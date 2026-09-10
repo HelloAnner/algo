@@ -43,8 +43,8 @@ algo in               # 改样例输入 in.txt
 algo out              # 改期望输出 out.txt
 algo board            # 打开白板 whiteboard.excalidraw
 
-make run              # 编译 → 用 in.txt 跑 → 立刻删掉二进制
-make check            # 和 out.txt 比对，✅ AC / ❌ WA（跑完同样清理）
+make run              # 编译 + 跑 in.txt；对了只打印一行 AC
+make check            # 编译 + 静态检查 + 写法检查 + 对拍；没问题什么都不输出
 make debug            # ASan + UBSan（跑完清理）
 make build            # 想保留二进制时用这个（之后 make clean）
 make e                # micro 打开 solution.cpp
@@ -132,7 +132,10 @@ algo list                  列出题目，显示「题面✓思路✓板✓」�
 algo edit [目录] [目标]    用 micro 打开，默认 solution.cpp
 algo in / algo out [目录]  打开 in.txt / out.txt
 algo board [目录]          用系统默认程序打开 whiteboard.excalidraw
-algo run|raw|check|debug|build|clean [目录]
+algo run [目录]            编译 + 跑 in.txt，和 out.txt 一致就打印一行 AC
+algo check [目录]          编译 + 静态检查 + 写法检查 + 对拍；没问题不输出
+    --timeout <秒>         跑样例的超时（默认 5 秒，防死循环）
+algo raw|debug|build|clean [目录]
 algo path [目录] [目标]    只打印路径；目标：code/cpp · in · out ·
                            problem · board · readme · makefile
                            （也可以直接写文件名，自动补 .cpp/.md/.txt/.excalidraw）
@@ -141,6 +144,28 @@ algo setup --shell         装 shell 集成（algo new 之后自动 cd）
 algo setup --init          额外生成 ~/.config/micro/init.lua（存在则不覆盖）
 algo doctor                自检
 ```
+
+## `algo check` 检查什么
+
+`algo check`（以及 `make check`）做四件事：
+
+1. **编译**：不通就把编译器错误原样打出来（含语法错误），退出码 1
+2. **静态检查**：用比日常编译更严的警告集（`-Wshadow -Wsign-compare -Wuninitialized -Wvla
+   -Wparentheses -Wreturn-type -Wunused -Wswitch -Wfloat-equal`）再过一遍 `-fsyntax-only`
+3. **写法检查**（ACM 常见坑）：`<bits/stdc++.h>`、`endl`、`cin.eof()` 当循环条件、
+   `fflush(stdin)`、`scanf/printf` 与 `cin/cout` 混用、用了 iostream 却没关同步
+4. **样例对拍**：用 `in.txt` 当标准输入跑一遍（默认 5 秒超时，防死循环），和 `out.txt` 逐行比
+
+**静默是设计目标**：一切正常时一个字符都不打印，只看退出码（0 = 通过）。
+有警告或对拍不过才输出，例如：
+
+```console
+$ make check
+⚠ 写法检查 1 条
+  solution.cpp:13 endl 会强制 flush，数据量大时明显变慢，换成 '\\n'
+```
+
+写法提示只提醒、不影响退出码；编译失败 / WA / 超时才会以非 0 退出。
 
 ## 题目目录结构
 
@@ -174,7 +199,9 @@ cli/
 │   ├── add.ts        # algo add：JSON 规格 + 各种文本来源
 │   ├── scaffold.ts   # 生成题目目录
 │   ├── list.ts       # algo list + 进度标记
-│   ├── run.ts        # algo run/check/... → make
+│   ├── run.ts        # algo run（AC 一行）/ make 转发
+│   ├── check.ts      # algo check：静态检查 + 写法坑 + 对拍（静默）
+│   ├── cpp.ts        # 编译 / 运行 / 比对（临时二进制 .algo_bin，跑完必删）
 │   ├── micro.ts      # micro profile 定义与合并
 │   ├── doctor.ts     # 环境自检
 │   └── util.ts       # 颜色 / 文件 / 进程小工具

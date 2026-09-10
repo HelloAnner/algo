@@ -24,6 +24,7 @@ const VALUE_FLAGS = new Set([
   "out",
   "out-file",
   "json",
+  "timeout",
 ]);
 
 const SHORT: Record<string, string> = {

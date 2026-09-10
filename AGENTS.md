@@ -62,7 +62,7 @@ feat: 支持随机数据对拍（algo gen + make stress）
 algo/
 ├── Makefile            # 根入口：原样转发到 cli/Makefile
 └── cli/                # 全部实现
-    ├── src/            # index(分发) / flags / add(题面解法) / scaffold / list / run / targets / open / shell / micro / doctor / util
+    ├── src/            # index(分发) / flags / add / scaffold / list / run / check / cpp / targets / open / shell / micro / doctor / util
     ├── assets/         # 模板：solution.cpp / make.tmpl / problem.md.tmpl / solution.md.tmpl / whiteboard.excalidraw.tmpl / README.tmpl / init.lua
     ├── scripts/        # smoke-test.sh
     ├── micro.md        # micro 编辑器插件与配置详解 —— micro 相关改动的唯一依据
@@ -156,7 +156,10 @@ make doctor                   # 环境自检
 ## 实现约定
 
 - **micro 配置**：只做 **merge**，绝不覆盖用户已有的键；写之前备份成 `settings.json.bak-<时间戳>`；`init.lua` 已存在则不动。逻辑在 `cli/src/micro.ts`，但**行为说明以 `cli/micro.md` 为准**，两边必须同步。
+  注意 micro 的 `autosave` 是**秒数**不是布尔（写 `true` 会被它当成 8 秒），profile 里显式写成 `autosave: 2`；自动保存本身不弹提示，是刻意保持静默的。
 - **不要给 micro 装 LSP，也不要把 `linter` 打开**——「没有波浪线」是刻意设计，不是待修的缺陷。要加诊断能力，先在 `cli/micro.md` 里写清取舍。
+- **run / check 由 CLI 实现**：`cli/src/cpp.ts` 负责编译与运行（临时二进制 `.algo_bin`，任何路径下都必删），`cli/src/check.ts` 负责静态警告 + 写法坑 + 对拍。题目 Makefile 里的 `run` / `check` 只是转发到 `algo run` / `algo check`；Makefile 的 `CXXFLAGS` 与 `cpp.ts` 的 `BUILD_FLAGS` 必须保持一致。
+  `check` 的「没问题就不输出」是刻意设计（静默即通过），别给它加成功提示；`run` 正常只打印一行 `AC`。
 - **依赖**：CLI 不引入第三方运行时依赖；`assets/` 里的模板保持自包含（不依赖仓库外的文件）。
 - **脚手架模板**：生成的 `Makefile` 必须自清理——`run` / `raw` / `check` / `debug` 跑完都要删掉二进制和临时文件（`trap ... EXIT INT TERM` 兜底），只有 `build` 保留二进制。另外提供 `make e`（micro 打开 solution.cpp）、`make w`（系统默认程序打开白板）和 `make help`。改 `cli/assets/make.tmpl` 后必须跑 `make test`，冒烟脚本会断言目录里没有残留。
 - **文档**：改动架构或命令后，同步更新本文件、`cli/README.md`、`cli/micro.md` 中受影响的部分。

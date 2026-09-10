@@ -24,7 +24,8 @@ a.out
 *.o
 *.dSYM/
 
-# ===== 对拍临时文件 =====
+# ===== 对拍 / 检查临时文件 =====
+.algo_bin
 .out.actual
 .out.diff
 

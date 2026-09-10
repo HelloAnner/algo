@@ -9,6 +9,9 @@ import { c, hint, info, ok, readText, timestamp, versionOf, warn, which, writeTe
  * 每个 key 都会被 merge 进 ~/.config/micro/settings.json，其它 key 原样保留。
  */
 export const PROFILE: Record<string, unknown> = {
+  // 自动保存：每 2 秒一次（micro 的 autosave 是「秒数」，不是布尔；
+  // 写 true 会被兼容转换成 8 秒）。保存过程不弹任何提示，完全静默。
+  autosave: 2,
   // 保留：括号 / 引号自动补全
   autoclose: true,
   // 关闭：内置 linter 插件会在保存时跑 g++ -fsyntax-only，

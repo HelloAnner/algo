@@ -116,6 +116,7 @@ end
 
 | 键 | 值 | 作用 | 分组 |
 |---|---|---|---|
+| `autosave` | `2` | **每 2 秒静默自动保存**（不是布尔，单位是秒，见 §3.2） | 自动保存 |
 | `autoclose` | `true` | **保留括号/引号自动补全**（内置 autoclose 插件开关） | 编辑手感 |
 | `linter` | `false` | **关掉保存时的 g++ 语法检查**，这是终端里「波浪线」的唯一来源 | 关掉报错 |
 | `hltaberrors` | `false` | 不因为 tab/空格混用而高亮告警 | 关掉报错 |
@@ -139,7 +140,31 @@ end
 
 > 默认值对比（来自 `micro -options`）：`tabstospaces` 默认 `false`、`trucolor` 默认 `auto`、`rmtrailingws` 默认 `false`、`savecursor`/`saveundo`/`scrollbar` 默认都是 `false`。也就是说 `algo setup` 主要是把这些「更顺手」的开关打开，并且**关掉 linter**。
 
-### 3.2 合并策略与还原
+### 3.2 自动保存（autosave，静默）
+
+micro 的 `autosave` **不是布尔开关，而是「秒数」**：值 `N > 0` 表示每 N 秒检查一次，有改动就落盘，没改动就不写；`0` 表示关闭。
+
+- 写 `true` 也能用，但会被 micro 兼容转换成 **8 秒**（见 `internal/config/settings.go` 里把 bool 转成 float 的那段）；你原来的配置就是 `"autosave": true`，也就是 8 秒才存一次。
+- 现在 `algo setup` 设成 **`2`**：手速再快也不会丢东西，正常节奏下每 2 秒静默存一次。
+
+**为什么说是「静默」**：micro 的自动保存路径是 `Buffer.AutoSave()` → `saveToFile(path, false, true)`，全程不调用任何提示接口，**屏幕上不会出现任何消息**。唯一的可见变化是状态栏里的 `$(modified)` 标记（`*`）消失。
+
+实测（2 秒配置，pty 里输入 `abc` 后等待，再退出）：
+
+```
+文件内容: abc                       ← 2 秒内已经落盘
+屏幕提示: （没有 autosaved / saved / 任何弹窗）
+退出提示: （没有 unsaved changes）
+```
+
+两个副作用值得知道：
+
+1. 自动保存路径**会跳过 `rmtrailingws`**（micro 的 `saveToFile` 里 `!autoSave && rmtrailingws` 才清理行尾空格）。也就是说行尾空格只在手动 `Ctrl+S` 时才会被删。
+2. 开了 autosave 之后，**退出时有未保存改动会直接保存再退出**，不再询问（`internal/action/actions.go`）。
+
+想调频率：直接改 `settings.json` 里的数字（`0` 关闭），比如 `"autosave": 1`。
+
+### 3.3 合并策略与还原
 
 - 备份文件：`~/.config/micro/settings.json.bak-<时间戳>`；直接把它拷回 `settings.json` 就完全还原。
 - 只想撤销某一项：把该键删掉即可（比如把 `"linter": true` 改回去，报错下划线就回来了）。
@@ -323,8 +348,8 @@ cd two-sum && micro .    # 开始写
 # 写完：Alt-r（需 algo setup --init）或开个终端 make run / make check
 ```
 
-- `make run` 用 `in.txt` 当标准输入；
-- `make check` 和 `out.txt` 对拍，输出 `✅ AC` / `❌ WA`；
+- `make run` 编译 + 用 `in.txt` 跑一遍，和 `out.txt` 一致就打印一行 `AC`；
+- `make check` 编译 + 静态检查 + 写法检查 + 对拍，**没问题什么都不输出**；
 - `make debug` 带 AddressSanitizer + UBSan，专门抓越界和未定义行为。
 - 以上目标跑完都会**自动删掉二进制**（只有 `make build` 会保留），目录里不留编译产物。
 
