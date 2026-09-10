@@ -10,16 +10,22 @@
 ifeq ($(origin CXX), default)
 CXX := clang++
 endif
-CXXFLAGS ?= -std=c++20 -O2 -Wall -Wextra -Wno-sign-compare -Wno-unused-variable
-DBGFLAGS ?= -std=c++20 -g -O0 -fsanitize=address,undefined -fno-omit-frame-pointer
+
+# 万能头 <bits/stdc++.h> 是 GCC 专有的，本机 Apple clang + libc++ 没有：
+# `make -C ~/algo install` 会装一份兼容头到 ~/.local/include/bits/stdc++.h，
+# 下面这个 -I 就是指向它（换位置就 make INCLUDE_DIR=... run）。
+INCLUDE_DIR ?= $(HOME)/.local/include
+
+CXXFLAGS ?= -std=c++20 -O2 -I$(INCLUDE_DIR) -Wall -Wextra -Wno-sign-compare -Wno-unused-variable
+DBGFLAGS ?= -std=c++20 -g -O0 -I$(INCLUDE_DIR) -fsanitize=address,undefined -fno-omit-frame-pointer
 
 SRC      := solution.cpp
 BIN      := solution
 DBGBIN   := solution_dbg
 BOARD    := whiteboard.excalidraw
 TMPBIN   := .algo_bin
-PROBLEM  := problem.md
-SOLUTION := solution.md
+PROBLEM  := problem.txt
+SOLUTION := solution.txt
 
 .PHONY: all help run raw check debug build e p s r c w clean
 
@@ -33,9 +39,9 @@ help:
 	@echo "make build  只编译（唯一会留下二进制，记得 make clean）"
 	@echo "make r      = make run（顺手一个字母）"
 	@echo "make c      = make check（顺手一个字母）"
-	@echo "make e      用 micro 打开 $(SRC)"
-	@echo "make p      用 micro 打开题面 problem.md"
-	@echo "make s      用 micro 打开解法 solution.md"
+	@echo "make e      用 micro 打开 $(SRC)（空模板，自己写）"
+	@echo "make p      用 micro 打开题面 $(PROBLEM)"
+	@echo "make s      用 micro 打开解法 $(SOLUTION)（答案在里面，想不出来再看）"
 	@echo "make w      用系统默认程序打开 $(BOARD)"
 	@echo "make clean  清掉编译产物"
 
@@ -74,12 +80,12 @@ e:
 	@command -v micro >/dev/null 2>&1 || { echo "没找到 micro：brew install micro"; exit 1; }
 	@micro $(SRC)
 
-# micro 打开题面 problem.md
+# micro 打开题面 problem.txt
 p:
 	@command -v micro >/dev/null 2>&1 || { echo "没找到 micro：brew install micro"; exit 1; }
 	@micro $(PROBLEM)
 
-# micro 打开解法 solution.md
+# micro 打开解法 solution.txt（答案 + 参考代码）
 s:
 	@command -v micro >/dev/null 2>&1 || { echo "没找到 micro：brew install micro"; exit 1; }
 	@micro $(SOLUTION)
