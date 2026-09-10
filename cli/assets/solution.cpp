@@ -4,7 +4,7 @@
 // 思路：
 // 复杂度：时间 O() 空间 O()
 //
-// 这里是**空模板**：实现自己写；参考解法在 solution.txt 里（实在想不出来再看）。
+// 这里是空模板：实现自己写；参考解法在 solution.txt 里（实在想不出来再看）。
 #include <algorithm>
 #include <array>
 #include <climits>
