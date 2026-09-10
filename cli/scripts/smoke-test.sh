@@ -182,15 +182,29 @@ PATH="$PWD/fakebin:$PATH" "$BUN" "$CLI" edit three-sum problem | grep -q "MOCK-M
 PATH="$PWD/fakebin:$PATH" "$BUN" "$CLI" board three-sum | grep -q "MOCK-OPEN .*whiteboard.excalidraw" || fail "algo board 没走系统打开"
 echo "  ✓ 路径与打开都正常"
 
-echo "→ --print-dir（给 shell 集成用：stdout 只给路径）"
+echo "→ 静默建题 + --verbose + --print-dir"
+SILENT="$("$BUN" "$CLI" new silent-test 2>&1)"
+if [ -n "$SILENT" ]; then
+    fail "algo new 应该完全静默，却输出了：$SILENT"
+fi
+[ -e silent-test/Makefile ] || fail "静默模式下没有建出目录"
+
+VERBOSE="$("$BUN" "$CLI" new verbose-test --verbose 2>&1)"
+printf '%s' "$VERBOSE" | grep -q "已创建题目" || fail "--verbose 没有打印文件清单"
+
 PD="$("$BUN" "$CLI" new print-dir-test --print-dir 2>/dev/null)"
 case "$PD" in */print-dir-test) ;; *) fail "--print-dir 没在 stdout 给出路径（得到：$PD）" ;; esac
-"$BUN" "$CLI" new print-dir-test2 --print-dir 2>&1 >/dev/null | grep -q "已创建" || fail "--print-dir 的人话没走 stderr"
+
+PD_ERR="$("$BUN" "$CLI" new print-dir-test2 --print-dir 2>&1 >/dev/null)"
+if [ -n "$PD_ERR" ]; then
+    fail "--print-dir 模式下 stderr 也应该是空的，却得到：$PD_ERR"
+fi
+
 case "$("$BUN" "$CLI" add print-dir-test --in "1" --print-dir 2>/dev/null)" in
     "") ;;
     *) fail "只更新已有目录时不该输出路径" ;;
 esac
-echo "  ✓ print-dir 行为正确"
+echo "  ✓ 静默 / --verbose / --print-dir 行为正确"
 
 echo "→ setup --shell（写进临时 HOME）"
 mkdir -p fakehome

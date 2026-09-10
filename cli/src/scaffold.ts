@@ -96,15 +96,19 @@ export function createProblem(opts: AddOptions): CreateResult {
   mkdirSync(dir, { recursive: true });
   for (const f of files) writeText(join(dir, f.name), f.content);
 
-  if (existed) warn(`目录已存在，已覆盖同名文件：./${slug}`);
-  ok(`已创建题目 ./${slug}`);
-  out();
-  for (const f of files) out("  " + c.cyan(f.name));
-  out();
-  info("下一步：");
-  hint(`cd ${slug} && micro .        # 先看 problem.md，再写 solution.cpp`);
-  hint("algo in / algo out          # 改样例输入 / 期望输出");
-  hint("make run                    # 用 in.txt 跑一遍");
-  hint("make check                  # 和 out.txt 比对");
+  // 默认完全静默：配合 shell 集成的自动 cd，建完直接落在新目录里，不刷屏。
+  // 想要原来的清单与提示：algo new <名字> --verbose
+  if (opts.verbose) {
+    if (existed) warn(`目录已存在，已覆盖同名文件：./${slug}`);
+    ok(`已创建题目 ./${slug}`);
+    out();
+    for (const f of files) out("  " + c.cyan(f.name));
+    out();
+    info("下一步：");
+    hint(`cd ${slug} && micro .        # 先看 problem.md，再写 solution.cpp`);
+    hint("algo in / algo out          # 改样例输入 / 期望输出");
+    hint("make run                    # 用 in.txt 跑一遍");
+    hint("make check                  # 和 out.txt 比对");
+  }
   return { dir, created: true };
 }

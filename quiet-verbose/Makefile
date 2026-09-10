@@ -1,0 +1,74 @@
+# Quiet Verbose — 本地编译 / 运行 / 对拍 / 编辑
+#
+# 设计原则：跑完就把二进制删掉，目录里不留编译产物。
+# 编译目标都用 trap 兜底：正常结束、编译报错、程序崩溃、Ctrl-C 都会清理。
+# 想保留二进制时用 `make build`（用完记得 `make clean`）。
+# 忘了有哪些目标：`make help`
+
+ifeq ($(origin CXX), default)
+CXX := clang++
+endif
+CXXFLAGS ?= -std=c++20 -O2 -Wall -Wextra -Wno-sign-compare -Wno-unused-variable
+DBGFLAGS ?= -std=c++20 -g -O0 -fsanitize=address,undefined -fno-omit-frame-pointer
+
+SRC    := solution.cpp
+BIN    := solution
+DBGBIN := solution_dbg
+BOARD  := whiteboard.excalidraw
+
+.PHONY: all help run raw check debug build e w clean
+
+all: build
+
+help:
+	@echo "make run    编译 + 用 in.txt 跑一遍（跑完删二进制）"
+	@echo "make raw    编译 + 手动输入跑"
+	@echo "make check  和 out.txt 对拍"
+	@echo "make debug  ASan + UBSan 跑一遍，抓越界"
+	@echo "make build  只编译（唯一会留下二进制，记得 make clean）"
+	@echo "make e      用 micro 打开 $(SRC)"
+	@echo "make w      用系统默认程序打开 $(BOARD)"
+	@echo "make clean  清掉编译产物"
+
+# 用 in.txt 作为标准输入跑一遍（跑完删除二进制）
+run:
+	@trap 'rm -f $(BIN)' EXIT; trap 'rm -f $(BIN); exit 130' INT TERM; \
+	$(CXX) $(CXXFLAGS) $(SRC) -o $(BIN) && ./$(BIN) < in.txt
+
+# 直接跑，标准输入接终端（手动输入测试）
+raw:
+	@trap 'rm -f $(BIN)' EXIT; trap 'rm -f $(BIN); exit 130' INT TERM; \
+	$(CXX) $(CXXFLAGS) $(SRC) -o $(BIN) && ./$(BIN)
+
+# 与 out.txt 比对
+check:
+	@trap 'rm -f $(BIN) .out.actual .out.diff' EXIT; trap 'rm -f $(BIN) .out.actual .out.diff; exit 130' INT TERM; \
+	$(CXX) $(CXXFLAGS) $(SRC) -o $(BIN) && \
+	{ ./$(BIN) < in.txt > .out.actual 2>&1 || true; } && \
+	if diff -u out.txt .out.actual > .out.diff; then echo "✅ AC"; else echo "❌ WA"; cat .out.diff; fi
+
+# AddressSanitizer + UBSan，专门抓越界 / 未定义行为
+debug:
+	@trap 'rm -f $(DBGBIN)' EXIT; trap 'rm -f $(DBGBIN); exit 130' INT TERM; \
+	$(CXX) $(DBGFLAGS) $(SRC) -o $(DBGBIN) && ./$(DBGBIN) < in.txt
+
+# 唯一会留下二进制的目标：需要反复手动跑 ./solution 时用
+build: $(BIN)
+
+$(BIN): $(SRC)
+	@$(CXX) $(CXXFLAGS) $< -o $@
+
+# micro 打开 solution.cpp
+e:
+	@command -v micro >/dev/null 2>&1 || { echo "没找到 micro：brew install micro"; exit 1; }
+	@micro $(SRC)
+
+# 用系统默认程序打开白板（macOS 用 open，Linux 用 xdg-open）
+w:
+	@if [ ! -f $(BOARD) ]; then echo "找不到 $(BOARD)"; exit 1; fi
+	@if command -v open >/dev/null 2>&1; then open $(BOARD); \
+	elif command -v xdg-open >/dev/null 2>&1; then xdg-open $(BOARD); \
+	else echo "没有可用的打开方式，文件在这里：$(CURDIR)/$(BOARD)"; fi
+
+clean:
+	@rm -f $(BIN) $(DBGBIN) .out.actual .out.diff

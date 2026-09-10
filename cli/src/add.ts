@@ -19,6 +19,8 @@ export interface AddOptions {
   expected?: string;
   force: boolean;
   edit: boolean;
+  /** 新建后打印文件清单与下一步（默认完全静默） */
+  verbose: boolean;
 }
 
 type JsonSpec = Record<string, string | string[] | undefined>;
@@ -136,5 +138,6 @@ export function resolveAddOptions(positionals: string[], flags: Flags): AddOptio
     expected,
     force: flagOn(flags, "force"),
     edit: flagOn(flags, "edit"),
+    verbose: flagOn(flags, "verbose"),
   };
 }

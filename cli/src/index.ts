@@ -15,6 +15,7 @@ const HELP = `${c.bold("algo")} — 面试算法练习脚手架（C++ / ACM 模�
 
 ${c.bold("新建题目")}
   algo <名字>                     新建题目目录（题面 / 解法 / 白板 / 代码 / 样例 / Makefile）
+                                  默认静默：不打印任何内容，配合 shell 集成直接 cd 进去
   algo add <名字>                 同上，并且可以直接带上内容与元信息
       --title --link --difficulty --tags <a,b>
       --problem <文本> / --problem-file <文件|->        -> problem.md
@@ -51,6 +52,7 @@ ${c.bold("环境")}
 ${c.bold("选项")}
   -e, --edit                      新建后立刻用 micro 打开
   -f, --force                     目录已存在时覆盖全部文件
+      --verbose                   新建后打印文件清单与下一步（默认完全静默）
       --print-dir                 只把新建目录的路径打到 stdout（给 shell 集成用）
   -h, --help                      帮助
 `;

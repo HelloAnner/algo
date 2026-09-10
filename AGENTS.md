@@ -125,6 +125,8 @@ algo add two-sum --title "两数之和" --difficulty 简单 --tags 数组,哈希
 - `--problem-file -` / `--solution-file -` 表示从 stdin 读；两个都用 `-` 会报错，这种情况改用 `--json -`。
 - `name` 命令行优先于 JSON；`--title` / `--link` / `--difficulty` / `--tags` 同理。
 - `--in` / `--out`（或 JSON 的 `in` / `out`）把样例输入、期望输出直接写进 `in.txt` / `out.txt`。
+- **新建目录时完全静默**：`algo new` / `algo add --json` 建出来的新题目不打印任何内容（这样 shell 集成 cd 过去之后终端是干净的）。
+  要文件清单与下一步提示加 `--verbose`；更新已有题目仍会打印一行「已更新 …」。别指望从 stdout 里读建题结果，用退出码 + 文件是否存在判断。
 
 看 / 改单个文件：`algo edit [目录] [目标]`（目标：`code` `in` `out` `problem` `board` `readme`，或直接写文件名）、
 `algo in` / `algo out` / `algo board`，以及只打印路径的 `algo path [目录] [目标]`。

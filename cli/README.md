@@ -37,7 +37,7 @@ make install          # 打包 CLI + 装到 ~/.local/bin + 合并 micro 配置
 ```bash
 mkdir -p ~/algo/leetcode && cd ~/algo/leetcode
 
-algo two-sum          # 建 ./two-sum/（9 个文件，含题面 / 解法 / 白板模板）
+algo two-sum          # 静默建 ./two-sum/（9 个文件），配合 shell 集成直接落在里面
 cd two-sum && micro . # 先看 problem.md，再写 solution.cpp
 algo in               # 改样例输入 in.txt
 algo out              # 改期望输出 out.txt
@@ -108,6 +108,8 @@ algo new three-sum --print-dir    # 只想要路径
 
 细节：
 
+- `algo new` / `algo two-sum` 建新目录时**完全静默**（一个字都不打印），所以 `cd` 过去之后终端是干净的；
+  想看文件清单与下一步提示就加 `--verbose`
 - 只有**真的新建了目录**才会 cd；`algo add` 更新已有题目不会把你拽走
 - `algo list` / `run` / `in` / `board` 等子命令原样直通，不受影响
 - `-e` / `--edit` 会启动 micro（全屏 TUI），函数会跳过自动 cd 直接执行
@@ -116,7 +118,8 @@ algo new three-sum --print-dir    # 只想要路径
 ## 命令一览
 
 ```
-algo <名字>                新建题目目录（等价于 algo add <名字>）
+algo <名字>                新建题目目录（等价于 algo add <名字>），静默
+algo new <名字> --verbose  新建时打印文件清单与下一步
 algo add <名字> [选项]      新建并写入题面/解法/元信息
     --title --link --difficulty --tags
     --problem / --problem-file <文件|->
