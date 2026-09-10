@@ -14,7 +14,7 @@ make install          # 打包 CLI + 装到 ~/.local/bin + 合并 micro 配置
 
 1. `bun build` 把 TS 打成 `cli/dist/algo.js`
 2. 写一个轻量启动器 `~/.local/bin/algo`（`exec bun .../dist/algo.js`）
-3. 运行 `algo setup`，把 C++ 刷题 profile 合并进 `~/.config/micro/settings.json`（先备份再合并）
+3. 运行 `algo setup`，把 C++ 刷题 profile 合并进 `~/.config/micro/settings.json` 和 `bindings.json`（先备份再合并）
 4. 运行 `algo setup --shell`，把「建完题自动 cd」的函数写进 `~/.zshrc`（先备份再追加）
 
 其它目标：
@@ -43,13 +43,16 @@ algo in               # 改样例输入 in.txt
 algo out              # 改期望输出 out.txt
 algo board            # 打开白板 whiteboard.excalidraw
 
-make run              # 编译 + 跑 in.txt；对了只打印一行 AC
-make check            # 编译 + 静态检查 + 写法检查 + 对拍；没问题什么都不输出
+make run              # 编译 + 跑 in.txt；对了只打印一行 AC（简写 make r）
+make check            # 编译 + 静态检查 + 写法检查 + 对拍；没问题什么都不输出（简写 make c）
 make debug            # ASan + UBSan（跑完清理）
 make build            # 想保留二进制时用这个（之后 make clean）
+make p / make s       # micro 打开题面 problem.md / 解法 solution.md
 make e                # micro 打开 solution.cpp
 make w                # 打开白板 whiteboard.excalidraw
 make help             # 列出全部目标
+
+# micro 里：Alt-r 跑样例 · Alt-t 对拍 · Alt-i / Alt-o 开 in.txt / out.txt（algo setup --init）
 ```
 
 ## 加一道题（题面 / 解法各一个 md）
@@ -139,9 +142,10 @@ algo raw|debug|build|clean [目录]
 algo path [目录] [目标]    只打印路径；目标：code/cpp · in · out ·
                            problem · board · readme · makefile
                            （也可以直接写文件名，自动补 .cpp/.md/.txt/.excalidraw）
-algo setup [--dry-run]     安装 / 合并 micro 配置
+algo setup [--dry-run]     合并 micro 配置（settings.json + bindings.json）
 algo setup --shell         装 shell 集成（algo new 之后自动 cd）
-algo setup --init          额外生成 ~/.config/micro/init.lua（存在则不覆盖）
+algo setup --init          额外生成 ~/.config/micro/init.lua
+                           （Alt-r 跑样例 / Alt-t 对拍 / Alt-i·Alt-o 开样例；存在则不覆盖）
 algo doctor                自检
 ```
 
@@ -177,7 +181,7 @@ two-sum/
 ├── solution.cpp     # ACM 模式：读 stdin 写 stdout
 ├── in.txt           # 样例输入
 ├── out.txt          # 期望输出
-├── Makefile         # run / raw / check / debug / build / e / w / help / clean
+├── Makefile         # run(r) / raw / check(c) / debug / build / e / p / s / w / help / clean
 ├── README.md        # 卡片：链接 / 难度 / 标签 / 状态 / 复盘记录
 └── .gitignore       # 忽略编译产物
 ```

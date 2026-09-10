@@ -187,17 +187,37 @@ grep -q "^9 9$" three-sum/in.txt || fail "in.txt 没更新"
 grep -qF "[[-1,-1,2],[-1,0,1]]" three-sum/out.txt || fail "未指定的 out.txt 被改动了"
 echo "  ✓ 只更新目标文件"
 
-echo "→ make e / make w / make help（用假 micro、假 open，不启动真编辑器）"
+echo "→ make e / p / s / w / r / c / help（用假 micro、假 open，不启动真编辑器）"
 mkdir -p fakebin
 printf '#!/bin/sh\necho "MOCK-MICRO $*"\n' > fakebin/micro
 printf '#!/bin/sh\necho "MOCK-OPEN $*"\n' > fakebin/open
 chmod +x fakebin/micro fakebin/open
 PATH="$PWD/fakebin:$PATH" make -C two-sum e | grep "MOCK-MICRO solution.cpp" > /dev/null || fail "make e 没交给 micro"
+PATH="$PWD/fakebin:$PATH" make -C two-sum p | grep "MOCK-MICRO problem.md" > /dev/null || fail "make p 没打开题面"
+PATH="$PWD/fakebin:$PATH" make -C two-sum s | grep "MOCK-MICRO solution.md" > /dev/null || fail "make s 没打开解法"
 PATH="$PWD/fakebin:$PATH" make -C two-sum w | grep "MOCK-OPEN whiteboard.excalidraw" > /dev/null || fail "make w 没走系统打开"
 make -C two-sum help > make-help.txt || fail "make help 跑失败"
-grep -q "make e" make-help.txt || fail "make help 没列出 make e"
-grep -q "make w" make-help.txt || fail "make help 没列出 make w"
-echo "  ✓ make e / make w / make help 正常"
+for t in e p s w r c; do
+    grep -q "make $t " make-help.txt || fail "make help 没列出 make $t"
+done
+
+# make r / make c 就是 run / check 的短写法：先换一份能通过的代码
+cat > two-sum/solution.cpp <<'EOF'
+#include <iostream>
+int main() {
+    std::ios::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+    std::cout << "hi\n";
+}
+EOF
+printf 'hi\n' > two-sum/out.txt
+R_OUT="$(cd two-sum && PATH="$FAKEBIN:$PATH" make r 2>&1 || true)"
+[ "$R_OUT" = "AC" ] || fail "make r 应该等价于 make run（只输出 AC），实际：[$R_OUT]"
+C_OUT="$(cd two-sum && PATH="$FAKEBIN:$PATH" make c 2>&1 || true)"
+if [ -n "$C_OUT" ]; then
+    fail "make c 应该等价于 make check（静默），实际：[$C_OUT]"
+fi
+echo "  ✓ make e / p / s / w / r / c / help 正常"
 
 echo "→ path / in / out / board（用假 micro、假 open，不启动真编辑器）"
 "$BUN" "$CLI" path three-sum in | grep -q "three-sum/in.txt$" || fail "path 解析 in.txt 失败"
@@ -254,16 +274,26 @@ case "$ZSH_PWD" in
 esac
 [ -e fakehome/zsh-cd-test/Makefile ] || fail "自动 cd 的目录里没有 Makefile"
 
-echo "→ micro profile（含静默 autosave）"
+echo "→ micro profile（含静默 autosave；bindings 只 merge 不覆盖）"
 rm -rf fakecfg
 mkdir -p fakecfg
+printf '{\n    "Ctrl-G": "command:my-own-thing"\n}\n' > fakecfg/bindings.json
 MICRO_CONFIG_DIR="$PWD/fakecfg" "$BUN" "$CLI" setup > /dev/null
 grep -q '"autosave": 2' fakecfg/settings.json || fail "profile 里没有 autosave=2"
 grep -q '"linter": false' fakecfg/settings.json || fail "profile 里没有 linter=false"
 grep -q '"autoclose": true' fakecfg/settings.json || fail "profile 里没有 autoclose=true"
-echo "  ✓ profile 内容正确"
+grep -q '"Ctrl-P": "CommandMode"' fakecfg/bindings.json || fail "bindings.json 里没有 Ctrl-P 命令模式"
+grep -q '"Alt-n": "command-edit:open "' fakecfg/bindings.json || fail "bindings.json 里没有 Alt-n 新建文件"
+grep -q '"Ctrl-G"' fakecfg/bindings.json || fail "setup 把用户自己的绑定冲掉了"
+MICRO_CONFIG_DIR="$PWD/fakecfg" "$BUN" "$CLI" setup | grep -q "已是最新" || fail "micro 配置重复安装不幂等"
+echo "  ✓ profile 内容正确，且保留用户自定义绑定"
 
 echo "→ algo setup --dry-run（只读，不写配置）"
-"$BUN" "$CLI" setup --dry-run > /dev/null
+rm -rf drycfg
+mkdir -p drycfg
+MICRO_CONFIG_DIR="$PWD/drycfg" "$BUN" "$CLI" setup --dry-run > /dev/null
+[ -e drycfg/settings.json ] && fail "--dry-run 不该写 settings.json"
+[ -e drycfg/bindings.json ] && fail "--dry-run 不该写 bindings.json"
+echo "  ✓ dry-run 只打印不落盘"
 
 echo "✓ 冒烟测试全部通过"

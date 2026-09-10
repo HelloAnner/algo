@@ -11,9 +11,10 @@
 
 | 你想干的事 | 命令 |
 |---|---|
-| 安装 / 合并这套 C++ 刷题配置 | `algo setup`（或 `make -C cli setup`） |
+| 安装 / 合并这套 C++ 刷题配置 | `algo setup`（或 `make -C cli setup`）：settings.json + bindings.json |
 | 只看改什么、不落盘 | `algo setup --dry-run` |
-| 额外生成 `init.lua`（Alt-r 一键 make run） | `algo setup --init`（已存在则绝不覆盖） |
+| 再加上 `init.lua`（Alt-r 跑样例、Alt-t 对拍、Alt-i/Alt-o 开样例） | `algo setup --init`（已存在则绝不覆盖） |
+| 题目目录里看题面 / 解法 / 跑样例 / 对拍 | `make p` / `make s` / `make r` / `make c` |
 | 看当前生效状态 | `algo doctor` |
 | 编辑器里重载配置 | `Ctrl+E` 然后执行 `reload` |
 | 看所有选项（含默认值） | 终端 `micro -options` ，或编辑器内 `> help options` |
@@ -49,13 +50,13 @@ micro 的配置目录默认是 `~/.config/micro`（macOS 与 Linux 相同）。�
 
 | 路径 | 作用 |
 |---|---|
-| `settings.json` | 全局选项（**`algo setup` 合并的就是这个文件**） |
-| `bindings.json` | 按键绑定 |
-| `init.lua` | 用户自己的 Lua 插件（`algo setup --init` 可选生成） |
+| `settings.json` | 全局选项（**`algo setup` 合并这个文件**，见 §3.1） |
+| `bindings.json` | 按键绑定（**`algo setup` 也合并这个文件**，见 §3.3） |
+| `init.lua` | 用户自己的 Lua 插件（`algo setup --init` 生成，提供 Alt-r/t/i/o，见 §7） |
 | `plug/<名字>/` | 通过插件管理器安装的第三方插件 |
 | `syntax/*.yaml` | 自定义语法文件（C++ 是 `cpp.yaml`） |
 | `colorschemes/*.micro` | 自定义配色 |
-| `snippets/*.snippets` | snippets 插件的代码片段（本机有 cpp/go/java/js/python） |
+| `snippets/*.snippets` | 自定义代码片段——⚠️ snippets 插件**不读这个目录**（只读 `plug/snippets/snippets/`，见 §5.2） |
 | `buffers/`、`recent_files`、`backups/` | 会话记忆、最近文件、崩溃备份 |
 
 ### 2.2 启动顺序（很重要）
@@ -106,11 +107,12 @@ end
 
 ## 3. `algo setup` 做了什么
 
-它只做一件事：**把下面这些键 merge 进 `~/.config/micro/settings.json`**。
+它做两件事：**把下面这些键 merge 进 `~/.config/micro/settings.json`，再把 §3.3 那几个键 merge 进 `~/.config/micro/bindings.json`**。
 
 - 其它键（你自己配的）原样保留；
-- 只有内容真的发生变化时才写入，写之前先备份成 `settings.json.bak-YYYYMMDD-HHMMSS`；
-- 幂等：重复执行第二次会输出「已是最新，无需改动」。
+- 只有内容真的发生变化时才写入，写之前先备份成 `<文件名>.bak-YYYYMMDD-HHMMSS`；
+- 幂等：重复执行第二次会输出「已是最新，无需改动」；
+- 分工：`settings.json` 管「怎么编辑」，`bindings.json` 管「按哪个键」，`init.lua`（`algo setup --init`）提供 Alt-r / Alt-t / Alt-i / Alt-o 四个命令，见 §7。
 
 ### 3.1 逐项解释
 
@@ -164,10 +166,26 @@ micro 的 `autosave` **不是布尔开关，而是「秒数」**：值 `N > 0` �
 
 想调频率：直接改 `settings.json` 里的数字（`0` 关闭），比如 `"autosave": 1`。
 
-### 3.3 合并策略与还原
+### 3.3 按键绑定（merge 进 bindings.json）
 
-- 备份文件：`~/.config/micro/settings.json.bak-<时间戳>`；直接把它拷回 `settings.json` 就完全还原。
-- 只想撤销某一项：把该键删掉即可（比如把 `"linter": true` 改回去，报错下划线就回来了）。
+只写这 6 个「micro 默认不是这样、但刷题更顺手」的键，其余保持 micro 默认（§5.4）：
+
+| 按键 | 值 | 作用 |
+|---|---|---|
+| `Ctrl-P` | `CommandMode` | 命令模式（micro 默认在 `Ctrl-E`，这里额外加一个） |
+| `Ctrl-B` | `command:vsplit` | 左右分屏（默认是 `ShellMode`） |
+| `Ctrl-L` | `command:hsplit` | 上下分屏（默认是 `command-edit:goto `，即跳行） |
+| `F12` | `NextSplit\|FirstSplit` | 在分屏之间跳（默认只有 `Ctrl-W`） |
+| `Alt-n` | `command-edit:open ` | 新建文件：回车后输入文件名（`open` 对不存在的文件会开一个空 buffer，保存即创建） |
+| `Alt-d` | `DuplicateLine` | 复制当前行（默认只有 `Ctrl-D`） |
+
+> 这几个键会盖掉 micro 的默认绑定（`Ctrl-P`=`FindPrevious`、`Ctrl-B`=`ShellMode`、`Ctrl-L`=`command-edit:goto`、`Alt-n`=`SpawnMultiCursor`）。
+> 不想要哪个，就在 `bindings.json` 里删掉那一行；下次 `algo setup` 只会把它加回来，不会动你别的东西。
+
+### 3.4 合并策略与还原
+
+- 备份文件：`~/.config/micro/settings.json.bak-<时间戳>`、`bindings.json.bak-<时间戳>`；拷回去就完全还原。
+- 只想撤销某一项：把该键删掉即可（比如把 `"linter": true` 改回去，报错下划线就回来了；把 `"Ctrl-B"` 那行删掉，`Ctrl-B` 就恢复成默认的 `ShellMode`）。
 - `algo setup --dry-run` 只打印 `+ 新增` / `~ 修改`，不写文件。
 
 ---
@@ -271,23 +289,21 @@ autoclose: false  → 文件内容: ([
 
 各插件的帮助：编辑器内 `> help linter`、`> help comment`、`> help status`；插件开发文档 `> help plugins`。
 
-### 5.2 本机安装的第三方插件
+### 5.2 第三方插件（可选，默认一个都不装）
+
+`algo setup` **不装任何第三方插件**，`~/.config/micro/plug/` 默认不存在——内置的 7 个（§5.1）已经覆盖了刷题要用的全部功能。
+
+想加别的能力就自己装（`micro -plugin install <名字>`，名字用 `micro -plugin available` 查）：
 
 | 插件 | 注册的命令 | 说明 |
 |---|---|---|
-| `fzfinder` | `fzfinder` | 调 `fzf` 模糊找文件，`bat` 预览。README 推荐自己绑 `"Alt-Tab": "command:fzfinder"` |
-| `recentfiles` | `recentfiles` | 从 `~/.config/micro/recent_files` 里模糊召回最近打开的文件 |
-| `snippets` | `Alt-s` 插入 / `Alt-w` 下一占位符 / `Alt-a` 接受 / `Alt-d` 取消 | 代码片段，本机有 `cpp.snippets` 等 5 个语言 |
+| `snippets` | `Alt-s` 插入 / `Alt-w` 下一占位符 / `Alt-a` 接受 / `Alt-d` 取消 | 代码片段。⚠️ 它**只读自己目录下的 `*.snippets`**（`~/.config/micro/plug/snippets/snippets/`），文件名必须等于 micro 的 filetype —— C++ 是 `c++`，所以要 `c++.snippets`（插件自带的 `c.snippets` 对 C++ 不生效；`micro -plugin update` 可能覆盖这个目录） |
+| `fzfinder` | `fzfinder` | 调 `fzf` 模糊找文件、`bat` 预览（**不在官方频道**，得自己 clone 到 `~/.config/micro/plug/`） |
+| `recentfiles` | `recentfiles` | 从 `recent_files` 召回最近打开的文件（同上） |
 
-> ⚠️ 冲突提醒：snippets 用 `TryBindKey(..., overwrite=false)` 注册 `Alt-d`，而你的 `bindings.json` 里把 `Alt-d` 绑成了 `DuplicateLine`。**你的绑定优先**，所以 `Alt-d` 是复制行，片段取消不可用（`Alt-a` / `Alt-s` / `Alt-w` 正常）。
+> ⚠️ 冲突提醒：如果装了 `snippets`，它用 `TryBindKey(..., overwrite=false)` 注册 `Alt-d`，而 `bindings.json` 把 `Alt-d` 绑成了 `DuplicateLine`——**bindings.json 优先**，所以 `Alt-d` 是复制行，片段取消用 `> snippetcancel`。
 >
-> 另外 `fzfinder` / `recentfiles` 只注册了命令、**没有自动绑键**。想用快捷键就在 `bindings.json` 里加上，例如：
->
-> ```json
-> { "Alt-Tab": "command:fzfinder", "Alt-o": "command:recentfiles" }
-> ```
->
-> （`MICRO_FUZZY_MEMORY.md` 里写的「Ctrl+P = 模糊打开」是**旧记录**：现在的 `bindings.json` 把 `Ctrl+P` 绑成了 `CommandMode`，且没有 `Ctrl-Shift-P`。）
+> `fzfinder` / `recentfiles` 只注册命令、**不会自动绑键**。装完自己往 `bindings.json` 里加一行，例如 `{ "Alt-Tab": "command:fzfinder" }`；algo 只 merge 自己那几个键，你加的会原样保留。
 
 ### 5.3 插件管理
 
@@ -311,21 +327,29 @@ micro -plugin remove <名字>     # 卸载
 }
 ```
 
-### 5.4 你当前的 bindings.json（自定义部分）
+### 5.4 按键绑定（bindings.json + init.lua）
+
+`algo setup` 写进 `bindings.json` 的 6 个键（目的是把「刷题常用」放到顺手的位置，其余保持 micro 默认）：
+
+| 按键 | 功能 | micro 默认 |
+|---|---|---|
+| `Ctrl-P` | 命令模式 | `Ctrl-E`（`Ctrl-P` 原来是 `FindPrevious`，`Ctrl-E` 仍然可用） |
+| `Ctrl-B` / `Ctrl-L` | 左右 / 上下分屏 | `ShellMode` / `goto` |
+| `F12` | 在分屏之间跳 | 只有 `Ctrl-W` |
+| `Alt-n` | 新建文件（`command-edit:open `） | `SpawnMultiCursor` |
+| `Alt-d` | 复制当前行 | 无（`Ctrl-D` 也能复制） |
+
+`algo setup --init` 再由 `init.lua` 注册四个（见 §7）：
 
 | 按键 | 功能 |
 |---|---|
-| `Ctrl-P` | 命令模式（默认是 `Ctrl-E`，你改过） |
-| `Ctrl-B` / `Ctrl-L` | 垂直 / 水平分屏 |
-| `Ctrl-K` / `Ctrl-X` | 剪切当前行 |
-| `Ctrl-D` / `Alt-d` | 复制当前行 |
-| `Alt-↑` / `Alt-↓` | 上下移动当前行 |
-| `Alt-n` | 新建文件（`command-edit:touch `） |
-| `Ctrl-/` | 注释（comment 插件） |
-| `F2`/`Ctrl-S` / `F4`/`Ctrl-Q` | 保存 / 退出 |
-| `F12`/`Ctrl-W` | 切换分屏 |
+| `Alt-r` | 保存 + `make run`：编译、跑 `in.txt`，和 `out.txt` 一致就打印一行 `AC` |
+| `Alt-t` | 保存 + `make check`：编译 + 静态检查 + 写法检查 + 对拍，**没问题什么都不输出** |
+| `Alt-i` / `Alt-o` | 打开同目录的 `in.txt` / `out.txt`（不存在就开个空 buffer，保存即创建） |
 
-micro 默认按键大全：编辑器内 `> help defaultkeys`；当前实际绑定：**`Alt-g`**。
+micro 默认就有、**不用**重复写的：`Ctrl-K`/`Ctrl-X` 剪行、`Ctrl-D` 复制行、`Alt-↑`/`Alt-↓` 上下移动行、`Ctrl-S`/`F2` 保存、`Ctrl-Q`/`F4` 退出、`Ctrl-W` 切分屏、`Ctrl-/`（`CtrlUnderscore`）注释、`Tab` 缩进。
+
+micro 默认按键大全：编辑器内 `> help defaultkeys`；当前实际绑定：按 **`Alt-g`**。
 
 ---
 
@@ -343,17 +367,20 @@ micro 默认按键大全：编辑器内 `> help defaultkeys`；当前实际绑�
 algo two-sum            # 生成 ./two-sum/（problem.md 题面 + solution.md 解法 + whiteboard.excalidraw 白板 + 代码 + Makefile）
 algo add two-sum --problem-file p.md --solution-file s.md   # 或一次性把内容灌进去
 algo in / algo out      # 直接改样例输入 / 期望输出（也在 micro 里编辑）
+make p / make s         # micro 打开题面 problem.md / 解法 solution.md
 make e / make w         # micro 打开 solution.cpp / 打开白板（等价于 algo edit / algo board）
 cd two-sum && micro .    # 开始写
-# 写完：Alt-r（需 algo setup --init）或开个终端 make run / make check
+# 写完：Alt-r 跑样例 / Alt-t 对拍（需 algo setup --init），或 make r / make c
 ```
 
-- `make run` 编译 + 用 `in.txt` 跑一遍，和 `out.txt` 一致就打印一行 `AC`；
-- `make check` 编译 + 静态检查 + 写法检查 + 对拍，**没问题什么都不输出**；
-- `make debug` 带 AddressSanitizer + UBSan，专门抓越界和未定义行为。
+- `make run`（简写 `make r`）编译 + 用 `in.txt` 跑一遍，和 `out.txt` 一致就打印一行 `AC`；
+- `make check`（简写 `make c`）编译 + 静态检查 + 写法检查 + 对拍，**没问题什么都不输出**；
+- `make debug` 带 AddressSanitizer + UBSan，专门抓越界和未定义行为；
+- `make p` / `make s` / `make e` 用 micro 打开题面 / 解法 / 代码（对应 `algo new` 建出来的三个文件）。
 - 以上目标跑完都会**自动删掉二进制**（只有 `make build` 会保留），目录里不留编译产物。
 
-在 micro 里想开个终端跑命令：`> term`（分屏终端）；或直接 `Ctrl+B` 跑一次 shell 命令（默认绑定）。
+在 micro 里想跑 shell 命令：`> term` 开一个分屏终端，或 `> run <命令>` 后台跑（输出在新 tab）。
+（`Ctrl+B` 原本是 `ShellMode`，现在被换成左右分屏了，见 §5.4；想要回来就删掉 `bindings.json` 里那一行。）
 
 ---
 
@@ -363,39 +390,38 @@ cd two-sum && micro .    # 开始写
 algo setup --init      # 只在 ~/.config/micro/init.lua 不存在时创建
 ```
 
-生成的内容给你绑了一个 `Alt-r`：**保存当前文件并执行 `make run`**（把 micro 暂时收起来跑命令，回车返回）：
+生成的内容给你绑了四个键（都在题目目录里的 `solution.cpp` 上按）：
+
+| 按键 | 做什么 |
+|---|---|
+| `Alt-r` | 保存 + `make run`：编译、跑 `in.txt`，和 `out.txt` 一致就打印一行 `AC` |
+| `Alt-t` | 保存 + `make check`：编译 + 静态检查 + 写法检查 + 对拍，没问题什么都不输出 |
+| `Alt-i` / `Alt-o` | 打开同目录的 `in.txt` / `out.txt`（不存在就开个空 buffer，保存即创建） |
+
+跑命令用的是 `shell.RunInteractiveShell(..., wait=true, ...)`：micro 会暂时收起屏幕、把终端让给命令，**跑完回车返回**。
+命令一律是 `make -C <当前文件所在目录> <目标>`，所以不管你从哪个目录启动 micro 都能跑对题目。
 
 ```lua
-local config = import("micro/config")
-local shell = import("micro/shell")
-
-function algoRun(bp)
+local function runMake(bp, target)
     bp:Save()
-    shell.RunInteractiveShell("make run", true, false)
+    shell.RunInteractiveShell("make -C " .. quote(currentDir(bp)) .. " " .. target, true, false)
 end
 
 function init()   -- 必须在 init() 里注册，见 §2.2
     config.MakeCommand("algo-run", algoRun, config.NoComplete)
     config.TryBindKey("Alt-r", "command:algo-run", true)
+    -- ... algo-check / algo-in / algo-out 同理
 end
 ```
 
-更多的常用写法：
+打开同目录文件用的是 `micro/buffer` + `bp:OpenBuffer()`（`bp:Open()` 在 2.0.15 里**不存在**）：
 
 ```lua
--- 1) 打开同目录的 in.txt / out.txt
-function openInput(bp)
-    bp:Open(`${Filepath.Dir(bp.Buf.Path)}/in.txt`)   -- 需要 local Filepath = import("path/filepath")
-end
-
--- 2) 只编译不运行
-function algoBuild(bp)
-    bp:Save()
-    shell.RunInteractiveShell("make", true, false)
-end
-
--- 3) 每次保存后自动格式化（不推荐：会引入外部依赖，破坏“清爽”）
+local buf, err = buffer.NewBufferFromFile(filepath.Join(currentDir(bp), "in.txt"))
+bp:OpenBuffer(buf)   -- 文件不存在时 NewBufferFromFile 会返回一个空 buffer
 ```
+
+想自己加命令，照抄 `cli/assets/init.lua` 里的写法即可；完整的原文就是 `algo setup --init` 生成的那份。
 
 插件 API 全表：`> help plugins`。要点：`config.MakeCommand(name, fn, completer)`、`config.TryBindKey(key, action, overwrite)`、`shell.RunInteractiveShell(cmd, wait, getOutput)`。
 
@@ -414,14 +440,18 @@ end
 | 中文/emoji 错位 | 终端宽度计算 | 属于终端层面，micro 无解；可关 `softwrap` |
 | `fatal error: 'bits/stdc++.h' file not found` | **与 micro 无关**：这是 GCC 专有头，Apple clang/libc++ 没有 | 用显式 include（脚手架默认就是），或 `brew install gcc` 后用 `make CXX=g++-14` |
 | 插件装了没反应 | 被 `settings.json` 里同名键设成了 `false` | 改成 `true` 或删掉该键 |
+| `Alt-r` / `Alt-t` / `Alt-i` / `Alt-o` 没反应 | 没生成 `init.lua`（`algo setup` 默认不写它） | `algo setup --init`，然后在 micro 里 `Ctrl-P` → `reload` |
+| `Alt-r` 报找不到 Makefile | 当前文件不在题目目录里 | 打开某个题目的 `solution.cpp` 再按（命令是 `make -C <文件所在目录>`） |
+| `Ctrl-P` 不是命令模式了 | `bindings.json` 里那一行被改掉/删了 | `algo setup` 重新合并（不会动你其它键） |
+| 分屏快捷键不习惯 | `Ctrl-B`/`Ctrl-L` 盖掉了默认的 `ShellMode` / `goto` | 删掉 `bindings.json` 里对应那行，或改绑别的键 |
 
 ---
 
 ## 9. 还原 / 卸载
 
-- **恢复配置**：`cp ~/.config/micro/settings.json.bak-<时间戳> ~/.config/micro/settings.json`；
-- **只撤掉某项**：编辑 `settings.json` 删键（例如删掉 `"linter": false` 就会恢复保存时检查）；
-- **撤掉 init.lua**：`rm ~/.config/micro/init.lua`（如果里面还有你自己的东西，只删 `algoRun`/`init` 相关片段）；
+- **恢复配置**：`cp ~/.config/micro/settings.json.bak-<时间戳> ~/.config/micro/settings.json`（`bindings.json` 同理）；
+- **只撤掉某项**：编辑对应文件删键（例如删掉 `"linter": false` 就恢复保存时检查；删掉 `"Ctrl-B"` 那行就恢复默认的 `ShellMode`）；
+- **撤掉 init.lua**：`rm ~/.config/micro/init.lua`（如果里面还有你自己的东西，只删 `algo-run`/`algo-check`/`algo-in`/`algo-out` 和 `init` 相关片段）；
 - **卸载 CLI**：`make -C cli uninstall`（只删 `~/.local/bin/algo`，不动 micro 配置）。
 
 ---

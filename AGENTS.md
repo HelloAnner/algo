@@ -79,7 +79,8 @@ algo/
 ├── solution.cpp   # ACM 实现：读 stdin、写 stdout
 ├── in.txt         # 样例输入
 ├── out.txt        # 期望输出
-├── Makefile       # run / raw / check / debug / build / e / w / help / clean（run 等跑完自动删二进制）
+├── Makefile       # run(r) / raw / check(c) / debug / build / e / p / s / w / help / clean
+│                  # （run 等跑完自动删二进制；p / s 是 micro 看题面 / 解法）
 ├── README.md      # 卡片：链接 / 难度 / 标签 / 状态 / 复盘记录
 └── .gitignore     # 忽略编译产物
 ```
@@ -155,13 +156,14 @@ make doctor                   # 环境自检
 
 ## 实现约定
 
-- **micro 配置**：只做 **merge**，绝不覆盖用户已有的键；写之前备份成 `settings.json.bak-<时间戳>`；`init.lua` 已存在则不动。逻辑在 `cli/src/micro.ts`，但**行为说明以 `cli/micro.md` 为准**，两边必须同步。
+- **micro 配置**：只做 **merge**，绝不覆盖用户已有的键；写之前备份成 `<文件>.bak-<时间戳>`；`init.lua` 已存在则不动。逻辑在 `cli/src/micro.ts`（`PROFILE` 管 settings.json、`BINDINGS` 管 bindings.json），但**行为说明以 `cli/micro.md` 为准**，两边必须同步。
   注意 micro 的 `autosave` 是**秒数**不是布尔（写 `true` 会被它当成 8 秒），profile 里显式写成 `autosave: 2`；自动保存本身不弹提示，是刻意保持静默的。
+  `bindings.json` 只写「micro 默认不是这样」的 6 个键（Ctrl-P 命令模式、Ctrl-B/L 分屏、F12 切分屏、Alt-n 新建文件、Alt-d 复制行），其余保持 micro 默认；`init.lua`（`algo setup --init`）提供 Alt-r 跑样例 / Alt-t 对拍 / Alt-i·Alt-o 开样例，命令必须写在 `init()` 里。
 - **不要给 micro 装 LSP，也不要把 `linter` 打开**——「没有波浪线」是刻意设计，不是待修的缺陷。要加诊断能力，先在 `cli/micro.md` 里写清取舍。
 - **run / check 由 CLI 实现**：`cli/src/cpp.ts` 负责编译与运行（临时二进制 `.algo_bin`，任何路径下都必删），`cli/src/check.ts` 负责静态警告 + 写法坑 + 对拍。题目 Makefile 里的 `run` / `check` 只是转发到 `algo run` / `algo check`；Makefile 的 `CXXFLAGS` 与 `cpp.ts` 的 `BUILD_FLAGS` 必须保持一致。
   `check` 的「没问题就不输出」是刻意设计（静默即通过），别给它加成功提示；`run` 正常只打印一行 `AC`。
 - **依赖**：CLI 不引入第三方运行时依赖；`assets/` 里的模板保持自包含（不依赖仓库外的文件）。
-- **脚手架模板**：生成的 `Makefile` 必须自清理——`run` / `raw` / `check` / `debug` 跑完都要删掉二进制和临时文件（`trap ... EXIT INT TERM` 兜底），只有 `build` 保留二进制。另外提供 `make e`（micro 打开 solution.cpp）、`make w`（系统默认程序打开白板）和 `make help`。改 `cli/assets/make.tmpl` 后必须跑 `make test`，冒烟脚本会断言目录里没有残留。
+- **脚手架模板**：生成的 `Makefile` 必须自清理——`run` / `raw` / `check` / `debug` 跑完都要删掉二进制和临时文件（`trap ... EXIT INT TERM` 兜底），只有 `build` 保留二进制。另外提供 `make e` / `make p` / `make s`（micro 打开代码 / 题面 / 解法）、`make r` / `make c`（`run` / `check` 的简写）、`make w`（系统默认程序打开白板）和 `make help`。改 `cli/assets/make.tmpl` 后必须跑 `make test`，冒烟脚本会断言目录里没有残留。
 - **文档**：改动架构或命令后，同步更新本文件、`cli/README.md`、`cli/micro.md` 中受影响的部分。
 
 ---
@@ -173,4 +175,4 @@ make doctor                   # 环境自检
 - micro 内置插件只有 7 个（autoclose / comment / diff / ftoptions / linter / literate / status），**LSP 不在其中**，它是官方插件频道里的可选插件 `lsp`。
 - micro 启动顺序：`LoadAllPlugins()` → `action.InitCommands()` → `preinit()` → `init()`。因此 `init.lua` 里调用 `config.MakeCommand` **必须写在 `init()` 内**，写在顶层会报 `assignment to entry in nil map`。
 - 验证 micro 行为可以用 `script -q /dev/null micro ...` 开一个 pty（本机没有 `timeout` 命令）；用假的 `g++` 包装脚本记录调用，是确认 linter 开关生效最直接的办法。
-- `bun` 和 `~/.local/bin` 都已在该用户 PATH 中。
+  更彻底的办法是用 Python 的 `pty.fork()` 驱动真 micro（发 `\x1br` 这类按键），只看「效果」（文件内容、是否退出），别去 grep 屏幕输出——micro 是增量重绘，原始流里的文本是残缺的。

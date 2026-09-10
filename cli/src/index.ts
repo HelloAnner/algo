@@ -44,9 +44,10 @@ ${c.bold("刷题")}
   algo clean [目录]               清掉编译产物
 
 ${c.bold("环境")}
-  algo setup                      安装 / 合并 micro 的 C++ 刷题配置
+  algo setup                      合并 micro 刷题配置：settings.json + bindings.json
   algo setup --shell              把「建完题自动 cd」写进 shell 配置（~/.zshrc 等）
-  algo setup --init               额外生成 ~/.config/micro/init.lua（存在则不覆盖）
+  algo setup --init               额外生成 ~/.config/micro/init.lua
+                                  （Alt-r 跑样例 / Alt-t 对拍 / Alt-i·Alt-o 开样例；存在则不覆盖）
   algo doctor                     自检依赖与配置
   algo version                    版本
   algo help                       本帮助

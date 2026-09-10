@@ -1,6 +1,6 @@
 import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import initLuaTpl from "../assets/init.lua" with { type: "text" };
 import { c, hint, info, ok, readText, timestamp, versionOf, warn, which, writeText } from "./util";
 
@@ -43,6 +43,25 @@ export const PROFILE: Record<string, unknown> = {
   saveundo: true,
 };
 
+/**
+ * algo 管理的按键绑定，merge 进 ~/.config/micro/bindings.json。
+ * 只写「micro 默认不是这样、但刷题时更顺手」的键（micro 的默认绑定见 cli/micro.md §5.4），
+ * 另外四个键由 init.lua 提供（algo setup --init）：Alt-r 跑样例、Alt-t 对拍、Alt-i/Alt-o 开 in/out。
+ */
+export const BINDINGS: Record<string, string> = {
+  // 命令模式：micro 默认在 Ctrl-E，挪到 Ctrl-P
+  "Ctrl-P": "CommandMode",
+  // 分屏：Ctrl-B 竖着分（左右），Ctrl-L 横着分（上下）
+  "Ctrl-B": "command:vsplit",
+  "Ctrl-L": "command:hsplit",
+  // F12 在分屏之间跳（默认只有 Ctrl-W）
+  F12: "NextSplit|FirstSplit",
+  // 新建文件：回车后输入文件名；open 对不存在的文件会开一个空 buffer，保存即创建
+  "Alt-n": "command-edit:open ",
+  // 复制当前行（默认只有 Ctrl-D）
+  "Alt-d": "DuplicateLine",
+};
+
 export function microConfigDir(): string {
   const env = process.env.MICRO_CONFIG_DIR?.trim();
   return env && env.length > 0 ? env : join(homedir(), ".config", "micro");
@@ -50,6 +69,14 @@ export function microConfigDir(): string {
 
 export function microSettingsPath(): string {
   return join(microConfigDir(), "settings.json");
+}
+
+export function microBindingsPath(): string {
+  return join(microConfigDir(), "bindings.json");
+}
+
+export function initLuaPath(): string {
+  return join(microConfigDir(), "init.lua");
 }
 
 export type MergeKind = "added" | "changed" | "same";
@@ -60,17 +87,17 @@ export interface MergeRow {
   to: unknown;
 }
 
-/** 保留 existing 的键顺序，覆盖 PROFILE 里的值，再追加 PROFILE 新增的键 */
-export function mergeSettings(existing: Record<string, unknown>): {
-  merged: Record<string, unknown>;
-  rows: MergeRow[];
-} {
+/** 保留 existing 的键顺序，覆盖 profile 里的值，再追加 profile 新增的键 */
+export function mergeProfile(
+  existing: Record<string, unknown>,
+  profile: Record<string, unknown>,
+): { merged: Record<string, unknown>; rows: MergeRow[] } {
   const merged: Record<string, unknown> = {};
   const rows: MergeRow[] = [];
 
   for (const [k, v] of Object.entries(existing)) {
-    if (k in PROFILE) {
-      const to = PROFILE[k];
+    if (k in profile) {
+      const to = profile[k];
       const same = JSON.stringify(v) === JSON.stringify(to);
       merged[k] = to;
       rows.push({ key: k, kind: same ? "same" : "changed", from: v, to });
@@ -78,7 +105,7 @@ export function mergeSettings(existing: Record<string, unknown>): {
       merged[k] = v;
     }
   }
-  for (const [k, v] of Object.entries(PROFILE)) {
+  for (const [k, v] of Object.entries(profile)) {
     if (!(k in existing)) {
       merged[k] = v;
       rows.push({ key: k, kind: "added", to: v });
@@ -87,14 +114,79 @@ export function mergeSettings(existing: Record<string, unknown>): {
   return { merged, rows };
 }
 
+/** 兼容旧调用：settings.json 的 merge */
+export function mergeSettings(existing: Record<string, unknown>): {
+  merged: Record<string, unknown>;
+  rows: MergeRow[];
+} {
+  return mergeProfile(existing, PROFILE);
+}
+
 const fmt = (v: unknown) => (typeof v === "string" ? JSON.stringify(v) : String(v));
 
-/** 安装 ~/.config/micro/init.lua（Alt-r 一键 make run）。已存在则绝不覆盖。 */
+interface ProfileFile {
+  /** 人看的名字，例如「全局选项」 */
+  label: string;
+  path: string;
+  profile: Record<string, unknown>;
+}
+
+/**
+ * 把一个 profile merge 进目标 JSON 文件：只覆盖 profile 里的键，其余原样保留；
+ * 有改动才写盘，写之前先备份成 <文件>.bak-<时间戳>。返回这次做了什么。
+ */
+function installJsonProfile(file: ProfileFile, opts: SetupOptions): "same" | "written" | "planned" {
+  const raw = readText(file.path);
+
+  if (raw === null) {
+    if (opts.dryRun) {
+      info(`将创建 ${file.path}（${file.label}）`);
+      for (const [k, v] of Object.entries(file.profile)) console.log(`  + ${k}: ${fmt(v)}`);
+      return "planned";
+    }
+    writeText(file.path, JSON.stringify(file.profile, null, 4) + "\n");
+    ok(`已创建 ${file.path}`);
+    return "written";
+  }
+
+  let existing: Record<string, unknown>;
+  try {
+    existing = JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    console.error(c.red("error:") + ` ${file.path} 不是合法 JSON，未做任何修改`);
+    hint("修好 JSON 后重试，或先手动备份再删除该文件让 algo 重新生成");
+    process.exit(1);
+  }
+
+  const { merged, rows } = mergeProfile(existing, file.profile);
+  const dirty = rows.filter((r) => r.kind !== "same");
+  if (dirty.length === 0) return "same";
+
+  console.log(c.bold(`将更新 ${file.path}`) + c.gray(`（${file.label}）`));
+  for (const r of rows) {
+    if (r.kind === "added") console.log(`  ${c.green("+")} ${r.key}: ${fmt(r.to)}`);
+    else if (r.kind === "changed")
+      console.log(`  ${c.yellow("~")} ${r.key}: ${fmt(r.from)} ${c.gray("→")} ${fmt(r.to)}`);
+  }
+  console.log();
+
+  if (opts.dryRun) return "planned";
+
+  const backup = `${file.path}.bak-${timestamp()}`;
+  copyFileSync(file.path, backup);
+  mkdirSync(dirname(file.path), { recursive: true });
+  writeText(file.path, JSON.stringify(merged, null, 4) + "\n");
+  ok(`已写入 ${file.path}`);
+  info(`原文件已备份到 ${backup}`);
+  return "written";
+}
+
+/** 安装 ~/.config/micro/init.lua（Alt-r 一键 make run 等）。已存在则绝不覆盖。 */
 export function installInitLua(opts: SetupOptions = {}): void {
-  const file = join(microConfigDir(), "init.lua");
+  const file = initLuaPath();
   if (existsSync(file)) {
     warn(`${file} 已存在，未做改动`);
-    hint("想加“Alt-r 跑 make run”，把 cli/assets/init.lua 的内容手动并进去");
+    hint("想加 Alt-r / Alt-t / Alt-i / Alt-o，把 cli/assets/init.lua 的内容手动并进去");
     return;
   }
   if (opts.dryRun) {
@@ -103,11 +195,7 @@ export function installInitLua(opts: SetupOptions = {}): void {
   }
   writeText(file, initLuaTpl);
   ok(`已创建 ${file}`);
-  hint("新增快捷键：Alt-r = 保存并 make run");
-}
-
-export function initLuaPath(): string {
-  return join(microConfigDir(), "init.lua");
+  hint("新增快捷键：Alt-r 跑样例 · Alt-t 对拍 · Alt-i / Alt-o 打开 in.txt / out.txt");
 }
 
 export interface SetupOptions {
@@ -117,71 +205,31 @@ export interface SetupOptions {
 
 /** 安装 / 合并 micro 的 C++ 刷题配置。幂等，会先备份原文件。 */
 export function installMicroProfile(opts: SetupOptions = {}): void {
-  const dir = microConfigDir();
-  const file = microSettingsPath();
-
   const microPath = which("micro");
   if (!microPath) {
     warn("没有检测到 micro 编辑器，先配置好 settings.json 也不会生效");
     hint("安装：brew install micro     （或见 cli/micro.md 的安装章节）");
   }
 
-  if (!existsSync(file)) {
-    if (opts.dryRun) {
-      info(`将创建 ${file}`);
-      for (const [k, v] of Object.entries(PROFILE)) console.log(`  + ${k}: ${fmt(v)}`);
-      return;
-    }
-    writeText(file, JSON.stringify(PROFILE, null, 4) + "\n");
-    ok(`已创建 ${file}`);
-    reportTail(microPath);
-    return;
-  }
+  const results = [
+    installJsonProfile({ label: "全局选项", path: microSettingsPath(), profile: PROFILE }, opts),
+    installJsonProfile({ label: "按键绑定", path: microBindingsPath(), profile: BINDINGS }, opts),
+  ];
 
-  const raw = readText(file) ?? "";
-  let existing: Record<string, unknown>;
-  try {
-    existing = JSON.parse(raw) as Record<string, unknown>;
-  } catch (e) {
-    console.error(c.red("error:") + ` ${file} 不是合法 JSON，未做任何修改`);
-    hint("修好 JSON 后重试，或先手动备份再删除该文件让 algo 重新生成");
-    process.exit(1);
-  }
-
-  const { merged, rows } = mergeSettings(existing);
-  const dirty = rows.filter((r) => r.kind !== "same");
-
-  if (dirty.length === 0) {
+  if (results.every((r) => r === "same")) {
     ok("micro 配置已是最新，无需改动");
-    reportTail(microPath);
-    return;
-  }
-
-  console.log(c.bold(`将更新 ${file}`));
-  for (const r of rows) {
-    if (r.kind === "added") console.log(`  ${c.green("+")} ${r.key}: ${fmt(r.to)}`);
-    else if (r.kind === "changed")
-      console.log(`  ${c.yellow("~")} ${r.key}: ${fmt(r.from)} ${c.gray("→")} ${fmt(r.to)}`);
-  }
-  console.log();
-
-  if (opts.dryRun) {
+  } else if (opts.dryRun) {
     info("--dry-run：未写入任何文件");
-    return;
   }
 
-  const backup = `${file}.bak-${timestamp()}`;
-  copyFileSync(file, backup);
-  mkdirSync(dir, { recursive: true });
-  writeText(file, JSON.stringify(merged, null, 4) + "\n");
-  ok(`已写入 ${file}`);
-  info(`原文件已备份到 ${backup}`);
   reportTail(microPath);
 }
 
 function reportTail(microPath: string | null): void {
   console.log();
   if (microPath) hint("micro 若开着，按 Ctrl+E 执行 reload 即可生效（或重开）");
+  if (!existsSync(initLuaPath()))
+    hint("想要 Alt-r 一键 make run / Alt-t 对拍 / Alt-i·Alt-o 开样例：algo setup --init");
   hint("检查当前状态：algo doctor");
   hint("为什么这样配：cli/micro.md");
 }
@@ -193,26 +241,41 @@ export interface MicroStatus {
   linterOff: boolean;
   autocloseOn: boolean;
   syntaxOn: boolean;
+  bindingsPath: string;
+  bindingsExists: boolean;
+  /** BINDINGS 里已经写进 bindings.json 的键数 */
+  bindingsApplied: number;
+  bindingsTotal: number;
+  initLuaExists: boolean;
+}
+
+function readJson(path: string): Record<string, unknown> {
+  const raw = readText(path);
+  if (raw === null) return {};
+  try {
+    return JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
 }
 
 export function microStatus(): MicroStatus {
-  const file = microSettingsPath();
-  const raw = readText(file);
-  let obj: Record<string, unknown> = {};
-  if (raw !== null) {
-    try {
-      obj = JSON.parse(raw) as Record<string, unknown>;
-    } catch {
-      obj = {};
-    }
-  }
+  const settingsPath = microSettingsPath();
+  const bindingsPath = microBindingsPath();
+  const settings = readJson(settingsPath);
+  const bindings = readJson(bindingsPath);
   return {
     configDir: microConfigDir(),
-    settingsPath: file,
-    settingsExists: raw !== null,
-    linterOff: obj.linter === false,
-    autocloseOn: obj.autoclose !== false,
-    syntaxOn: obj.syntax !== false,
+    settingsPath,
+    settingsExists: readText(settingsPath) !== null,
+    linterOff: settings.linter === false,
+    autocloseOn: settings.autoclose !== false,
+    syntaxOn: settings.syntax !== false,
+    bindingsPath,
+    bindingsExists: readText(bindingsPath) !== null,
+    bindingsApplied: Object.entries(BINDINGS).filter(([k, v]) => bindings[k] === v).length,
+    bindingsTotal: Object.keys(BINDINGS).length,
+    initLuaExists: existsSync(initLuaPath()),
   };
 }
 
