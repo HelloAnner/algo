@@ -61,8 +61,8 @@ feat: 支持随机数据对拍（algo gen + make stress）
 algo/
 ├── Makefile            # 根入口：原样转发到 cli/Makefile
 └── cli/                # 全部实现
-    ├── src/            # index(分发) / scaffold(建题) / list / run / micro / doctor / util
-    ├── assets/         # 脚手架模板：solution.cpp / make.tmpl / README.tmpl / init.lua
+    ├── src/            # index(分发) / flags(参数) / add(题面解法) / scaffold / list / run / micro / doctor / util
+    ├── assets/         # 模板：solution.cpp / make.tmpl / problem.md.tmpl / solution.md.tmpl / README.tmpl / init.lua
     ├── scripts/        # smoke-test.sh
     ├── micro.md        # micro 编辑器插件与配置详解 —— micro 相关改动的唯一依据
     └── README.md       # 安装与用法
@@ -72,15 +72,54 @@ algo/
 
 ```
 <slug>/
-├── solution.cpp   # ACM 模板：读 stdin、写 stdout
+├── problem.md     # 题面描述（独立 md）
+├── solution.md    # 解法思路（独立 md）
+├── solution.cpp   # ACM 实现：读 stdin、写 stdout
 ├── in.txt         # 样例输入
 ├── out.txt        # 期望输出
 ├── Makefile       # run / raw / check / debug / build / clean（run 等跑完自动删二进制）
-├── README.md      # 思路 / 边界 / 复杂度 / 复盘
+├── README.md      # 卡片：链接 / 难度 / 标签 / 状态 / 复盘记录
 └── .gitignore     # 忽略编译产物
 ```
 
 安装方式是 `make install`：`bun build` 出 `cli/dist/algo.js`，在 `~/.local/bin/algo` 放一个 `exec bun ...` 的轻量启动器，然后合并 micro 配置。源码改动**即刻生效**，无需重新安装（除非改的是启动器本身）。
+
+---
+
+## 添加题目（`algo add`，AI 常用）
+
+题面和解法各占一个独立 md：`problem.md`（题面）与 `solution.md`（解法思路）。
+两个模板里都埋了 `<!-- algo:todo ... -->` 标记，`algo list` 靠它判断写没写，写完删掉即可。
+
+给 AI 用最顺手的是 **JSON 一次性投喂**：
+
+```bash
+cat > /tmp/spec.json <<'EOF'
+{
+  "name": "two-sum",
+  "title": "两数之和",
+  "link": "https://leetcode.cn/problems/two-sum/",
+  "difficulty": "简单",
+  "tags": ["数组", "哈希表"],
+  "problem": "## 题目描述\\n...",
+  "solution": "## 思路\\n..."
+}
+EOF
+algo add --json /tmp/spec.json     # 或 --json - 从 stdin 读
+```
+
+也可以走命令行（长文本用 `--xxx-file`，别在 argv 里硬塞 markdown）：
+
+```bash
+algo add two-sum --title "两数之和" --difficulty 简单 --tags 数组,哈希表 \
+  --problem-file p.md --solution-file s.md
+```
+
+规则：
+
+- 目录不存在 → 建全套；**目录已存在 → 只更新显式给出的那个 md**，绝不动 `solution.cpp` / `in.txt` / `out.txt`，也**不覆盖 `README.md`**（免得冲掉复盘记录）。要整套重来用 `--force`。
+- `--problem-file -` / `--solution-file -` 表示从 stdin 读；两个都用 `-` 会报错，这种情况改用 `--json -`。
+- `name` 命令行优先于 JSON；`--title` / `--link` / `--difficulty` / `--tags` 同理。
 
 ---
 

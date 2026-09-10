@@ -1,6 +1,7 @@
 # algo — 面试算法练习脚手架
 
-C++ / ACM 模式的本地刷题工作流：一条命令建好题目目录，micro 里写完 `make run` / `make check` 验证。
+C++ / ACM 模式的本地刷题工作流：一条命令建好题目目录（题面 + 解法 + 代码 + 对拍），
+micro 里写完 `make run` / `make check` 验证。
 
 ## 安装
 
@@ -23,7 +24,8 @@ make install          # 打包 CLI + 装到 ~/.local/bin + 合并 micro 配置
 | `make install-cli` | 只装 CLI，不碰 micro 配置 |
 | `make setup` / `make init` | 只合并 micro 配置 / 额外写 `init.lua`（存在则不动） |
 | `make doctor` | 环境自检 |
-| `make test` | 冒烟测试：建题 → 编译 → 对拍 |
+| `make typecheck` | `tsc --noEmit` |
+| `make test` | 冒烟测试：建题 → 编译 → 对拍 → 清理校验 → add → 列表 |
 | `make uninstall` | 删掉 `~/.local/bin/algo` |
 
 `PREFIX` 可覆盖安装位置：`make install PREFIX=/usr/local`。
@@ -33,8 +35,8 @@ make install          # 打包 CLI + 装到 ~/.local/bin + 合并 micro 配置
 ```bash
 mkdir -p ~/algo/leetcode && cd ~/algo/leetcode
 
-algo two-sum          # 建 ./two-sum/：solution.cpp / in.txt / out.txt / Makefile / README.md
-cd two-sum && micro . # 开写
+algo two-sum          # 建 ./two-sum/（8 个文件，含题面与解法模板）
+cd two-sum && micro . # 先看 problem.md，再写 solution.cpp
 
 make run              # 编译 → 用 in.txt 跑 → 立刻删掉二进制
 make check            # 和 out.txt 比对，✅ AC / ❌ WA（跑完同样清理）
@@ -42,29 +44,74 @@ make debug            # ASan + UBSan（跑完清理）
 make build            # 想保留二进制时用这个（之后 make clean）
 ```
 
-CLI 侧快捷命令：`algo list`、`algo run`、`algo check`、`algo edit`、`algo doctor`、`algo setup`。
+## 加一道题（题面 / 解法各一个 md）
+
+题面和解法**分成两个独立的 md**：`problem.md`（题面）和 `solution.md`（解法思路）。
+
+```bash
+# 1) 只建目录，题面和解法以后再补（模板里带 algo:todo 标记）
+algo two-sum
+
+# 2) 建目录的同时把内容灌进去（长文本建议用文件，避免 shell 转义）
+algo add two-sum --title "两数之和" --difficulty 简单 --tags 数组,哈希表 \
+  --problem-file problem.md --solution-file solution.md
+
+# 3) 目录已存在时，只更新显式给出的那个 md（不碰代码、样例和 README）
+algo add two-sum --solution-file 思路.md
+
+# 4) 给 AI 用：一个 JSON 一次性投喂（--json - 从 stdin 读）
+algo add --json spec.json
+```
+
+`spec.json` 的字段：
+
+```json
+{
+  "name": "two-sum",
+  "title": "两数之和",
+  "link": "https://leetcode.cn/problems/two-sum/",
+  "difficulty": "简单",
+  "tags": ["数组", "哈希表"],
+  "problem": "## 题目描述\n...",
+  "solution": "## 思路\n...",
+  "problem_file": "可选，改成从文件读题面",
+  "solution_file": "可选，改成从文件读解法"
+}
+```
+
+- `name` 可以由命令行给出（`algo add two-sum --json spec.json`），命令行优先。
+- 目录已存在时，`--force` 才会整套重来；否则**只覆盖显式给出的 md**。
+- `--problem-file -` / `--solution-file -` 表示从 stdin 读；两个都用 `-` 会报错，请改用 `--json -`。
+
+## 命令一览
 
 ```
-algo <名字>              新建题目目录
-algo new <名字>          同上（名字和子命令撞车时用）
-algo list                列出当前目录的题目
-algo edit [目录]         用 micro 打开 solution.cpp
-algo run|raw|check|debug|clean [目录]
-algo path [目录]         打印题目目录绝对路径
-algo setup [--dry-run]   安装 / 合并 micro 配置
-algo setup --init        额外生成 ~/.config/micro/init.lua（存在则不覆盖）
-algo doctor              自检
+algo <名字>                新建题目目录（等价于 algo add <名字>）
+algo add <名字> [选项]      新建并写入题面/解法/元信息
+    --title --link --difficulty --tags
+    --problem / --problem-file <文件|->
+    --solution / --solution-file <文件|->
+    --json <文件|->         一次读入全部字段（AI 推荐）
+algo list                  列出题目，显示「题面✓思路✓」进度
+algo edit [目录]           用 micro 打开 solution.cpp
+algo run|raw|check|debug|build|clean [目录]
+algo path [目录]           打印题目目录绝对路径
+algo setup [--dry-run]     安装 / 合并 micro 配置
+algo setup --init          额外生成 ~/.config/micro/init.lua（存在则不覆盖）
+algo doctor                自检
 ```
 
 ## 题目目录结构
 
 ```
 two-sum/
+├── problem.md       # 题面描述（独立 md）
+├── solution.md      # 解法思路（独立 md）
 ├── solution.cpp     # ACM 模式：读 stdin 写 stdout
 ├── in.txt           # 样例输入
 ├── out.txt          # 期望输出
 ├── Makefile         # run / raw / check / debug / build / clean
-├── README.md        # 思路、边界、复杂度、复盘
+├── README.md        # 卡片：链接 / 难度 / 标签 / 状态 / 复盘记录
 └── .gitignore       # 忽略编译产物
 ```
 
@@ -80,14 +127,17 @@ two-sum/
 ```
 cli/
 ├── src/
-│   ├── index.ts      # 参数解析 + 命令分发
-│   ├── scaffold.ts   # algo <名字> 建目录
-│   ├── list.ts       # algo list
+│   ├── index.ts      # 命令分发
+│   ├── flags.ts      # 迷你参数解析（--key value / --key=value / -e）
+│   ├── add.ts        # algo add：JSON 规格 + 各种文本来源
+│   ├── scaffold.ts   # 生成题目目录
+│   ├── list.ts       # algo list + 进度标记
 │   ├── run.ts        # algo run/check/... → make
 │   ├── micro.ts      # micro profile 定义与合并
 │   ├── doctor.ts     # 环境自检
 │   └── util.ts       # 颜色 / 文件 / 进程小工具
-└── assets/           # 脚手架模板（solution.cpp / Makefile / README / ...）
+├── scripts/          # smoke-test.sh
+└── assets/           # 模板：solution.cpp / make.tmpl / problem.md.tmpl / solution.md.tmpl / README.tmpl / init.lua
 ```
 
 micro 编辑器（插件清单、配置逐项解释、为什么关掉下划线报错、如何还原）见 **[micro.md](./micro.md)**。
