@@ -49,11 +49,14 @@ export function readHeader(txt: string | null): Partial<Header> {
 
 export function renderVars(opts: AddOptions, base: Partial<Header> = {}): Record<string, string> {
   const slug = slugify(opts.name);
+  // 没给链接就留空（以前会自动编一个 leetcode.cn/problems/<slug>/，非 LeetCode 的题会变成 404）
+  const link = opts.link !== undefined ? opts.link.trim() : (base.link ?? "");
   return {
     SLUG: slug,
     TITLE: opts.title?.trim() || base.title || titleize(slug),
-    // 没给链接就留空（以前会自动编一个 leetcode.cn/problems/<slug>/，非 LeetCode 的题会变成 404）
-    LINK: opts.link !== undefined ? opts.link.trim() : (base.link ?? ""),
+    LINK: link,
+    // 模板里的第二行注释：有链接就是 // <url>，没有就单独一个 //（不留尾随空格）
+    LINK_LINE: link ? `// ${link}` : "//",
     DIFFICULTY: opts.difficulty !== undefined ? opts.difficulty.trim() : (base.difficulty ?? ""),
   };
 }
