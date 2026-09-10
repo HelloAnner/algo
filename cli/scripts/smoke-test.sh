@@ -127,6 +127,23 @@ for f in solution solution_dbg .algo_bin .out.actual .out.diff; do
 done
 echo "  ✓ 无残留"
 
+echo "→ make c（algo check）不跑样例：输出错的程序只报编译/检查，不报 WA"
+cat > two-sum/solution.cpp <<'EOF'
+#include <iostream>
+int main() {
+    std::ios::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+    std::cout << "definitely wrong\n";
+}
+EOF
+CHK_ONLY="$(cd two-sum && PATH="$FAKEBIN:$PATH" "$BUN" "$CLI" check 2>&1 || true)"
+if [ -n "$CHK_ONLY" ]; then
+    fail "check 不该跑样例，却输出了：[$CHK_ONLY]"
+fi
+RUN_ONLY="$(cd two-sum && PATH="$FAKEBIN:$PATH" "$BUN" "$CLI" run 2>&1 || true)"
+printf '%s' "$RUN_ONLY" | grep -q "WA" || fail "run 应该报 WA，实际：[$RUN_ONLY]"
+echo "  ✓ check 只编译检查，run 才跑样例"
+
 echo "→ 写法检查：endl 会被 check 抓出来"
 cat > two-sum/solution.cpp <<'EOF'
 #include <iostream>

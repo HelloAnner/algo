@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
-import { BIN, BUILD_FLAGS, cleanupBin, compareLines, compiler, hasExpectedOutput, INCLUDE_FLAG, readCase, runBinary } from "./cpp";
+import { BIN, BUILD_FLAGS, cleanupBin, compiler, INCLUDE_FLAG } from "./cpp";
 import { c, out } from "./util";
 
 /** 静态检查额外打开的警告（比日常编译更严） */
@@ -23,11 +23,6 @@ const LINT_FLAGS = [
 ];
 
 const WARN_LINE = /^(.*?):(\d+):(\d+): (?:fatal )?(warning|error): (.+)$/;
-
-export interface CheckOptions {
-  /** 跑样例的超时（秒） */
-  timeoutSec?: number;
-}
 
 /** 在源码里找 ACM 常见坑 */
 function styleFindings(src: string): string[] {
@@ -61,17 +56,16 @@ function styleFindings(src: string): string[] {
 }
 
 /**
- * 编译 + 静态检查 + 写法检查 + 样例对拍。
+ * 编译 + 静态检查 + 写法检查（**不跑样例**：跑样例是 `algo run` / `make r` 的事）。
  * 静默是设计目标：一切正常时不输出任何内容（只看退出码）；
  * 有问题才把问题打出来。
  */
-export function runCheck(dir: string, opts: CheckOptions = {}): never {
+export function runCheck(dir: string): never {
   const srcPath = join(dir, "solution.cpp");
   if (!existsSync(srcPath)) {
     out(`${c.red("✗")} 找不到 solution.cpp`);
     process.exit(1);
   }
-  const timeoutMs = Math.max(1, opts.timeoutSec ?? 5) * 1000;
   const report: string[] = [];
   let failed = false;
 
@@ -105,24 +99,6 @@ export function runCheck(dir: string, opts: CheckOptions = {}): never {
     // 3. 写法检查
     const style = styleFindings(readFileSync(srcPath, "utf8"));
     if (style.length > 0) report.push(`${c.yellow("⚠")} 写法检查 ${style.length} 条`, ...style);
-
-    // 4. 样例对拍
-    if (!hasExpectedOutput(dir)) {
-      report.push(`${c.yellow("!")} out.txt 还是空的，跳过对拍（把期望输出填进去）`);
-    } else {
-      const r = runBinary(dir, readCase(dir, "in.txt") ?? "", timeoutMs);
-      if (r.timedOut) {
-        report.push(`${c.red("✗")} 运行超过 ${timeoutMs / 1000}s 还没结束（死循环？）`);
-        failed = true;
-      } else {
-        const cmp = compareLines(readCase(dir, "out.txt") ?? "", r.stdout);
-        if (!cmp.ok) {
-          failed = true;
-          report.push(`${c.red("✗")} 样例 WA（退出码 ${r.status ?? "?"}）`);
-          for (const d of cmp.diffs) report.push("  " + d);
-        }
-      }
-    }
   } finally {
     cleanupBin(dir);
   }

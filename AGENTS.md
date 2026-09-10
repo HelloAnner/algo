@@ -165,8 +165,11 @@ make doctor                   # 环境自检
   注意 micro 的 `autosave` 是**秒数**不是布尔（写 `true` 会被它当成 8 秒），profile 里显式写成 `autosave: 2`；自动保存本身不弹提示，是刻意保持静默的。
   `bindings.json` 只写「micro 默认不是这样」的 6 个键（Ctrl-P 命令模式、Ctrl-B/L 分屏、F12 切分屏、Alt-n 新建文件、Alt-d 复制行），其余保持 micro 默认；`init.lua`（`algo setup --init`）提供 Alt-r 跑样例 / Alt-t 对拍 / Alt-i·Alt-o 开样例，命令必须写在 `init()` 里。
 - **不要给 micro 装 LSP，也不要把 `linter` 打开**——「没有波浪线」是刻意设计，不是待修的缺陷。要加诊断能力，先在 `cli/micro.md` 里写清取舍。
-- **run / check 由 CLI 实现**：`cli/src/cpp.ts` 负责编译与运行（临时二进制 `.algo_bin`，任何路径下都必删），`cli/src/check.ts` 负责静态警告 + 写法坑 + 对拍。题目 Makefile 里的 `run` / `check` 只是转发到 `algo run` / `algo check`；Makefile 的 `CXXFLAGS` 与 `cpp.ts` 的 `BUILD_FLAGS` 必须保持一致。
-  `check` 的「没问题就不输出」是刻意设计（静默即通过），别给它加成功提示；`run` 正常只打印一行 `AC`。
+- **run / check 由 CLI 实现，分工是刻意的**：`cli/src/cpp.ts` 负责编译与运行（临时二进制 `.algo_bin`，任何路径下都必删）。
+  `algo run`（`make r`）= 编译 + 跑 `in.txt` + 和 `out.txt` 对拍，正常只打印一行 `AC`，WA / 超时非 0 退出；
+  `algo check`（`make c`）= 编译 + 静态警告 + 写法坑，**不跑样例**（用户明确要 `make c` 只编译检查、`make r` 才跑 case）。
+  题目 Makefile 里的 `run` / `check` 只是转发到 `algo run` / `algo check`；Makefile 的 `CXXFLAGS` 与 `cpp.ts` 的 `BUILD_FLAGS` 必须保持一致。
+  两者的「没问题就不输出」是刻意设计（静默即通过），别加成功提示。
 - **依赖**：CLI 不引入第三方运行时依赖；`assets/` 里的模板保持自包含（不依赖仓库外的文件）。
 - **题面 / 解法都是纯文本**：`problem.txt`（头部 `题目：` / `链接：` / `难度：`，章节用 `[题目描述]` 这种标记，**图一律用 ASCII 画**）、`solution.txt`（`[思路]` / `[复杂度]` / `[关键点]` / `[C++ 代码]`）。**不要往题目目录里加 Markdown 文件**（用户明确要 `cat txt`）。
 - **`solution.cpp` 永远是空模板**：顶层就一行 `#include <bits/stdc++.h>`（靠兼容头 + `-I` 生效）+ `using namespace std;` + `main` + `// TODO: 读入 -> 计算 -> 输出`，实现留给用户自己写；参考代码放在 `solution.txt` 的 `[C++ 代码]` 里。不要用参考实现覆盖 `solution.cpp`，也不要往模板里堆一长串显式 include。

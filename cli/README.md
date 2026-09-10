@@ -143,8 +143,8 @@ algo edit [目录] [目标]    用 micro 打开，默认 solution.cpp
 algo in / algo out [目录]  打开 in.txt / out.txt
 algo board [目录]          用系统默认程序打开 whiteboard.excalidraw
 algo run [目录]            编译 + 跑 in.txt，和 out.txt 一致就打印一行 AC
-algo check [目录]          编译 + 静态检查 + 写法检查 + 对拍；没问题不输出
-    --timeout <秒>         跑样例的超时（默认 5 秒，防死循环）
+algo check [目录]          编译 + 静态检查 + 写法检查；没问题不输出（不跑样例）
+    --timeout <秒>         跑样例的超时（默认 5 秒，防死循环；algo run 用）
 algo raw|debug|build|clean [目录]
 algo path [目录] [目标]    只打印路径；目标：code/cpp（solution.cpp）·
                            solution/answer（solution.txt）· problem · in · out ·
@@ -158,19 +158,22 @@ algo setup --init          额外生成 ~/.config/micro/init.lua
 algo doctor                自检
 ```
 
-## `algo check` 检查什么
+## `algo check`（= `make check` / `make c`）检查什么
 
-`algo check`（以及 `make check`）做四件事：
+做三件事，**不跑样例**：
 
 1. **编译**：不通就把编译器错误原样打出来（含语法错误），退出码 1
 2. **静态检查**：用比日常编译更严的警告集（`-Wshadow -Wsign-compare -Wuninitialized -Wvla
    -Wparentheses -Wreturn-type -Wunused -Wswitch -Wfloat-equal`）再过一遍 `-fsyntax-only`
-3. **写法检查**（ACM 常见坑）：`<bits/stdc++.h>`、`endl`、`cin.eof()` 当循环条件、
+3. **写法检查**（ACM 常见坑）：`endl`、`cin.eof()` 当循环条件、
    `fflush(stdin)`、`scanf/printf` 与 `cin/cout` 混用、用了 iostream 却没关同步
-4. **样例对拍**：用 `in.txt` 当标准输入跑一遍（默认 5 秒超时，防死循环），和 `out.txt` 逐行比
+
+**跑样例是 `algo run`（= `make run` / `make r`）的事**：编译 + 用 `in.txt` 跑一遍
+（默认 5 秒超时，防死循环）+ 和 `out.txt` 逐行比。所以分工是：`make c` 只管「写得对不对」，
+`make r` 才管「跑出来对不对」。
 
 **静默是设计目标**：一切正常时一个字符都不打印，只看退出码（0 = 通过）。
-有警告或对拍不过才输出，例如：
+有警告才输出，例如：
 
 ```console
 $ make check
@@ -178,7 +181,7 @@ $ make check
   solution.cpp:13 endl 会强制 flush，数据量大时明显变慢，换成 '\\n'
 ```
 
-写法提示只提醒、不影响退出码；编译失败 / WA / 超时才会以非 0 退出。
+写法提示只提醒、不影响退出码；`algo check` 只有编译失败才非 0 退出，样例 WA / 超时由 `algo run` 报。
 
 ## 题目目录结构
 

@@ -39,10 +39,10 @@ ${c.bold("看 / 改文件")}
 
 ${c.bold("刷题")}
   algo list                       列出当前目录下的题目（题面/思路/板 进度）
-  algo run [目录]                 编译 + 跑 in.txt，和 out.txt 一致就打印一行 AC
+  algo run [目录]                 编译 + 跑 in.txt，和 out.txt 一致就打印一行 AC（跑样例）
   algo raw [目录]                 编译运行（手动输入）
-  algo check [目录]               编译 + 静态检查 + 写法检查 + 对拍；没问题不输出任何内容
-      --timeout <秒>              跑样例的超时（默认 5 秒，防死循环，run / check 都认）
+  algo check [目录]               编译 + 静态检查 + 写法检查；没问题不输出任何内容（不跑样例）
+      --timeout <秒>              跑样例的超时（默认 5 秒，防死循环；algo run 用）
   algo debug [目录]               带 ASan/UBSan 编译运行，抓越界
   algo build [目录]               只编译（唯一会留下二进制的目标）
   algo clean [目录]               清掉编译产物
@@ -157,7 +157,7 @@ export function main(argv: string[]): void {
       return;
     case "check": {
       const dir = resolveProblemDir(positionals[1]);
-      runCheck(dir, { timeoutSec: timeoutOf(flags) });
+      runCheck(dir);
       return;
     }
     case "debug":
