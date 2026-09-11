@@ -1,5 +1,6 @@
 #!/bin/sh
 # algo 冒烟测试：建题 → 编译/运行 → 对拍 → 清理校验 → add（json/局部更新）→ 白板 → 列表进度
+#              → setup（micro profile + 自带插件 autocopy，含 pty 端到端复制验证）
 # 用法：sh scripts/smoke-test.sh [dist/algo.js 路径]
 set -eu
 
@@ -371,12 +372,32 @@ MICRO_CONFIG_HOME="$PWD/homecfg" "$BUN" "$CLI" setup > /dev/null
 grep -q '"softwrap": true' homecfg/settings.json || fail "MICRO_CONFIG_HOME 没被 algo setup 认到"
 echo "  ✓ profile 内容正确，且保留用户自定义绑定"
 
+echo "→ 自带插件 autocopy（划词即复制）：装齐、幂等、被改坏了能恢复"
+[ -e fakecfg/plug/autocopy/autocopy.lua ] || fail "setup 没装 plug/autocopy/autocopy.lua"
+[ -e fakecfg/plug/autocopy/help/autocopy.md ] || fail "setup 没装插件帮助文件（> help autocopy）"
+grep -q "onMouseRelease" fakecfg/plug/autocopy/autocopy.lua || fail "插件里没有 onMouseRelease 回调"
+printf -- '-- 被用户改坏了\n' > fakecfg/plug/autocopy/autocopy.lua
+MICRO_CONFIG_DIR="$PWD/fakecfg" "$BUN" "$CLI" setup > /dev/null
+grep -q "onMouseRelease" fakecfg/plug/autocopy/autocopy.lua || fail "setup 没把插件恢复成 algo 的版本"
+ls fakecfg/plug/autocopy/autocopy.lua.bak-* > /dev/null 2>&1 || fail "覆盖用户改过的插件前没有备份"
+MICRO_CONFIG_DIR="$PWD/fakecfg" "$BUN" "$CLI" setup | grep -q "已是最新" || fail "插件安装不幂等"
+echo "  ✓ 插件装齐、幂等、覆盖前先备份"
+
+echo "→ autocopy 端到端：真 micro + pty + 真鼠标事件 + 系统剪贴板"
+if command -v micro > /dev/null 2>&1 && command -v python3 > /dev/null 2>&1 && command -v pbpaste > /dev/null 2>&1; then
+    python3 "$ROOT/scripts/micro-autocopy-test.py" --config-dir "$PWD/fakecfg" || fail "autocopy 端到端测试没过"
+    echo "  ✓ 拖选 / 双击都写进了系统剪贴板，没选区时不动剪贴板"
+else
+    echo "  - 跳过（缺 micro / python3 / pbpaste）"
+fi
+
 echo "→ algo setup --dry-run（只读，不写配置）"
 rm -rf drycfg
 mkdir -p drycfg
 MICRO_CONFIG_DIR="$PWD/drycfg" "$BUN" "$CLI" setup --dry-run > /dev/null
 [ -e drycfg/settings.json ] && fail "--dry-run 不该写 settings.json"
 [ -e drycfg/bindings.json ] && fail "--dry-run 不该写 bindings.json"
+[ -e drycfg/plug/autocopy/autocopy.lua ] && fail "--dry-run 不该写插件文件"
 echo "  ✓ dry-run 只打印不落盘"
 
 echo "✓ 冒烟测试全部通过"

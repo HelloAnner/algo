@@ -17,7 +17,8 @@ make install          # 打包 CLI + 装到 ~/.local/bin + 合并 micro 配置
 
 1. `bun build` 把 TS 打成 `cli/dist/algo.js`
 2. 写一个轻量启动器 `~/.local/bin/algo`（`exec bun .../dist/algo.js`），并把万能头兼容头装到 `~/.local/include/bits/stdc++.h`
-3. 运行 `algo setup`，把 C++ 刷题 profile 合并进 `~/.config/micro/settings.json` 和 `bindings.json`（先备份再合并）
+3. 运行 `algo setup`，把 C++ 刷题 profile 合并进 `~/.config/micro/settings.json` 和 `bindings.json`（先备份再合并），
+   并把自带插件 `autocopy` 装到 `~/.config/micro/plug/autocopy/`（鼠标划词松手即复制到系统剪贴板）
 4. 运行 `algo setup --shell`，把「建完题自动 cd」的函数写进 `~/.zshrc`（先备份再追加）
 
 其它目标：
@@ -57,6 +58,7 @@ make help             # 列出全部目标
 
 # micro 里：Alt-r 跑样例 · Alt-t 对拍 · Alt-i / Alt-o 开 in.txt / out.txt（algo setup --init）
 # micro 里：写到一半按 Tab 补成前面写过的词，连按换候选、Shift-Tab 往回调（内核自带，无需插件，见 micro.md §6）
+#          鼠标划词松手即复制到系统剪贴板（自带插件 autocopy，algo setup 安装，见 micro.md §5.5）
 # 目标别名：code/solution（cpp 与 txt 不一样）· problem · in · out · board
 ```
 
@@ -153,6 +155,7 @@ algo path [目录] [目标]    只打印路径；目标：code/cpp（solution.cp
 algo remake [目录]         按当前模板重新生成题目里的 Makefile（改了 assets/make.tmpl 之后
                            用它刷老题目；目录是题目就刷它，否则刷它下面所有题目）
 algo setup [--dry-run]     合并 micro 配置（settings.json + bindings.json）
+                           + 装自带插件 ~/.config/micro/plug/autocopy（鼠标划词即复制）
 algo setup --shell         装 shell 集成（algo new 之后自动 cd）
 algo setup --init          额外生成 ~/.config/micro/init.lua
                            （Alt-r 跑样例 / Alt-t 对拍 / Alt-i·Alt-o 开样例；存在则不覆盖）
@@ -229,9 +232,10 @@ cli/
 │   ├── micro.ts      # micro profile 定义与合并
 │   ├── doctor.ts     # 环境自检
 │   └── util.ts       # 颜色 / 文件 / 进程小工具
-├── scripts/          # smoke-test.sh
+├── scripts/          # smoke-test.sh（冒烟测试）· micro-autocopy-test.py（插件 pty 端到端测试）
 └── assets/           # 模板：solution.cpp / make.tmpl / problem.txt.tmpl / solution.txt.tmpl /
                       #        whiteboard.excalidraw.tmpl / init.lua / include/bits/stdc++.h（万能头兼容头）
+                      #        plug/autocopy/（自带 micro 插件：划词即复制）
 ```
 
 micro 编辑器（插件清单、配置逐项解释、为什么关掉下划线报错、如何还原）见 **[micro.md](./micro.md)**。

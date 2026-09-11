@@ -67,7 +67,8 @@ algo/
 └── cli/                # 全部实现
     ├── src/            # index(分发) / flags / add / scaffold / list / run / check / cpp / targets / open / shell / micro / doctor / util
     ├── assets/         # 模板：solution.cpp / make.tmpl / problem.txt.tmpl / solution.txt.tmpl / whiteboard.excalidraw.tmpl / init.lua
-    ├── scripts/        # smoke-test.sh
+    │                   #       + plug/autocopy/（自带 micro 插件：鼠标划词松手即复制到系统剪贴板）
+    ├── scripts/        # smoke-test.sh（含 pty 端到端跑真 micro）+ micro-autocopy-test.py
     ├── micro.md        # micro 编辑器插件与配置详解 —— micro 相关改动的唯一依据
     └── README.md       # 安装与用法
 ```
@@ -165,6 +166,7 @@ make doctor                   # 环境自检
   注意 micro 的 `autosave` 是**秒数**不是布尔（写 `true` 会被它当成 8 秒），profile 里显式写成 `autosave: 2`；自动保存本身不弹提示，是刻意保持静默的。
   `Tab` / `Shift-Tab` 的同类词补全（`Autocomplete|IndentSelection|InsertTab`）是 micro **内核默认**、不是插件，`BINDINGS` 里**故意不写**（写了会钉死用户自己的 `Tab`）；`algo doctor` 会检查它没被覆盖，说明见 `cli/micro.md` §6。
   `bindings.json` 只写「micro 默认不是这样」的 6 个键（Ctrl-P 命令模式、Ctrl-B/L 分屏、F12 切分屏、Alt-n 新建文件、Alt-d 复制行），其余保持 micro 默认；`init.lua`（`algo setup --init`）提供 Alt-r 跑样例 / Alt-t 对拍 / Alt-i·Alt-o 开样例，命令必须写在 `init()` 里。
+  `algo setup` 还把自带插件 `cli/assets/plug/autocopy/` 装到 `~/.config/micro/plug/autocopy/`（`PLUGIN_FILES`）：鼠标划词松手 → 写系统剪贴板。它存在的理由：micro 内置的 `MouseRelease` 只写 primary register，macOS 没有 primary，等于没复制；插件改调 `bp:Copy()`（和 Ctrl-C 同一条通道）。插件文件归 algo 管——内容一致就跳过，被改过先备份成 `.bak-<时间戳>` 再覆盖；用户想关掉就在 settings.json 写 `"autocopy": false`。
 - **不要给 micro 装 LSP，也不要把 `linter` 打开**——「没有波浪线」是刻意设计，不是待修的缺陷。要加诊断能力，先在 `cli/micro.md` 里写清取舍。
 - **run / check 由 CLI 实现，分工是刻意的**：`cli/src/cpp.ts` 负责编译与运行（临时二进制 `.algo_bin`，任何路径下都必删）。
   `algo run`（`make r`）= 编译 + 跑 `in.txt` + 和 `out.txt` 对拍，正常只打印一行 `AC`，WA / 超时非 0 退出；
@@ -188,6 +190,7 @@ make doctor                   # 环境自检
 - micro 启动顺序：`LoadAllPlugins()` → `action.InitCommands()` → `preinit()` → `init()`。因此 `init.lua` 里调用 `config.MakeCommand` **必须写在 `init()` 内**，写在顶层会报 `assignment to entry in nil map`。
 - 验证 micro 行为可以用 `script -q /dev/null micro ...` 开一个 pty（本机没有 `timeout` 命令）；用假的 `g++` 包装脚本记录调用，是确认 linter 开关生效最直接的办法。
   更彻底的办法是用 Python 的 `pty.fork()` 驱动真 micro（发 `\x1br` 这类按键），只看「效果」（文件内容、是否退出），别去 grep 屏幕输出——micro 是增量重绘，原始流里的文本是残缺的。
+  现成例子：`cli/scripts/micro-autocopy-test.py`（`make -C cli test` 会跑）用 SGR 鼠标序列做拖选/双击，直接断言系统剪贴板（`pbpaste`）里出现了选中的文本。
 - **Bun 的 `process.exit()` 不会执行 `finally`**，所以「跑完删 `.algo_bin`」不能只靠 `try/finally`（`run` 成功时就是这么退出的，曾经因此漏删）。`cli/src/cpp.ts` 里额外挂了 `process.on("exit")` 兜底。
 - PATH 上有**另一个同名 `algo`**（`~/.bun/bin/algo`，另一个 LeetCode 复习项目，编译好的二进制），排在 `~/.local/bin/algo` 前面 —— 这条真实踩过：题目里 `make r` 打出的是那个工具的帮助。现在三处兜住了：
   1. 题目 Makefile：`ALGO ?= $(shell [ -x "$$HOME/.local/bin/algo" ] && echo ... || command -v algo)`，即**优先本仓库装的绝对路径**（`make ALGO=... r` 可覆盖，`make help` 最后一行会打印实际用的是哪个）；

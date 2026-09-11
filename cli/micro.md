@@ -11,8 +11,9 @@
 
 | 你想干的事 | 命令 |
 |---|---|
-| 安装 / 合并这套 C++ 刷题配置 | `algo setup`（或 `make -C cli setup`）：settings.json + bindings.json |
+| 安装 / 合并这套 C++ 刷题配置 | `algo setup`（或 `make -C cli setup`）：settings.json + bindings.json + 自带插件 `plug/autocopy/` |
 | 只看改什么、不落盘 | `algo setup --dry-run` |
+| 划词自动复制到系统剪贴板 | 不用另外装：`algo setup` 会装自带插件 `autocopy`（§5.5） |
 | 再加上 `init.lua`（Alt-r 跑样例、Alt-t 对拍、Alt-i/Alt-o 开样例） | `algo setup --init`（已存在则绝不覆盖） |
 | 题目目录里看题面 / 解法 / 跑样例 / 对拍 | `make p` / `make s` / `make r` / `make c` |
 | 看当前生效状态 | `algo doctor` |
@@ -114,7 +115,7 @@ end
 
 ## 3. `algo setup` 做了什么
 
-它做两件事：**把下面这些键 merge 进 `~/.config/micro/settings.json`，再把 §3.3 那几个键 merge 进 `~/.config/micro/bindings.json`**。
+它做三件事：**把下面这些键 merge 进 `~/.config/micro/settings.json`**、**把 §3.3 那几个键 merge 进 `~/.config/micro/bindings.json`**，以及**把自带插件写进 `~/.config/micro/plug/autocopy/`**（§3.5）。
 
 - 其它键（你自己配的）原样保留；
 - 只有内容真的发生变化时才写入，写之前先备份成 `<文件名>.bak-YYYYMMDD-HHMMSS`；
@@ -196,6 +197,18 @@ micro 的 `autosave` **不是布尔开关，而是「秒数」**：值 `N > 0` �
 - 备份文件：`~/.config/micro/settings.json.bak-<时间戳>`、`bindings.json.bak-<时间戳>`；拷回去就完全还原。
 - 只想撤销某一项：把该键删掉即可（比如把 `"linter": true` 改回去，报错下划线就回来了；把 `"Ctrl-B"` 那行删掉，`Ctrl-B` 就恢复成默认的 `ShellMode`）。
 - `algo setup --dry-run` 只打印 `+ 新增` / `~ 修改`，不写文件。
+
+### 3.5 自带插件（写进 `plug/autocopy/`）
+
+| 文件 | 作用 |
+|---|---|
+| `plug/autocopy/autocopy.lua` | 插件本体：鼠标划词松手 → 写系统剪贴板（§5.5） |
+| `plug/autocopy/help/autocopy.md` | 编辑器里 `> help autocopy` 打开的说明 |
+
+- 这两个文件**归 algo 管**（它们是 algo 的产物，不是你的配置）：内容和 `cli/assets/plug/autocopy/` 一致就跳过；
+  不一致（你手改过、或 algo 升级了插件）会先备份成 `<文件>.bak-<时间戳>` 再覆盖。
+- 想改行为别直接改这两个文件（下次 `algo setup` 会盖回去）：改 `cli/assets/plug/autocopy/`，或自己另起一个插件目录。
+- 关掉：`settings.json` 里写 `"autocopy": false`；卸载：`rm -rf ~/.config/micro/plug/autocopy`（再 `algo setup` 会装回来）。
 
 ---
 
@@ -301,7 +314,7 @@ autoclose: false  → 文件内容: ([
 
 ### 5.2 第三方插件（可选，默认一个都不装）
 
-`algo setup` **不装任何第三方插件**，`~/.config/micro/plug/` 默认不存在——内置的 7 个（§5.1）已经覆盖了刷题要用的全部功能。
+`algo setup` **不装任何第三方插件**：`~/.config/micro/plug/` 里只有 algo 自带的 `autocopy`（§5.5），别的插件一个都不装——内置的 7 个（§5.1）加上它已经覆盖了刷题要用的全部功能。
 
 想加别的能力就自己装（`micro -plugin install <名字>`，名字用 `micro -plugin available` 查）：
 
@@ -365,6 +378,39 @@ micro 默认按键大全：编辑器内 `> help defaultkeys`；当前实际绑�
 
 ---
 
+### 5.5 algo 自带插件：autocopy（划词即复制）
+
+`algo setup` 会把 `cli/assets/plug/autocopy/` 装到 `~/.config/micro/plug/autocopy/`，
+micro 启动时自动加载（`micro -plugin list` 里能看到 `autocopy (1.0.0)`）。
+
+**它做什么**：鼠标选中文本（拖选 / 双击选词 / 三击选行）后**松开左键**，选区自动写进
+**系统剪贴板**，等同于再按一次 `Ctrl-C`（状态栏会闪一下 `Copied selection`）。
+
+**为什么需要它**：micro 内置的 `MouseRelease`（`internal/action/actions.go`）只把选区写进
+primary register（X11 的主选区），而 macOS 的剪贴板后端是 clipper → `pbcopy`，没有 primary，
+所以划完词系统剪贴板不会变。`MouseRelease` 是插件能接的回调，于是这个插件在松开左键时改调
+`bp:Copy()` —— 和 `Ctrl-C` 完全相同的那条通道，因此 `settings.json` 里的 `clipboard` 设置
+（`external` / `terminal` / `internal`）照常生效，ssh 里用 OSC 52 也照样能复制。
+
+**边界**（都是刻意的）：
+
+| 情况 | 行为 |
+|---|---|
+| 拖选 / 双击选词 / 三击选行 | 松手即复制 |
+| 键盘选区（`Shift-方向键`、`Ctrl-A`） | **不**自动复制（免得 `Ctrl-A` 把整个文件灌进剪贴板），要复制按 `Ctrl-C` |
+| 连着复制同一段文本 | 只写一次剪贴板（双击/三击会连发多次松开事件） |
+| 单击（没有选区） | 不动剪贴板 |
+| `"mouse": false` | 没有鼠标事件，插件静默 |
+
+**怎么验证**：打开任意文件拖选一段字 → 松手 → 到别处 `Ctrl-V`；`make -C cli test` 里还有一条
+pty 端到端测试（真 micro + 真鼠标事件 + 真系统剪贴板，脚本 `cli/scripts/micro-autocopy-test.py`）。
+
+**关掉 / 卸载**：`settings.json` 写 `"autocopy": false`（`Ctrl-E` → `reload`）；
+或 `rm -rf ~/.config/micro/plug/autocopy`（下次 `algo setup` 会装回来）。
+插件自己的帮助也随包安装：编辑器里 `> help autocopy`。
+
+---
+
 ## 6. C++ 编辑体验细节
 
 - **文件类型识别**：`.cpp/.cc/.cxx/.h/.hpp` → `ft:c++`（状态栏可见）。语法文件是内置的 `runtime/syntax/cpp.yaml`，可以拷到 `~/.config/micro/syntax/cpp.yaml` 覆盖。
@@ -394,6 +440,7 @@ micro **内核自带**「缓冲区同类词补全」（`internal/buffer/autocomp
 按 3 次 Tab → 回到 res                 # 最后一项是刚输入的前缀
 状态栏候选条 → result0 result1 res     # 当前候选反色
 ```
+
 
 ### 与刷题工作流的配合
 
@@ -480,6 +527,7 @@ bp:OpenBuffer(buf)   -- 文件不存在时 NewBufferFromFile 会返回一个空 
 | `Alt-r` 报找不到 Makefile | 当前文件不在题目目录里 | 打开某个题目的 `solution.cpp` 再按（命令是 `make -C <文件所在目录>`） |
 | `Ctrl-P` 不是命令模式了 | `bindings.json` 里那一行被改掉/删了 | `algo setup` 重新合并（不会动你其它键） |
 | 分屏快捷键不习惯 | `Ctrl-B`/`Ctrl-L` 盖掉了默认的 `ShellMode` / `goto` | 删掉 `bindings.json` 里对应那行，或改绑别的键 |
+| 鼠标划词没有进系统剪贴板 | 插件没装（`algo doctor` 看「插件 autocopy」）、被 `"autocopy": false` 关了，或 `"mouse": false` | `algo setup` 重装插件；确认 `settings.json` 里没有关掉它俩 |
 
 ---
 
@@ -489,6 +537,7 @@ bp:OpenBuffer(buf)   -- 文件不存在时 NewBufferFromFile 会返回一个空 
 - **只撤掉某项**：编辑对应文件删键（例如删掉 `"linter": false` 就恢复保存时检查；删掉 `"Ctrl-B"` 那行就恢复默认的 `ShellMode`）；
 - **补全失灵**：`bindings.json` 里把 `Tab` 改掉了 → 删掉那一行，micro 默认就是 `Autocomplete|IndentSelection|InsertTab`（见 §6）；
 - **撤掉 init.lua**：`rm ~/.config/micro/init.lua`（如果里面还有你自己的东西，只删 `algo-run`/`algo-check`/`algo-in`/`algo-out` 和 `init` 相关片段）；
+- **撤掉自带插件 autocopy**：`rm -rf ~/.config/micro/plug/autocopy`（再 `algo setup` 会装回来；只想临时关掉就写 `"autocopy": false`）；
 - **卸载 CLI**：`make -C cli uninstall`（只删 `~/.local/bin/algo`，不动 micro 配置）。
 
 ---

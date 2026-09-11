@@ -1,6 +1,8 @@
 import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import autocopyHelp from "../assets/plug/autocopy/help/autocopy.md" with { type: "text" };
+import autocopyLua from "../assets/plug/autocopy/autocopy.lua" with { type: "text" };
 import initLuaTpl from "../assets/init.lua" with { type: "text" };
 import { c, hint, info, ok, readText, timestamp, versionOf, warn, which, writeText } from "./util";
 
@@ -68,6 +70,22 @@ export const BINDINGS: Record<string, string> = {
   // 复制当前行（默认只有 Ctrl-D）
   "Alt-d": "DuplicateLine",
 };
+
+/**
+ * algo 自带的 micro 插件：`algo setup` 把它们写进 ~/.config/micro/plug/<插件名>/。
+ * 只放「micro 本身没有、刷题时又要用」的能力（目前就一个 autocopy：鼠标划词即复制到系统剪贴板）。
+ * 这些文件归 algo 管：内容一致就跳过，被改过则先备份再覆盖（见 installPluginFile）。
+ * 行为说明以 cli/micro.md 为准，改插件时两边一起改。
+ */
+export const PLUGIN_FILES: { path: string; content: string }[] = [
+  { path: join("plug", "autocopy", "autocopy.lua"), content: autocopyLua },
+  { path: join("plug", "autocopy", "help", "autocopy.md"), content: autocopyHelp },
+];
+
+/** 插件的安装目录（给 doctor / 测试用） */
+export function microPluginDir(): string {
+  return join(microConfigDir(), "plug", "autocopy");
+}
 
 /**
  * micro 的配置目录。
@@ -216,12 +234,40 @@ export function installInitLua(opts: SetupOptions = {}): void {
   hint("新增快捷键：Alt-r 跑样例 · Alt-t 对拍 · Alt-i / Alt-o 打开 in.txt / out.txt");
 }
 
+/**
+ * 装一个 algo 自带的 micro 插件文件（见 PLUGIN_FILES）。
+ * 内容一致 → 什么都不做；不一致 → 备份成 <文件>.bak-<时间戳> 再覆盖。
+ * 插件文件是 algo 的产物（不是用户的配置），所以这里不 merge，而是整体覆盖。
+ */
+function installPluginFile(
+  file: { path: string; content: string },
+  opts: SetupOptions,
+): "same" | "written" | "planned" {
+  const target = join(microConfigDir(), file.path);
+  const raw = readText(target);
+  if (raw === file.content) return "same";
+
+  if (opts.dryRun) {
+    info(`将写入 ${target}${raw === null ? "" : "（已存在，会被覆盖，原文件先备份）"}`);
+    return "planned";
+  }
+
+  if (raw !== null) {
+    const backup = `${target}.bak-${timestamp()}`;
+    copyFileSync(target, backup);
+    warn(`${target} 内容有变，原文件已备份到 ${backup}`);
+  }
+  writeText(target, file.content);
+  ok(`已写入 ${target}`);
+  return "written";
+}
+
 export interface SetupOptions {
   dryRun?: boolean;
   force?: boolean;
 }
 
-/** 安装 / 合并 micro 的 C++ 刷题配置。幂等，会先备份原文件。 */
+/** 安装 / 合并 micro 的 C++ 刷题配置（含自带插件）。幂等，会先备份原文件。 */
 export function installMicroProfile(opts: SetupOptions = {}): void {
   const microPath = which("micro");
   if (!microPath) {
@@ -232,6 +278,8 @@ export function installMicroProfile(opts: SetupOptions = {}): void {
   const results = [
     installJsonProfile({ label: "全局选项", path: microSettingsPath(), profile: PROFILE }, opts),
     installJsonProfile({ label: "按键绑定", path: microBindingsPath(), profile: BINDINGS }, opts),
+    // 自带插件（autocopy）：跟 settings/bindings 一样幂等，装进 plug/<名字>/
+    ...PLUGIN_FILES.map((f) => installPluginFile(f, opts)),
   ];
 
   if (results.every((r) => r === "same")) {
@@ -246,6 +294,7 @@ export function installMicroProfile(opts: SetupOptions = {}): void {
 function reportTail(microPath: string | null): void {
   console.log();
   if (microPath) hint("micro 若开着，按 Ctrl+E 执行 reload 即可生效（或重开）");
+  hint("自带插件 autocopy：鼠标划词（拖选 / 双击 / 三击）松手即复制到系统剪贴板");
   if (!existsSync(initLuaPath()))
     hint("想要 Alt-r 一键 make run / Alt-t 对拍 / Alt-i·Alt-o 开样例：algo setup --init");
   hint("检查当前状态：algo doctor");
@@ -267,6 +316,9 @@ export interface MicroStatus {
   /** Tab 是否仍走 micro 内核的同类词补全（bindings.json 没把 Tab 覆盖成别的动作） */
   tabAutocompleteOn: boolean;
   initLuaExists: boolean;
+  /** 自带插件（autocopy）装在哪、装没装齐 */
+  pluginDir: string;
+  pluginInstalled: boolean;
 }
 
 function readJson(path: string): Record<string, unknown> {
@@ -301,6 +353,8 @@ export function microStatus(): MicroStatus {
     bindingsTotal: Object.keys(BINDINGS).length,
     tabAutocompleteOn,
     initLuaExists: existsSync(initLuaPath()),
+    pluginDir: microPluginDir(),
+    pluginInstalled: PLUGIN_FILES.every((f) => readText(join(microConfigDir(), f.path)) === f.content),
   };
 }
 

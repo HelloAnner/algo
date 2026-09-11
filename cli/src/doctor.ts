@@ -92,6 +92,13 @@ export function doctor(): void {
       : "未安装 → algo setup --init",
     st.initLuaExists ? "ok" : "warn",
   );
+  check(
+    "插件 autocopy",
+    st.pluginInstalled
+      ? "已安装（鼠标划词松手即复制到系统剪贴板）"
+      : `未安装 → algo setup（或内容被改过：${st.pluginDir}）`,
+    st.pluginInstalled ? "ok" : "warn",
+  );
 
   console.log();
   console.log(c.bold("shell 集成"));
