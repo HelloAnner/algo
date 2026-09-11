@@ -361,6 +361,9 @@ grep -q '"wordwrap": true' fakecfg/settings.json || fail "profile 里没有 word
 grep -q '"Ctrl-P": "CommandMode"' fakecfg/bindings.json || fail "bindings.json 里没有 Ctrl-P 命令模式"
 grep -q '"Alt-n": "command-edit:open "' fakecfg/bindings.json || fail "bindings.json 里没有 Alt-n 新建文件"
 grep -q '"Ctrl-G"' fakecfg/bindings.json || fail "setup 把用户自己的绑定冲掉了"
+# Tab / Shift-Tab 是 micro 内核的同类词补全，algo 不该写进 bindings.json（写了会钉死用户自己的 Tab）
+if grep -q '"Tab"' fakecfg/bindings.json; then fail "setup 不该写 Tab（micro 默认的同类词补全靠它）"; fi
+MICRO_CONFIG_DIR="$PWD/fakecfg" "$BUN" "$CLI" doctor | grep -q "Tab 单词补全" || fail "doctor 没有检查 Tab 单词补全"
 MICRO_CONFIG_DIR="$PWD/fakecfg" "$BUN" "$CLI" setup | grep -q "已是最新" || fail "micro 配置重复安装不幂等"
 # micro 自己认的是 MICRO_CONFIG_HOME，algo 也要跟着走
 rm -rf homecfg && mkdir -p homecfg

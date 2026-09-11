@@ -69,6 +69,13 @@ export function doctor(): void {
   check("settings.json", st.settingsExists ? st.settingsPath : "不存在 → algo setup", st.settingsExists ? "ok" : "warn");
   check("linter = false", st.linterOff ? "已关闭（无下划线报错）" : "仍是开启 → algo setup", st.linterOff ? "ok" : "warn");
   check("autoclose", st.autocloseOn ? "已开启（括号/引号自动补全）" : "被关闭了", st.autocloseOn ? "ok" : "warn");
+  check(
+    "Tab 单词补全",
+    st.tabAutocompleteOn
+      ? "已开启（Tab 补全同类词 · 连按循环候选 · Shift-Tab 往回调）"
+      : "被 bindings.json 覆盖了 → 删掉 Tab 那一行（micro 默认 Autocomplete|IndentSelection|InsertTab）",
+    st.tabAutocompleteOn ? "ok" : "warn",
+  );
   check("syntax", st.syntaxOn ? "语法高亮开启" : "语法高亮关闭", st.syntaxOn ? "ok" : "warn");
   const bindingsOk = st.bindingsExists && st.bindingsApplied === st.bindingsTotal;
   check(

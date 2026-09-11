@@ -56,6 +56,7 @@ make w                # 打开白板 whiteboard.excalidraw
 make help             # 列出全部目标
 
 # micro 里：Alt-r 跑样例 · Alt-t 对拍 · Alt-i / Alt-o 开 in.txt / out.txt（algo setup --init）
+# micro 里：写到一半按 Tab 补成前面写过的词，连按换候选、Shift-Tab 往回调（内核自带，无需插件，见 micro.md §6）
 # 目标别名：code/solution（cpp 与 txt 不一样）· problem · in · out · board
 ```
 

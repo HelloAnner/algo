@@ -11,7 +11,7 @@
 改代码时**不要破坏**的三件事：
 
 1. **一条命令建题**：`algo two-sum` 直接得到一个可编译、可对拍的最小目录。
-2. **编辑体验清爽**：micro 保留语法高亮和括号/引号自动补全，但**不要任何波浪线式报错**（详见 `cli/micro.md`，那里解释了原理与还原方法）。
+2. **编辑体验清爽**：micro 保留语法高亮、括号/引号自动补全和 Tab 同类词补全（写到一半补成前面写过的词），但**不要任何波浪线式报错**（详见 `cli/micro.md`，那里解释了原理与还原方法）。
 3. **零运行时依赖**：CLI 只用 Bun + Node 内置模块，不引入第三方 npm 包。
 
 ---
@@ -163,6 +163,7 @@ make doctor                   # 环境自检
 
 - **micro 配置**：只做 **merge**，绝不覆盖用户已有的键；写之前备份成 `<文件>.bak-<时间戳>`；`init.lua` 已存在则不动。逻辑在 `cli/src/micro.ts`（`PROFILE` 管 settings.json、`BINDINGS` 管 bindings.json），但**行为说明以 `cli/micro.md` 为准**，两边必须同步。
   注意 micro 的 `autosave` 是**秒数**不是布尔（写 `true` 会被它当成 8 秒），profile 里显式写成 `autosave: 2`；自动保存本身不弹提示，是刻意保持静默的。
+  `Tab` / `Shift-Tab` 的同类词补全（`Autocomplete|IndentSelection|InsertTab`）是 micro **内核默认**、不是插件，`BINDINGS` 里**故意不写**（写了会钉死用户自己的 `Tab`）；`algo doctor` 会检查它没被覆盖，说明见 `cli/micro.md` §6。
   `bindings.json` 只写「micro 默认不是这样」的 6 个键（Ctrl-P 命令模式、Ctrl-B/L 分屏、F12 切分屏、Alt-n 新建文件、Alt-d 复制行），其余保持 micro 默认；`init.lua`（`algo setup --init`）提供 Alt-r 跑样例 / Alt-t 对拍 / Alt-i·Alt-o 开样例，命令必须写在 `init()` 里。
 - **不要给 micro 装 LSP，也不要把 `linter` 打开**——「没有波浪线」是刻意设计，不是待修的缺陷。要加诊断能力，先在 `cli/micro.md` 里写清取舍。
 - **run / check 由 CLI 实现，分工是刻意的**：`cli/src/cpp.ts` 负责编译与运行（临时二进制 `.algo_bin`，任何路径下都必删）。

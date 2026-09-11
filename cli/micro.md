@@ -19,8 +19,9 @@
 | 编辑器里重载配置 | `Ctrl+E` 然后执行 `reload` |
 | 看所有选项（含默认值） | 终端 `micro -options` ，或编辑器内 `> help options` |
 | 看当前按键绑定 | 编辑器内按 `Alt-g` |
+| 写到一半补全成前面写过的词 | 按 `Tab`（连按换候选、`Shift-Tab` 往回调，候选列表在状态栏；micro 内置，不用配，见 §6） |
 
-这套配置的目标只有一句话：**保留语法高亮和括号/引号自动补全，但不要任何波浪线/下划线式的报错提示。**
+这套配置的目标只有一句话：**保留语法高亮、括号/引号自动补全和 Tab 同类词补全，但不要任何波浪线/下划线式的报错提示。**
 
 ---
 
@@ -268,7 +269,8 @@ func (p *Plugin) IsLoaded() bool {
 | 匹配括号高亮 | ✅ | `matchbrace + matchbracestyle: underline` |
 | 括号/引号自动补全 | ✅ | 内置 `autoclose` 插件 |
 | 错误下划线 / 诊断 | ❌ 已关 | `linter: false`，且没装 `lsp` |
-| 自动补全提示弹窗 | ❌ | micro 没有 LSP；不装插件就没有弹窗（这正是「清爽」的来源） |
+| 单词补全（Tab，缓冲区同类词） | ✅ | **micro 内核自带**（`BufferComplete`），候选列在状态栏、`Tab`/`Shift-Tab` 循环，无需插件，见 §6 |
+| 语义补全 / 悬浮弹窗 | ❌ | micro 没有 LSP；不装插件就没有弹窗（这正是「清爽」的来源） |
 
 **autoclose 实测**（在 micro 里输入 `(` 和 `[`，然后 Ctrl+S 保存，再看文件内容）：
 
@@ -355,7 +357,9 @@ micro -plugin remove <名字>     # 卸载
 | `Alt-t` | 保存 + `make check`：编译 + 静态检查 + 写法检查 + 对拍，**没问题什么都不输出** |
 | `Alt-i` / `Alt-o` | 打开同目录的 `in.txt` / `out.txt`（不存在就开个空 buffer，保存即创建） |
 
-micro 默认就有、**不用**重复写的：`Ctrl-K`/`Ctrl-X` 剪行、`Ctrl-D` 复制行、`Alt-↑`/`Alt-↓` 上下移动行、`Ctrl-S`/`F2` 保存、`Ctrl-Q`/`F4` 退出、`Ctrl-W` 切分屏、`Ctrl-/`（`CtrlUnderscore`）注释、`Tab` 缩进。
+micro 默认就有、**不用**重复写的：`Ctrl-K`/`Ctrl-X` 剪行、`Ctrl-D` 复制行、`Alt-↑`/`Alt-↓` 上下移动行、`Ctrl-S`/`F2` 保存、`Ctrl-Q`/`F4` 退出、`Ctrl-W` 切分屏、`Ctrl-/`（`CtrlUnderscore`）注释、`Tab`（先试同类词补全，没有候选才缩进）、`Shift-Tab`（往回调候选，否则反缩进）。
+
+> `Tab` / `Shift-Tab` 绑的是 micro 默认的 `Autocomplete|IndentSelection|InsertTab` 和 `CycleAutocompleteBack|OutdentSelection|OutdentLine`，`algo setup` **故意不写这两个键**（写进去等于把用户自己的 `Tab` 钉死）；`algo doctor` 会检查 `Tab` 有没有被覆盖。补全的触发条件与实测见 §6。
 
 micro 默认按键大全：编辑器内 `> help defaultkeys`；当前实际绑定：按 **`Alt-g`**。
 
@@ -371,6 +375,25 @@ micro 默认按键大全：编辑器内 `> help defaultkeys`；当前实际绑�
 - **长行自动折行**：`softwrap: true` + `wordwrap: true`，超宽的行按终端宽度折到下一屏行、在空格处断开（**micro 默认是 `false`**：长行只能横向滚动，屏幕上看不到尾巴）。终端很窄时把窗口拉宽即可，折行位置会跟着变；改宽度后不用重开 micro。
 
   实测（40 列的小 pty + 一行 160 字符）：`softwrap: false` 时屏幕上**看不到**行尾；`softwrap: true` 时行尾正常出现在下面的屏行里。
+
+### 单词自动补全（Tab，LeetCode 同款手感）
+
+micro **内核自带**「缓冲区同类词补全」（`internal/buffer/autocomplete.go` 的 `BufferComplete`），**不需要任何插件、更不需要 LSP**：写到一半按 `Tab`，直接补成前面出现过的那个词；再按 `Tab` 换下一个候选，`Shift-Tab` 往回调。候选 ≥2 个时，**底部状态栏会临时变成候选条**（当前候选反色），按别的键就恢复成正常状态栏。
+
+- **触发条件**：光标左边是词字符（字母/数字/`_`）且光标**右边不是**词字符——也就是你正好写在一个词的尾巴上；前缀也不能为空（光标在行首、或前面是空格时，按 `Tab` 只会缩进）。
+- **候选来源**：当前行（从左到右）→ 光标上方各行（由近到远）→ 光标下方各行（由近到远），去重；这个扫描顺序就是 `Tab` 的循环顺序。候选 ≥2 个时会把「你刚输入的前缀」追加成最后一个候选，所以循环一圈能回到原点。
+- **匹配规则**：大小写敏感的前缀匹配；`_` 算词字符，所以 `snake` 能补成 `snake_case`，而 `case` 补不出来。
+- **只有词，没有语义**：候选就是整份文件里出现过的词，没有任何类型/成员信息。`.` 也会触发补全（内核的 `util.IsAutocomplete` 允许 `.`），此时前缀为空、`Tab` 会把 buffer 里的词当候选——所以别在 `obj.` 后面指望成员补全；想要真·语义补全只能装 `lsp`，而本仓库刻意不装（见 §4）。
+- **没有候选就退化成缩进**：`Tab` 的默认绑定是 `Autocomplete|IndentSelection|InsertTab`，补全失败才走缩进；`Shift-Tab` 同理。所以补全和缩进不冲突，也不用为此改键。
+
+实测（pty 驱动真 micro；文件先写 `result0` / `result1` 两行，再另起一行输入 `res`）：
+
+```
+按 1 次 Tab → res 补成 result0        # 当前行没有匹配，取光标上方最近的
+按 2 次 Tab → result0 换成 result1     # 继续往下循环
+按 3 次 Tab → 回到 res                 # 最后一项是刚输入的前缀
+状态栏候选条 → result0 result1 res     # 当前候选反色
+```
 
 ### 与刷题工作流的配合
 
@@ -444,6 +467,8 @@ bp:OpenBuffer(buf)   -- 文件不存在时 NewBufferFromFile 会返回一个空 
 |---|---|---|
 | 又出现下划线报错 | `"linter"` 被改回 `true`，或装了 `lsp`/其它 diagnostic 插件 | 设 `"linter": false`；`micro -plugin list` 检查有无 `lsp` |
 | 左括号不自动补全 | `"autoclose": false` | 设为 `true`（或删掉该键，默认开启） |
+| `Tab` 只缩进、不补全单词 | 光标右边紧贴着词字符（= 写在了词中间）、前缀为空，或 `bindings.json` 把 `Tab` 改成了别的 | 默认就是补全（`Autocomplete|IndentSelection|InsertTab`）；删掉 `bindings.json` 里的 `"Tab"` 那行即可，`algo doctor` 也会提示 |
+| 看不到候选列表 | 候选只有 1 个时状态栏不显示；列表只在补全过程中出现 | 多写几个词让候选 ≥2 个，或连按 `Tab` 循环着看（见 §6） |
 | 改了 settings.json 没生效 | 没重载；或写到了别的 config dir | `Ctrl+E` → `reload`；确认没设 `MICRO_CONFIG_HOME`（micro 认这个，不认 `MICRO_CONFIG_DIR`） |
 | micro 启动报 JSON 错误 | settings.json 语法错（注释/多余逗号） | 用 `algo setup` 重写，或从 `.bak-` 备份恢复 |
 | 出现 `assignment to entry in nil map` | `init.lua` 顶层调用了 `MakeCommand` | 挪进 `init()` / `preinit()` |
@@ -462,6 +487,7 @@ bp:OpenBuffer(buf)   -- 文件不存在时 NewBufferFromFile 会返回一个空 
 
 - **恢复配置**：`cp ~/.config/micro/settings.json.bak-<时间戳> ~/.config/micro/settings.json`（`bindings.json` 同理）；
 - **只撤掉某项**：编辑对应文件删键（例如删掉 `"linter": false` 就恢复保存时检查；删掉 `"Ctrl-B"` 那行就恢复默认的 `ShellMode`）；
+- **补全失灵**：`bindings.json` 里把 `Tab` 改掉了 → 删掉那一行，micro 默认就是 `Autocomplete|IndentSelection|InsertTab`（见 §6）；
 - **撤掉 init.lua**：`rm ~/.config/micro/init.lua`（如果里面还有你自己的东西，只删 `algo-run`/`algo-check`/`algo-in`/`algo-out` 和 `init` 相关片段）；
 - **卸载 CLI**：`make -C cli uninstall`（只删 `~/.local/bin/algo`，不动 micro 配置）。
 

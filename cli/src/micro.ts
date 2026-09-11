@@ -51,6 +51,9 @@ export const PROFILE: Record<string, unknown> = {
  * algo 管理的按键绑定，merge 进 ~/.config/micro/bindings.json。
  * 只写「micro 默认不是这样、但刷题时更顺手」的键（micro 的默认绑定见 cli/micro.md §5.4），
  * 另外四个键由 init.lua 提供（algo setup --init）：Alt-r 跑样例、Alt-t 对拍、Alt-i/Alt-o 开 in/out。
+ *
+ * 注意：Tab / Shift-Tab 的同类词补全（Autocomplete|IndentSelection|InsertTab）是 micro 内核默认，
+ * 所以**故意不写在这里**——写进去等于把用户自定义的 Tab 也钉死。algo doctor 会检查它没被覆盖。
  */
 export const BINDINGS: Record<string, string> = {
   // 命令模式：micro 默认在 Ctrl-E，挪到 Ctrl-P
@@ -261,6 +264,8 @@ export interface MicroStatus {
   /** BINDINGS 里已经写进 bindings.json 的键数 */
   bindingsApplied: number;
   bindingsTotal: number;
+  /** Tab 是否仍走 micro 内核的同类词补全（bindings.json 没把 Tab 覆盖成别的动作） */
+  tabAutocompleteOn: boolean;
   initLuaExists: boolean;
 }
 
@@ -279,6 +284,10 @@ export function microStatus(): MicroStatus {
   const bindingsPath = microBindingsPath();
   const settings = readJson(settingsPath);
   const bindings = readJson(bindingsPath);
+  // micro 默认 Tab = "Autocomplete|IndentSelection|InsertTab"（同类词补全 → 缩进，见 cli/micro.md §6）。
+  // bindings.json 里没写这个键就用默认；写了但不含 Autocomplete 就是被改坏了。
+  const tabKey = Object.keys(bindings).find((k) => k.toLowerCase() === "tab");
+  const tabAutocompleteOn = tabKey === undefined || String(bindings[tabKey]).includes("Autocomplete");
   return {
     configDir: microConfigDir(),
     settingsPath,
@@ -290,6 +299,7 @@ export function microStatus(): MicroStatus {
     bindingsExists: readText(bindingsPath) !== null,
     bindingsApplied: Object.entries(BINDINGS).filter(([k, v]) => bindings[k] === v).length,
     bindingsTotal: Object.keys(BINDINGS).length,
+    tabAutocompleteOn,
     initLuaExists: existsSync(initLuaPath()),
   };
 }
