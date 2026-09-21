@@ -62,8 +62,8 @@ feat: 支持随机数据对拍（algo gen + make stress）
 ```
 algo/
 ├── Makefile            # 根入口：原样转发到 cli/Makefile
-├── leetcode/           # 题库（已入库）：一道题一个目录，用 `algo <slug>` / `algo add` 生成
-│                       # 目前是《手撕字节跳动面试时出现过的算法题》里的 63 道，见 `algo list`
+├── leetcode/           # 题库（已入库）：一道题一个目录
+│                       # 63 道按来源顺序加 00-62 前缀；新题仍用 `algo <slug>` / `algo add` 生成
 └── cli/                # 全部实现
     ├── src/            # index(分发) / flags / add / scaffold / list / run / check / cpp / targets / open / shell / micro / doctor / util
     ├── assets/         # 模板：solution.cpp / make.tmpl / problem.txt.tmpl / solution.txt.tmpl / whiteboard.excalidraw.tmpl / init.lua
