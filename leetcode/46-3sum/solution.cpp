@@ -15,7 +15,15 @@ int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    // TODO: 读入 -> 计算 -> 输出
+    int n; 
+    cin >> n;
+    
+    vector<int> a(n);
+    
+    for(auto &x : a) cin >> x;
+    sort(a.begin() ,a.end());
+    
+    vector<vector<int>> 
 
     return 0;
 }
